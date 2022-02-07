@@ -12,6 +12,7 @@ A Kibana API client enabling Go programs to interact with Kibana in a simple and
 This API client package covers most of the existing Kibana API calls and is updated regularly
 to add new and/or missing endpoints. Currently, the following services are supported:
 
+- [ ] Get features API
 - [ ] Spaces
   - [x] Create space
   - [x] Update space
@@ -21,6 +22,62 @@ to add new and/or missing endpoints. Currently, the following services are suppo
   - [ ] Copy saved objects to space
   - [ ] Resolve copy to space conflicts
   - [ ] Disable legacy URL aliases
+- [ ] Roles
+  - [ ] Create or update role
+  - [ ] Get specific role
+  - [ ] Get all roles
+  - [ ] Delete role
+- [ ] User Sessions
+  - [ ] Invalidate user sessions
+- [ ] Saved Objects
+  - [ ] Get object
+  - [ ] Bulk get objects
+  - [ ] Find objects
+  - [ ] Create saved objects
+  - [ ] Bulk create saved objects
+  - [ ] Update object
+  - [ ] Delete object
+  - [ ] Export objects
+  - [ ] Import objects
+  - [ ] Resolve import errors
+  - [ ] Resolve object
+  - [ ] Bulk resolve objects
+  - [ ] Rotate encryption key
+- [ ] Index Patterns
+  - [ ] Get index pattern
+  - [ ] Create index pattern
+  - [ ] Update index pattern
+  - [ ] Delete index pattern
+  - [ ] Get default index pattern
+  - [ ] Set default index pattern
+  - [ ] Update index pattern fields metadata
+  - [ ] Get runtime field
+  - [ ] Create runtime field
+  - [ ] Upsert runtime field
+  - [ ] Update runtime field
+  - [ ] Delete runtime field
+- [ ] Alerting
+  - [ ] Create rule
+  - [ ] Update rule
+  - [ ] Get rule
+  - [ ] Delete rule
+  - [ ] Find rules
+  - [ ] List rule types
+  - [ ] Enable rule
+  - [ ] Disable rule
+  - [ ] Mute all alerts
+  - [ ] Mute alert
+  - [ ] Unmute all alerts
+  - [ ] Unmute alert
+  - [ ] Get Alerting framework health
+- [ ] Actions and Connectors
+  - [ ] Get connector
+  - [ ] Get all connectors
+  - [ ] List all connector types
+  - [ ] Create connector
+  - [ ] Update connector
+  - [ ] Execute connector
+  - [ ] Delete connector
 
 ## Usage
 
