@@ -13,6 +13,7 @@ This API client package covers most of the existing Kibana API calls and is upda
 to add new and/or missing endpoints. Currently, the following services are supported:
 
 - [ ] Get features API
+- [ ] Get Task Manager health
 - [x] Spaces
   - [x] Create space
   - [x] Update space
@@ -78,6 +79,29 @@ to add new and/or missing endpoints. Currently, the following services are suppo
   - [ ] Update connector
   - [ ] Execute connector
   - [ ] Delete connector
+- [ ] Import & Export Dashboards
+  - [ ] Import dashboard 
+  - [ ] Export dashboard
+- [ ] Logstash Configuration Management
+  - [ ] Delete pipeline
+  - [ ] List pipeline
+  - [ ] Create Logstash pipeline
+  - [ ] Retrieve pipeline
+- [ ] Machine Learning
+  - [ ] Sync machine learning saved objects
+- [ ] Short URLs
+  - [ ] Create short URL
+  - [ ] Get short URL
+  - [ ] Delete short URL
+  - [ ] Resolve short URL
+- [ ] Upgrade Assistant
+  - [ ] Upgrade readiness status
+  - [ ] Start or resume reindex
+  - [ ] Batch start or resume reindex
+  - [ ] Batch reindex queue
+  - [ ] Add default field
+  - [ ] Check reindex status
+  - [ ] Cancel reindex
 
 ## Usage
 
