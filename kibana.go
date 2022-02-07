@@ -225,7 +225,6 @@ func (c *Client) NewRequest(method, path string, opt interface{}, options []Requ
 // interface, the raw response body will be written to v, without attempting to
 // first decode it.
 func (c Client) Do(req *http.Request, v interface{}) (*Response, error) {
-
 	// Set the correct authentication header. If using basic auth, then check
 	// if we already have a token and if not first authenticate and get one.
 	switch c.authType {

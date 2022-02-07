@@ -43,7 +43,6 @@ type CreateSpaceOptions struct {
 //
 // Kibana API docs: https://www.elastic.co/guide/en/kibana/current/spaces-api-post.html
 func (s SpacesService) CreateSpace(opt *CreateSpaceOptions, options ...RequestOptionFunc) (*Space, *Response, error) {
-
 	req, err := s.client.NewRequest(http.MethodPost, "spaces/space", opt, options)
 	if err != nil {
 		return nil, nil, err
@@ -75,7 +74,6 @@ type UpdateSpaceOptions struct {
 //
 // Kibana API docs: https://www.elastic.co/guide/en/kibana/current/spaces-api-put.html
 func (s SpacesService) UpdateSpace(sid string, opt *UpdateSpaceOptions, options ...RequestOptionFunc) (*Space, *Response, error) {
-
 	u := fmt.Sprintf("spaces/space/%s", sid)
 	opt.ID = String(sid)
 
@@ -97,7 +95,6 @@ func (s SpacesService) UpdateSpace(sid string, opt *UpdateSpaceOptions, options 
 //
 // Kibana API docs: https://www.elastic.co/guide/en/kibana/current/spaces-api-get.html
 func (s SpacesService) GetSpace(sid string, options ...RequestOptionFunc) (*Space, *Response, error) {
-
 	u := fmt.Sprintf("spaces/space/%s", sid)
 
 	req, err := s.client.NewRequest(http.MethodGet, u, nil, options)
@@ -126,7 +123,6 @@ type GetAllSpacesOptions struct {
 //
 // Kibana API docs: https://www.elastic.co/guide/en/kibana/current/spaces-api-get-all.html
 func (s SpacesService) GetAllSpaces(opt *GetAllSpacesOptions, options ...RequestOptionFunc) ([]*Space, *Response, error) {
-
 	req, err := s.client.NewRequest(http.MethodGet, "spaces/space", opt, options)
 	if err != nil {
 		return nil, nil, err
@@ -145,7 +141,6 @@ func (s SpacesService) GetAllSpaces(opt *GetAllSpacesOptions, options ...Request
 //
 // Kibana API docs: https://www.elastic.co/guide/en/kibana/current/spaces-api-delete.html
 func (s SpacesService) DeleteSpace(sid string, options ...RequestOptionFunc) (*Response, error) {
-
 	u := fmt.Sprintf("spaces/space/%s", sid)
 
 	req, err := s.client.NewRequest(http.MethodDelete, u, nil, options)
