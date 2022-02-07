@@ -57,6 +57,7 @@ type Client struct {
 	UserAgent string
 
 	// Services used for talking to different parts of the Kibana API
+	Roles  *RolesService
 	Spaces *SpacesService
 }
 
@@ -97,6 +98,7 @@ func newClient(options ...ClientOptionFunc) (*Client, error) {
 	}
 
 	// Create all the public services
+	c.Roles = &RolesService{client: c}
 	c.Spaces = &SpacesService{client: c}
 
 	return c, nil

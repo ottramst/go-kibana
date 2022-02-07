@@ -13,7 +13,7 @@ This API client package covers most of the existing Kibana API calls and is upda
 to add new and/or missing endpoints. Currently, the following services are supported:
 
 - [ ] Get features API
-- [ ] Spaces
+- [x] Spaces
   - [x] Create space
   - [x] Update space
   - [x] Get space
@@ -22,10 +22,10 @@ to add new and/or missing endpoints. Currently, the following services are suppo
   - [ ] Copy saved objects to space
   - [ ] Resolve copy to space conflicts
   - [ ] Disable legacy URL aliases
-- [ ] Roles
-  - [ ] Create or update role
-  - [ ] Get specific role
-  - [ ] Get all roles
+- [x] Roles
+  - [x] Create or update role
+  - [x] Get specific role
+  - [x] Get all roles
   - [ ] Delete role
 - [ ] User Sessions
   - [ ] Invalidate user sessions

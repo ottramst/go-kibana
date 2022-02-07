@@ -5,7 +5,7 @@ import (
 	"net/http"
 )
 
-// SpacesService handles communication with the runner related methods of the
+// SpacesService handles communication with the spaces related methods of the
 // Kibana API
 //
 // Kibana API docs: https://www.elastic.co/guide/en/kibana/current/spaces-api.html
