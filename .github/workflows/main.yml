@@ -30,7 +30,7 @@ jobs:
     permissions:
       contents: read
   coverage:
-    uses: ./.github/workflows/coverage.yml
+    uses: ./.github/workflows/coverage.yml # zizmor: ignore[self-repository]
     permissions:
       contents: read
 
