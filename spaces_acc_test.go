@@ -57,6 +57,20 @@ func TestAccSpaces(t *testing.T) {
 		t.Errorf("Update() = %+v, want new description and unchanged color", updated)
 	}
 
+	// Empty text fields clear the settings; an empty color keeps the color.
+	space.Description, space.Initials, space.Color = "", "", ""
+	if _, _, err := client.Spaces.Update(ctx, id, space); err != nil {
+		t.Fatalf("Update(clear) error = %v", err)
+	}
+	cleared, _, err := client.Spaces.Get(ctx, id)
+	if err != nil {
+		t.Fatalf("Get() error = %v", err)
+	}
+	if cleared.Description != "" || cleared.Initials != "" || cleared.Color != "#aabbcc" {
+		t.Errorf("after clearing: Description = %q, Initials = %q, Color = %q; want empty, empty, #aabbcc",
+			cleared.Description, cleared.Initials, cleared.Color)
+	}
+
 	spaces, _, err := client.Spaces.List(ctx, &kibana.ListSpacesOptions{IncludeAuthorizedPurposes: true})
 	if err != nil {
 		t.Fatalf("List() error = %v", err)
@@ -69,8 +83,7 @@ func TestAccSpaces(t *testing.T) {
 		t.Errorf("AuthorizedPurposes = %v, want any=true", spaces[i].AuthorizedPurposes)
 	}
 
-	// The default space, read with a client scoped to the new space, can be
-	// written back unchanged although it is reserved.
+	// The default space can be read with a client scoped to another space.
 	def, _, err := client.InSpace(id).Spaces.Get(ctx, kibana.DefaultSpace)
 	if err != nil {
 		t.Fatalf("InSpace().Get(default) error = %v", err)
@@ -78,8 +91,15 @@ func TestAccSpaces(t *testing.T) {
 	if !def.Reserved {
 		t.Errorf("default space Reserved = false, want true")
 	}
-	if _, _, err := client.Spaces.Update(ctx, kibana.DefaultSpace, def); err != nil {
-		t.Errorf("Update(default) error = %v", err)
+	// Writing the reserved default space back changes shared state, so only
+	// do it on the local compose stack.
+	if localStack() {
+		updated, _, err := client.Spaces.Update(ctx, kibana.DefaultSpace, def)
+		if err != nil {
+			t.Errorf("Update(default) error = %v", err)
+		} else if !updated.Reserved {
+			t.Errorf("Update(default) Reserved = false, want true")
+		}
 	}
 
 	if _, err := client.Spaces.Delete(ctx, id); err != nil {
