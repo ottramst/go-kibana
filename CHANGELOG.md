@@ -8,8 +8,9 @@ BREAKING CHANGES:
   * Every service method takes a `context.Context` first.
   * Methods are named `List`, `Get`, `Create`, `Update` and `Delete`.
   * `RequestOptionFunc` is now `RequestOption`, `ClientOptionFunc` is now `ClientOption`, and the `String`/`Bool` pointer helpers are removed.
-* spaces: `Space` is used for reads and writes, and `CreateSpaceOptions`/`UpdateSpaceOptions` are removed. `Description`, `Initials` and `ImageURL` are always sent, so they can be cleared ([#6](https://github.com/ottramst/go-kibana/issues/6))
-* roles: `KibanaPrivilege.Feature` is now `map[string][]string`, so it works with every Kibana feature, and the anonymous structs are replaced with named types. `CreateOrUpdate` returns only the response, because Kibana answers 204 No Content. `CreateOrUpdate` rejects Kibana privileges without `Spaces`, which Kibana would otherwise grant in all spaces ([#7](https://github.com/ottramst/go-kibana/issues/7))
+  * `WithBaseURL` is removed: the base URL is the first argument of `NewClient`.
+* spaces: `Space` is used for reads and writes, and `CreateSpaceOptions`/`UpdateSpaceOptions` are removed. `Description`, `Initials` and `ImageURL` are always sent, so they can be cleared. `GetAllSpacesOptions` is now `ListSpacesOptions`, with `Purpose SpacePurpose` and `IncludeAuthorizedPurposes bool` ([#6](https://github.com/ottramst/go-kibana/issues/6))
+* roles: `Privilege` is now `KibanaPrivilege` and its `Feature` is a `map[string][]string`, so it works with every Kibana feature (the `Feature` struct is removed); `ElasticsearchIndex` is now `IndexPrivilege`, and the anonymous structs are replaced with named types. `CreateOrUpdate` takes the role as a `*Role`; `CreateOrUpdateRoleOptions` now only holds query options (`CreateOnly`). `CreateOrUpdate` returns only the response, because Kibana answers 204 No Content. `CreateOrUpdate` rejects Kibana privileges without `Spaces`, which Kibana would otherwise grant in all spaces ([#7](https://github.com/ottramst/go-kibana/issues/7))
 
 FEATURES:
 
