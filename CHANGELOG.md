@@ -32,4 +32,5 @@ BUG FIXES:
 
 NOTES:
 
+* Acceptance tests run against Kibana 8.19.25 and 9.5.6 in CI, using `docker-compose.yml` locally ([#5](https://github.com/ottramst/go-kibana/issues/5))
 * Repository tooling modernized: golangci-lint v2, a `GNUmakefile`, a hardened CI/CD pipeline, Dependabot, and community health files ([#2](https://github.com/ottramst/go-kibana/issues/2), [#3](https://github.com/ottramst/go-kibana/issues/3))

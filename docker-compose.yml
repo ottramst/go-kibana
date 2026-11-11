@@ -1,0 +1,73 @@
+# Local Elasticsearch + Kibana for acceptance tests. ELASTIC_STACK_VERSION
+# selects the image tags and defaults to the newest supported release; keep it
+# in sync with the test matrix in .github/workflows/test.yml.
+#
+# Credentials: elastic / changeme (superuser). Not for production use.
+name: go-kibana
+
+services:
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:${ELASTIC_STACK_VERSION:-9.5.6}
+    environment:
+      discovery.type: single-node
+      ELASTIC_PASSWORD: changeme
+      xpack.security.enabled: "true"
+      xpack.security.http.ssl.enabled: "false"
+      # A trial license enables every API, including platinum-level features.
+      xpack.license.self_generated.type: trial
+      cluster.routing.allocation.disk.threshold_enabled: "false"
+      ES_JAVA_OPTS: -Xms1g -Xmx1g
+    ports:
+      - "127.0.0.1:9200:9200"
+    mem_limit: 2g
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS -u elastic:changeme 'http://localhost:9200/_cluster/health?wait_for_status=yellow&timeout=1s'"]
+      interval: 5s
+      timeout: 5s
+      retries: 60
+
+  # Kibana connects as kibana_system, whose password must be set first.
+  kibana-setup:
+    image: docker.elastic.co/elasticsearch/elasticsearch:${ELASTIC_STACK_VERSION:-9.5.6}
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+    restart: "no"
+    # The security index can briefly be unavailable after the cluster turns
+    # yellow, so retry for up to two minutes.
+    command:
+      - sh
+      - -c
+      - |
+        for attempt in $$(seq 1 60); do
+          curl -fsS -u elastic:changeme -X POST http://elasticsearch:9200/_security/user/kibana_system/_password \
+            -H 'Content-Type: application/json' -d '{"password":"changeme"}' && exit 0
+          echo "attempt $$attempt failed, retrying"
+          sleep 2
+        done
+        exit 1
+
+  kibana:
+    image: docker.elastic.co/kibana/kibana:${ELASTIC_STACK_VERSION:-9.5.6}
+    depends_on:
+      kibana-setup:
+        condition: service_completed_successfully
+    environment:
+      ELASTICSEARCH_HOSTS: http://elasticsearch:9200
+      ELASTICSEARCH_USERNAME: kibana_system
+      ELASTICSEARCH_PASSWORD: changeme
+      # Needed by alerting, connectors and encrypted saved objects.
+      XPACK_ENCRYPTEDSAVEDOBJECTS_ENCRYPTIONKEY: go-kibana-acceptance-tests-encryption-key-1
+      XPACK_SECURITY_ENCRYPTIONKEY: go-kibana-acceptance-tests-security-key-00001
+      XPACK_REPORTING_ENCRYPTIONKEY: go-kibana-acceptance-tests-reporting-key-0001
+      TELEMETRY_OPTIN: "false"
+    ports:
+      - "127.0.0.1:5601:5601"
+    mem_limit: 2g
+    healthcheck:
+      # Every plugin reports a level too: match the overall status.
+      test: ["CMD-SHELL", "curl -fsS -u elastic:changeme http://localhost:5601/api/status | grep -q '\"overall\":{\"level\":\"available\"'"]
+      interval: 10s
+      timeout: 10s
+      retries: 60
+      start_period: 30s

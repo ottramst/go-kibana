@@ -1,5 +1,9 @@
 # See GitHub's documentation for more information on this file:
 # https://docs.github.com/en/code-security/dependabot/working-with-dependabot/dependabot-options-reference
+#
+# The Elastic Stack images are not updated here: the acceptance test matrix in
+# .github/workflows/test.yml and the ELASTIC_STACK_VERSION default in
+# docker-compose.yml are bumped together by hand (see CONTRIBUTING.md).
 version: 2
 updates:
   - package-ecosystem: "gomod"
