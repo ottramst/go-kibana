@@ -1,9 +1,8 @@
 name: CI/CD
 
 on:
+  # Every pull request, including stacked ones that target another branch.
   pull_request:
-    branches:
-      - main
   push:
     branches:
       - main
@@ -15,17 +14,19 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
+# Reusable workflows are called with "./" paths: zizmor's self-repository
+# audit suggests the newer "$/" syntax, which actionlint does not accept yet.
 jobs:
   lint:
-    uses: ./.github/workflows/lint.yml
+    uses: ./.github/workflows/lint.yml # zizmor: ignore[self-repository]
     permissions:
       contents: read
   build:
-    uses: ./.github/workflows/build.yml
+    uses: ./.github/workflows/build.yml # zizmor: ignore[self-repository]
     permissions:
       contents: read
   test:
-    uses: ./.github/workflows/test.yml
+    uses: ./.github/workflows/test.yml # zizmor: ignore[self-repository]
     permissions:
       contents: read
   coverage:
