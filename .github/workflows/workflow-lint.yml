@@ -42,3 +42,5 @@ jobs:
           # Report findings in the log and fail the job, instead of uploading
           # SARIF to code scanning (which fork pull requests cannot do).
           advanced-security: false
+          # Pinned, so that new audits don't fail CI unannounced; bump by hand.
+          version: 1.31.1
