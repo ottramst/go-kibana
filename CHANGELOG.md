@@ -1,4 +1,4 @@
-## Unreleased
+## v0.1.0
 
 BREAKING CHANGES:
 
@@ -8,8 +8,9 @@ BREAKING CHANGES:
   * Every service method takes a `context.Context` first.
   * Methods are named `List`, `Get`, `Create`, `Update` and `Delete`.
   * `RequestOptionFunc` is now `RequestOption`, `ClientOptionFunc` is now `ClientOption`, and the `String`/`Bool` pointer helpers are removed.
-* spaces: `Space` is used for reads and writes, and `CreateSpaceOptions`/`UpdateSpaceOptions` are removed. `Description`, `Initials` and `ImageURL` are always sent, so they can be cleared ([#6](https://github.com/ottramst/go-kibana/issues/6))
-* roles: `KibanaPrivilege.Feature` is now `map[string][]string`, so it works with every Kibana feature, and the anonymous structs are replaced with named types. `CreateOrUpdate` returns only the response, because Kibana answers 204 No Content. `CreateOrUpdate` rejects Kibana privileges without `Spaces`, which Kibana would otherwise grant in all spaces ([#7](https://github.com/ottramst/go-kibana/issues/7))
+  * `WithBaseURL` is removed: the base URL is the first argument of `NewClient`.
+* spaces: `Space` is used for reads and writes, and `CreateSpaceOptions`/`UpdateSpaceOptions` are removed. `Description`, `Initials` and `ImageURL` are always sent, so they can be cleared. `GetAllSpacesOptions` is now `ListSpacesOptions`, with `Purpose SpacePurpose` and `IncludeAuthorizedPurposes bool` ([#6](https://github.com/ottramst/go-kibana/issues/6))
+* roles: `Privilege` is now `KibanaPrivilege` and its `Feature` is a `map[string][]string`, so it works with every Kibana feature (the `Feature` struct is removed); `ElasticsearchIndex` is now `IndexPrivilege`, and the anonymous structs are replaced with named types. `CreateOrUpdate` takes the role as a `*Role`; `CreateOrUpdateRoleOptions` now only holds query options (`CreateOnly`). `CreateOrUpdate` returns only the response, because Kibana answers 204 No Content. `CreateOrUpdate` rejects Kibana privileges without `Spaces`, which Kibana would otherwise grant in all spaces ([#7](https://github.com/ottramst/go-kibana/issues/7))
 
 FEATURES:
 
@@ -32,6 +33,8 @@ BUG FIXES:
 
 NOTES:
 
+* First release of the revived module, tested against Kibana 8.19.25 and 9.5.6 on Go 1.26 and 1.27. The [roadmap](https://github.com/ottramst/go-kibana/milestones) lists what comes next
+* Requires `github.com/google/go-querystring` v1.2.0 ([#66](https://github.com/ottramst/go-kibana/pull/66))
 * README rewritten with usage, compatibility and support policy, and roadmap sections; `Example*` functions on pkg.go.dev; `CLAUDE.md` with architecture notes and verified Kibana API quirks ([#9](https://github.com/ottramst/go-kibana/issues/9))
 * `COVERAGE.md` lists every endpoint of the Kibana 8.19.25 and 9.5.6 OpenAPI specs and the method that implements it. `make coverage` regenerates it from the `// Kibana API:` annotations, and CI fails when it is stale ([#8](https://github.com/ottramst/go-kibana/issues/8))
 * Acceptance tests run against Kibana 8.19.25 and 9.5.6 in CI, using `docker-compose.yml` locally ([#5](https://github.com/ottramst/go-kibana/issues/5))
