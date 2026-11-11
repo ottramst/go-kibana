@@ -1,0 +1,35 @@
+name: Feature request
+description: Suggest a new endpoint, option, or improvement.
+labels: ["type/feature"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Check the [roadmap](https://github.com/ottramst/go-kibana/milestones) and
+        [COVERAGE.md](https://github.com/ottramst/go-kibana/blob/main/COVERAGE.md) first:
+        the endpoint may already be planned.
+  - type: textarea
+    id: description
+    attributes:
+      label: Description
+      description: What would you like the client to do, and what problem does it solve?
+    validations:
+      required: true
+  - type: textarea
+    id: endpoints
+    attributes:
+      label: Kibana API endpoints
+      description: Optional. The endpoints involved (method and path), with links to the [Kibana API reference](https://www.elastic.co/docs/api/doc/kibana).
+      placeholder: POST /api/saved_objects/_export
+  - type: textarea
+    id: usage
+    attributes:
+      label: Proposed usage
+      description: Optional. How you would like to call it from Go.
+      render: go
+  - type: input
+    id: kibana-version
+    attributes:
+      label: Kibana version
+      description: The Kibana version that provides the feature, if known.
+      placeholder: "9.5.0"

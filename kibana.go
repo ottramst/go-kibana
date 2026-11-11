@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"net/url"
 	"sort"
@@ -35,7 +34,7 @@ const (
 	APIKey
 )
 
-// A Client manages communication with the Kibana API
+// A Client manages communication with the Kibana API.
 type Client struct {
 	// HTTP client used to communicate with the API
 	client *http.Client
@@ -62,7 +61,7 @@ type Client struct {
 }
 
 // Response is a Kibana API response. This wraps the standard http.Response
-// returned from Kibana
+// returned from Kibana.
 type Response struct {
 	*http.Response
 }
@@ -105,7 +104,7 @@ func newClient(options ...ClientOptionFunc) (*Client, error) {
 }
 
 // NewClient returns a new Kibana API client. To use API methods which require
-// authentication, provide a valid API key
+// authentication, provide a valid API key.
 func NewClient(apiKey string, options ...ClientOptionFunc) (*Client, error) {
 	client, err := newClient(options...)
 	if err != nil {
@@ -265,7 +264,7 @@ func (c Client) Do(req *http.Request, v interface{}) (*Response, error) {
 	return response, err
 }
 
-// An ErrorResponse reports one or more errors caused by an API request
+// An ErrorResponse reports one or more errors caused by an API request.
 type ErrorResponse struct {
 	Body     []byte
 	Response *http.Response
@@ -278,7 +277,7 @@ func (e *ErrorResponse) Error() string {
 	return fmt.Sprintf("%s %s: %d %s", e.Response.Request.Method, u, e.Response.StatusCode, e.Message)
 }
 
-// CheckResponse checks the API response for errors, and returns them if present
+// CheckResponse checks the API response for errors, and returns them if present.
 func CheckResponse(r *http.Response) error {
 	switch r.StatusCode {
 	case 200, 201, 202, 204, 304:
@@ -286,7 +285,7 @@ func CheckResponse(r *http.Response) error {
 	}
 
 	errorResponse := &ErrorResponse{Response: r}
-	data, err := ioutil.ReadAll(r.Body)
+	data, err := io.ReadAll(r.Body)
 	if err == nil && data != nil {
 		errorResponse.Body = data
 
