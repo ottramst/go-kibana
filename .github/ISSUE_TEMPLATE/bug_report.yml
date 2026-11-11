@@ -1,0 +1,60 @@
+name: Bug report
+description: Something in the client is not working as expected.
+labels: ["type/bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to report a bug. Please check the
+        [support policy](https://github.com/ottramst/go-kibana#support-policy) first:
+        Kibana versions outside the tested range are supported on a best-effort basis only.
+  - type: input
+    id: client-version
+    attributes:
+      label: go-kibana version
+      description: The module version from your `go.mod`.
+      placeholder: "v0.1.0"
+    validations:
+      required: true
+  - type: input
+    id: go-version
+    attributes:
+      label: Go version
+      description: Output of `go version`.
+      placeholder: "go1.27.3 linux/amd64"
+    validations:
+      required: true
+  - type: input
+    id: kibana-version
+    attributes:
+      label: Kibana version
+      description: The Kibana version, as shown by `GET /api/status` (`version.number`), and whether it is self-managed, Elastic Cloud Hosted or Serverless.
+      placeholder: "9.5.6 (self-managed)"
+    validations:
+      required: true
+  - type: input
+    id: endpoints
+    attributes:
+      label: Affected services or methods
+      placeholder: SpacesService.Update, RolesService.CreateOrUpdate
+  - type: textarea
+    id: code
+    attributes:
+      label: Code to reproduce
+      description: A minimal program that reproduces the problem. Remove any secrets.
+      render: go
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior
+      description: Include the full error, and the status code and response body from `*kibana.ErrorResponse` if there is one.
+    validations:
+      required: true

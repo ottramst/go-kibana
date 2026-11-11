@@ -1,0 +1,48 @@
+# Library release workflow: Go modules are served from the git tag, so a
+# release only needs the GitHub release notes and a warm module proxy.
+name: Release
+
+# Creates a GitHub release when a tag that matches the pattern "v*"
+# (e.g. v0.1.0) is pushed.
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions: {}
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    # Deployment protection rules on the environment restrict releases to v* tags.
+    environment: release
+    permissions:
+      # Creating the GitHub release
+      contents: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Create GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          # The release notes are the CHANGELOG.md section for this version.
+          awk -v heading="## $TAG" '$0 == heading { found = 1; next } found && /^## / { exit } found' CHANGELOG.md > notes.md
+          if [ ! -s notes.md ]; then
+            echo "CHANGELOG.md has no '## $TAG' section."
+            exit 1
+          fi
+          case "$TAG" in
+            *-*) prerelease=true ;;
+            *) prerelease=false ;;
+          esac
+          gh release create "$TAG" --repo "$GITHUB_REPOSITORY" --verify-tag --title "$TAG" \
+            --notes-file notes.md --prerelease="$prerelease"
+      - name: Warm the Go module proxy
+        env:
+          TAG: ${{ github.ref_name }}
+        # pkg.go.dev picks up the version from proxy.golang.org.
+        run: curl -fsS --retry 5 --retry-all-errors "https://proxy.golang.org/github.com/${GITHUB_REPOSITORY,,}/@v/${TAG}.info"

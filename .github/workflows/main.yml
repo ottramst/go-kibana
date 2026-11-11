@@ -1,0 +1,46 @@
+name: CI/CD
+
+on:
+  # Every pull request, including stacked ones that target another branch.
+  pull_request:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions: {}
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+# Reusable workflows are called with "./" paths: zizmor's self-repository
+# audit suggests the newer "$/" syntax, which actionlint does not accept yet.
+jobs:
+  lint:
+    uses: ./.github/workflows/lint.yml # zizmor: ignore[self-repository]
+    permissions:
+      contents: read
+  build:
+    uses: ./.github/workflows/build.yml # zizmor: ignore[self-repository]
+    permissions:
+      contents: read
+
+  # Single required status check for branch protection: it always reports,
+  # and fails if any job above failed, was cancelled or was skipped.
+  ci-gate:
+    name: CI gate
+    if: always()
+    needs: [lint, build]
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Check job results
+        env:
+          RESULTS: ${{ toJSON(needs.*.result) }}
+        run: |
+          echo "Job results: $RESULTS"
+          if echo "$RESULTS" | grep -qE '"(failure|cancelled|skipped)"'; then
+            echo "One or more required jobs did not succeed."
+            exit 1
+          fi
