@@ -139,11 +139,11 @@ The stack runs with security enabled and a trial license, on ports bound to 127.
 ## CI
 
 GitHub Actions workflows in `.github/workflows/`:
-- `main.yml` ("CI/CD") calls the reusable `lint`, `build`, `test` and `coverage` workflows. The single `CI gate` job is the required status check.
+- `main.yml` ("CI/CD") calls the reusable `lint`, `build`, `test` and `coverage` workflows. The single `CI gate` job is the required status check. CI/CD, Security and CodeQL run on every pull request, including stacked ones that target another branch.
 - `build`: go.mod tidy check, build, vet, and race-enabled unit tests on Go 1.26.x and 1.27.x, the two supported Go releases. The go.mod `go` directive is the oldest one.
 - `test`: acceptance tests on a Kibana {8.19.25, 9.5.6} matrix via `docker compose up -d --wait`. The image tag comes from `ELASTIC_STACK_VERSION`, whose default in `docker-compose.yml` is the newest. Dependabot does not bump the stack; see CONTRIBUTING.md for the version bump checklist (test matrix, compose default, `KIBANA_SPEC_VERSIONS`, README, this file).
 - `coverage`: tests the coverage tool, runs `make coverage`, and fails if `COVERAGE.md` changed.
-- Also: CodeQL (`codeql.yml`), govulncheck and dependency review (`security.yml`), OpenSSF Scorecard, actionlint plus zizmor for workflow changes (zizmor fails the job on findings, without uploading SARIF), lock threads, and waiting-response triage.
+- Also: CodeQL (`codeql.yml`), govulncheck and dependency review (`security.yml`), OpenSSF Scorecard, actionlint plus zizmor for workflow changes (zizmor is pinned in `workflow-lint.yml` and fails the job on findings, without uploading SARIF; reusable workflows are called with `./` paths plus `# zizmor: ignore[self-repository]`, because the `$/` syntax zizmor suggests fails actionlint), lock threads, and waiting-response triage.
 - `release.yml`: pushing a `vX.Y.Z` tag creates the GitHub release from the `## vX.Y.Z` section of `CHANGELOG.md` (the heading must match exactly) and warms proxy.golang.org. It runs in the `release` environment, which only allows `v*` tags.
 - All actions are pinned to commit SHAs with a version comment. Workflows triggered by events use top-level `permissions: {}` and grant permissions per job; the reusable workflows (`build`, `lint`, `test`, `coverage`) declare `contents: read`. Every job has a timeout, and checkouts use `persist-credentials: false`.
 - Never commit downloaded files: `.cache/` (the OpenAPI specs) must stay in `.gitignore`.
