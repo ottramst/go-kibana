@@ -26,7 +26,7 @@ jobs:
     permissions:
       contents: read
   test:
-    uses: ./.github/workflows/test.yml
+    uses: ./.github/workflows/test.yml # zizmor: ignore[self-repository]
     permissions:
       contents: read
 
