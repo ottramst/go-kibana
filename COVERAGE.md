@@ -4,6 +4,8 @@
 
 Endpoints of the official Kibana OpenAPI specs (v8.19.25, v9.5.6) and the go-kibana methods that implement them. Planned work is tracked in the [roadmap](https://github.com/ottramst/go-kibana/milestones).
 
+Endpoint data comes from the [Kibana OpenAPI specification](https://github.com/elastic/kibana/tree/main/oas_docs) by Elastic, licensed under [CC BY-NC-ND 4.0](https://creativecommons.org/licenses/by-nc-nd/4.0/).
+
 **9 of 726 endpoints implemented.**
 
 | Area | Implemented |
@@ -43,7 +45,7 @@ Endpoints of the official Kibana OpenAPI specs (v8.19.25, v9.5.6) and the go-kib
 | [Message Signing Service](#message-signing-service) | 0 / 1 |
 | [ml](#ml) | 0 / 3 |
 | [observability_ai_assistant](#observability_ai_assistant) | 0 / 1 |
-| [roles](#roles) | 4 / 5 |
+| [roles](#roles) | 4 / 6 |
 | [saved objects](#saved-objects) | 0 / 17 |
 | [Security AI Assistant API](#security-ai-assistant-api) | 0 / 21 |
 | [Security Attack discovery API](#security-attack-discovery-api) | 0 / 16 |
@@ -60,13 +62,12 @@ Endpoints of the official Kibana OpenAPI specs (v8.19.25, v9.5.6) and the go-kib
 | [short url](#short-url) | 0 / 4 |
 | [significant_events](#significant_events) | 0 / 5 |
 | [slo](#slo) | 0 / 13 |
-| [spaces](#spaces) | 5 / 9 |
+| [spaces](#spaces) | 5 / 10 |
 | [streams](#streams) | 0 / 18 |
 | [synthetics](#synthetics) | 0 / 18 |
 | [system](#system) | 0 / 2 |
 | [Tags](#tags) | 0 / 5 |
 | [task manager](#task-manager) | 0 / 1 |
-| [untagged](#untagged) | 0 / 2 |
 | [upgrade](#upgrade) | 0 / 6 |
 | [uptime](#uptime) | 0 / 2 |
 | [user session](#user-session) | 0 / 1 |
@@ -592,6 +593,7 @@ Endpoints of the official Kibana OpenAPI specs (v8.19.25, v9.5.6) and the go-kib
 | Method | Path | v8.19.25 | v9.5.6 | go-kibana | Notes |
 |---|---|:-:|:-:|---|---|
 | GET | `/api/security/role` | ✅ | ✅ | `RolesService.List` |  |
+| POST | `/api/security/role/_query` | ✅ | ✅ |  |  |
 | GET | `/api/security/role/{name}` | ✅ | ✅ | `RolesService.Get` |  |
 | PUT | `/api/security/role/{name}` | ✅ | ✅ | `RolesService.CreateOrUpdate` |  |
 | DELETE | `/api/security/role/{name}` | ✅ | ✅ | `RolesService.Delete` |  |
@@ -967,6 +969,7 @@ Endpoints of the official Kibana OpenAPI specs (v8.19.25, v9.5.6) and the go-kib
 | POST | `/api/spaces/_copy_saved_objects` | ✅ | ✅ |  |  |
 | POST | `/api/spaces/_disable_legacy_url_aliases` | ✅ | ✅ |  |  |
 | POST | `/api/spaces/_get_shareable_references` | ✅ | ✅ |  |  |
+| POST | `/api/spaces/_resolve_copy_saved_objects_errors` | ✅ | ✅ |  |  |
 | POST | `/api/spaces/_update_objects_spaces` | ✅ | ✅ |  |  |
 | GET | `/api/spaces/space` | ✅ | ✅ | `SpacesService.List` |  |
 | POST | `/api/spaces/space` | ✅ | ✅ | `SpacesService.Create` |  |
@@ -1042,13 +1045,6 @@ Endpoints of the official Kibana OpenAPI specs (v8.19.25, v9.5.6) and the go-kib
 | Method | Path | v8.19.25 | v9.5.6 | go-kibana | Notes |
 |---|---|:-:|:-:|---|---|
 | GET | `/api/task_manager/_health` | ✅ | ✅ |  |  |
-
-## untagged
-
-| Method | Path | v8.19.25 | v9.5.6 | go-kibana | Notes |
-|---|---|:-:|:-:|---|---|
-| POST | `/api/security/role/_query` | ✅ | ✅ |  |  |
-| POST | `/api/spaces/_resolve_copy_saved_objects_errors` | ✅ | ✅ |  |  |
 
 ## upgrade
 

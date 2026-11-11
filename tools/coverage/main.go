@@ -6,8 +6,17 @@
 //
 //	// Kibana API: GET /api/spaces/space
 //
-// It exits with an error when an annotation matches no operation in any of
-// the specs, which catches typos and endpoints Kibana removed.
+// It exits with an error when an annotation is malformed, is not in a
+// method's doc comment, is duplicated, or matches no operation in any of the
+// specs. The last catches typos, and endpoints removed from every supported
+// version.
+//
+// Versions are listed oldest first: for an endpoint in several specs, the
+// newest spec's tag and x-state are shown.
+//
+// The specs are the Kibana OpenAPI specification by Elastic, licensed under
+// CC BY-NC-ND 4.0. They are downloaded at build time and never committed;
+// COVERAGE.md only lists their operations' methods, paths, tags and states.
 //
 // Run it with `make coverage`, which downloads the specs first.
 package main
@@ -30,7 +39,7 @@ import (
 func main() {
 	root := flag.String("root", ".", "repository root")
 	specDir := flag.String("specs", ".cache/specs", "directory with kibana-<version>.yaml files, relative to root")
-	versions := flag.String("versions", "", "space separated Kibana versions, e.g. \"v8.19.25 v9.5.6\"")
+	versions := flag.String("versions", "", "space separated Kibana versions, oldest first, e.g. \"v8.19.25 v9.5.6\"")
 	out := flag.String("out", "COVERAGE.md", "output file, relative to root")
 	flag.Parse()
 
@@ -127,14 +136,47 @@ func loadSpec(path string) (*spec, error) {
 			if err := node.Decode(&op); err != nil {
 				return nil, fmt.Errorf("parsing %s %s in %s: %w", m, p, path, err)
 			}
-			tag := "untagged"
+			tag := ""
 			if len(op.Tags) > 0 {
 				tag = op.Tags[0]
 			}
 			s.ops[endpoint{strings.ToUpper(m), p}] = operation{tag: tag, deprecated: op.Deprecated, state: op.State}
 		}
 	}
+	inferTags(s.ops)
 	return s, nil
+}
+
+// inferTags gives untagged operations the tag of the tagged operation whose
+// path shares the most leading segments with theirs, such as "roles" for
+// POST /api/security/role/_query.
+func inferTags(ops map[endpoint]operation) {
+	for ep, op := range ops {
+		if op.tag != "" {
+			continue
+		}
+		best, bestLen := "untagged", 1 // require more than the shared "/api"
+		for other, o := range ops {
+			if o.tag == "" {
+				continue
+			}
+			n := commonSegments(ep.path, other.path)
+			if n > bestLen || n == bestLen && best != "untagged" && o.tag < best {
+				best, bestLen = o.tag, n
+			}
+		}
+		op.tag = best
+		ops[ep] = op
+	}
+}
+
+func commonSegments(a, b string) int {
+	as, bs := strings.Split(strings.Trim(a, "/"), "/"), strings.Split(strings.Trim(b, "/"), "/")
+	n := 0
+	for n < len(as) && n < len(bs) && as[n] == bs[n] {
+		n++
+	}
+	return n
 }
 
 type annotation struct {
@@ -144,8 +186,11 @@ type annotation struct {
 }
 
 var (
-	annotationRE = regexp.MustCompile(`^// Kibana API: (GET|POST|PUT|PATCH|DELETE) (/\S+)$`)
-	funcRE       = regexp.MustCompile(`^func \(\w+ \*(\w+)\) (\w+)\(`)
+	annotationPrefixRE = regexp.MustCompile(`^\s*//\s*Kibana API:`)
+	annotationRE       = regexp.MustCompile(`^// Kibana API: (GET|POST|PUT|PATCH|DELETE) (/\S+)$`)
+	// funcRE matches method declarations with named, unnamed, pointer, value
+	// and generic receivers.
+	funcRE = regexp.MustCompile(`^func \((?:\w+ )?\*?(\w+)(?:\[[^\]]*\])?\) (\w+)[\[(]`)
 )
 
 // scanAnnotations finds the annotated endpoints in the non-test Go files of
@@ -174,14 +219,24 @@ func scanFile(name string, impl map[endpoint]annotation) error {
 	}
 	defer f.Close()
 
-	var pending []endpoint
-	var pendingLine int
+	type pendingAnnotation struct {
+		endpoint
+		line int
+	}
+	var pending []pendingAnnotation
 	sc := bufio.NewScanner(f)
 	for line := 1; sc.Scan(); line++ {
 		text := sc.Text()
-		if m := annotationRE.FindStringSubmatch(text); m != nil {
-			pending = append(pending, endpoint{m[1], m[2]})
-			pendingLine = line
+		if annotationPrefixRE.MatchString(text) {
+			// "Kibana API docs:" lines are links, not annotations.
+			if strings.Contains(text, "Kibana API docs:") {
+				continue
+			}
+			m := annotationRE.FindStringSubmatch(text)
+			if m == nil {
+				return fmt.Errorf("%s:%d: malformed annotation %q, want \"// Kibana API: METHOD /path\" with an upper case method", name, line, strings.TrimSpace(text))
+			}
+			pending = append(pending, pendingAnnotation{endpoint{m[1], m[2]}, line})
 			continue
 		}
 		if len(pending) == 0 || strings.HasPrefix(text, "//") {
@@ -189,17 +244,23 @@ func scanFile(name string, impl map[endpoint]annotation) error {
 		}
 		m := funcRE.FindStringSubmatch(text)
 		if m == nil {
-			return fmt.Errorf("%s:%d: Kibana API annotation is not in a method's doc comment", name, pendingLine)
+			return fmt.Errorf("%s:%d: Kibana API annotation is not in a method's doc comment", name, pending[0].line)
 		}
-		for _, ep := range pending {
-			if prev, ok := impl[ep]; ok {
-				return fmt.Errorf("%s:%d: %s %s is already annotated on %s", name, pendingLine, ep.method, ep.path, prev.method)
+		for _, p := range pending {
+			if prev, ok := impl[p.endpoint]; ok {
+				return fmt.Errorf("%s:%d: %s %s is already annotated on %s", name, p.line, p.method, p.path, prev.method)
 			}
-			impl[ep] = annotation{file: filepath.Base(name), line: pendingLine, method: m[1] + "." + m[2]}
+			impl[p.endpoint] = annotation{file: filepath.Base(name), line: p.line, method: m[1] + "." + m[2]}
 		}
 		pending = nil
 	}
-	return sc.Err()
+	if err := sc.Err(); err != nil {
+		return err
+	}
+	if len(pending) > 0 {
+		return fmt.Errorf("%s:%d: Kibana API annotation is not in a method's doc comment", name, pending[0].line)
+	}
+	return nil
 }
 
 type row struct {
@@ -239,7 +300,10 @@ func render(w io.Writer, specs []*spec, impl map[endpoint]annotation) error {
 			return cmp.Or(cmp.Compare(a.path, b.path), cmp.Compare(methodOrder(a.method), methodOrder(b.method)))
 		})
 	}
-	slices.SortFunc(tags, func(a, b string) int { return cmp.Compare(strings.ToLower(a), strings.ToLower(b)) })
+	slices.SortFunc(tags, func(a, b string) int {
+		return cmp.Or(cmp.Compare(strings.ToLower(a), strings.ToLower(b)), cmp.Compare(a, b))
+	})
+	anchors := headingAnchors(tags)
 
 	versions := make([]string, len(specs))
 	for i, s := range specs {
@@ -251,6 +315,7 @@ func render(w io.Writer, specs []*spec, impl map[endpoint]annotation) error {
 	fmt.Fprintf(&b, "# API coverage\n\n")
 	fmt.Fprintf(&b, "Endpoints of the official Kibana OpenAPI specs (%s) and the go-kibana methods that implement them. ", strings.Join(versions, ", "))
 	fmt.Fprintf(&b, "Planned work is tracked in the [roadmap](https://github.com/ottramst/go-kibana/milestones).\n\n")
+	fmt.Fprintf(&b, "Endpoint data comes from the [Kibana OpenAPI specification](https://github.com/elastic/kibana/tree/main/oas_docs) by Elastic, licensed under [CC BY-NC-ND 4.0](https://creativecommons.org/licenses/by-nc-nd/4.0/).\n\n")
 
 	total, done := 0, 0
 	for _, r := range rows {
@@ -269,11 +334,11 @@ func render(w io.Writer, specs []*spec, impl map[endpoint]annotation) error {
 				n++
 			}
 		}
-		fmt.Fprintf(&b, "| [%s](#%s) | %d / %d |\n", t, anchor(t), n, len(byTag[t]))
+		fmt.Fprintf(&b, "| [%s](#%s) | %d / %d |\n", cell(t), anchors[t], n, len(byTag[t]))
 	}
 
 	for _, t := range tags {
-		fmt.Fprintf(&b, "\n## %s\n\n", t)
+		fmt.Fprintf(&b, "\n## %s\n\n", cell(t))
 		fmt.Fprintf(&b, "| Method | Path | %s | go-kibana | Notes |\n", strings.Join(versions, " | "))
 		fmt.Fprintf(&b, "|---|---|%s---|---|\n", strings.Repeat(":-:|", len(versions)))
 		for _, r := range byTag[t] {
@@ -295,7 +360,7 @@ func render(w io.Writer, specs []*spec, impl map[endpoint]annotation) error {
 			if r.op.state != "" {
 				notes = append(notes, r.op.state)
 			}
-			fmt.Fprintf(&b, "| %s | `%s` | %s | %s | %s |\n", r.method, r.path, strings.Join(avail, " | "), impl, strings.Join(notes, "; "))
+			fmt.Fprintf(&b, "| %s | `%s` | %s | %s | %s |\n", r.method, cell(r.path), strings.Join(avail, " | "), impl, cell(strings.Join(notes, "; ")))
 		}
 	}
 	_, err := io.WriteString(w, b.String())
@@ -304,6 +369,30 @@ func render(w io.Writer, specs []*spec, impl map[endpoint]annotation) error {
 
 func methodOrder(m string) int {
 	return slices.Index(methods, strings.ToLower(m))
+}
+
+// cell makes text safe for a Markdown table cell or heading.
+func cell(s string) string {
+	s = strings.ReplaceAll(s, "|", `\|`)
+	return strings.Join(strings.Fields(s), " ")
+}
+
+// headingAnchors returns the GitHub anchors of the headings, in order:
+// repeated anchors get a "-1", "-2", ... suffix like GitHub adds.
+func headingAnchors(headings []string) map[string]string {
+	anchors := make(map[string]string, len(headings))
+	seen := make(map[string]int)
+	for _, h := range headings {
+		a := anchor(cell(h))
+		if n := seen[a]; n > 0 {
+			seen[a]++
+			a = fmt.Sprintf("%s-%d", a, n)
+		} else {
+			seen[a] = 1
+		}
+		anchors[h] = a
+	}
+	return anchors
 }
 
 // anchor returns the GitHub heading anchor for a heading text.
