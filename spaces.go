@@ -1,152 +1,190 @@
 package kibana
 
 import (
-	"fmt"
+	"context"
+	"errors"
 	"net/http"
 )
 
 // SpacesService handles communication with the spaces related methods of the
-// Kibana API
+// Kibana API.
 //
-// Kibana API docs: https://www.elastic.co/guide/en/kibana/current/spaces-api.html
-type SpacesService struct {
-	client *Client
-}
+// Kibana API docs: https://www.elastic.co/docs/api/doc/kibana/group/endpoint-spaces
+type SpacesService service
 
-// Space represents a Kibana Space
+// SpaceSolution is the solution view of a space, which determines the
+// navigation it shows.
+type SpaceSolution string
+
+// Solution views of a space.
+const (
+	SpaceSolutionClassic       SpaceSolution = "classic"
+	SpaceSolutionSecurity      SpaceSolution = "security"
+	SpaceSolutionObservability SpaceSolution = "oblt"
+	SpaceSolutionSearch        SpaceSolution = "es"
+)
+
+// Space is a Kibana space. The same type is used to read, create and update
+// spaces, so a space can be read, changed and written back.
 //
-// Kibana API docs: https://www.elastic.co/guide/en/kibana/current/spaces-api.html
+// Description, Initials and ImageURL are always sent, so setting them to ""
+// clears them. Color cannot be cleared: Kibana requires a hex color when it
+// is sent, so an empty Color is left out.
 type Space struct {
-	ID               string   `json:"id"`
-	Name             string   `json:"name"`
-	Description      string   `json:"description"`
-	Color            string   `json:"color"`
-	Initials         string   `json:"initials"`
-	DisabledFeatures []string `json:"disabledFeatures"`
-	ImageURL         string   `json:"imageUrl"`
+	// ID is part of the Kibana URL inside the space. It is limited to
+	// lowercase alphanumeric, underscore and hyphen characters, and cannot be
+	// changed once the space is created.
+	ID string `json:"id"`
+
+	// Name is the display name of the space.
+	Name string `json:"name"`
+
+	Description string `json:"description"`
+
+	// Color is the hexadecimal color code of the space avatar, such as
+	// "#aabbcc". Kibana generates one from the name when it is empty.
+	Color string `json:"color,omitempty"`
+
+	// Initials are one or two characters shown in the space avatar. Kibana
+	// generates them from the name when they are empty.
+	Initials string `json:"initials"`
+
+	// ImageURL is a data URL of the image shown in the space avatar.
+	ImageURL string `json:"imageUrl"`
+
+	// DisabledFeatures lists the IDs of the features turned off in the space.
+	DisabledFeatures []string `json:"disabledFeatures,omitempty"`
+
+	// Solution is the solution view of the space.
+	Solution SpaceSolution `json:"solution,omitempty"`
+
+	// ProjectRouting is the default cross-project search routing of the
+	// space. Kibana 9.5 and later.
+	ProjectRouting string `json:"projectRouting,omitempty"`
+
+	// Reserved is true for spaces Kibana manages, such as the default space.
+	// It is read-only and never sent.
+	Reserved bool `json:"_reserved,omitempty"`
+
+	// AuthorizedPurposes is returned by [SpacesService.List] when
+	// ListSpacesOptions.IncludeAuthorizedPurposes is set. It is never sent.
+	AuthorizedPurposes map[string]bool `json:"authorizedPurposes,omitempty"`
 }
 
-// CreateSpaceOptions represents the available CreateSpace() options
-//
-// Kibana API docs: https://www.elastic.co/guide/en/kibana/current/spaces-api-post.html
-type CreateSpaceOptions struct {
-	ID               *string   `url:"id" json:"id"`
-	Name             *string   `url:"name" json:"name"`
-	Description      *string   `url:"description,omitempty" json:"description,omitempty"`
-	Color            *string   `url:"color,omitempty" json:"color,omitempty"`
-	Initials         *string   `url:"initials,omitempty" json:"initials,omitempty"`
-	DisabledFeatures *[]string `url:"disabledFeatures,omitempty" json:"disabledFeatures,omitempty"`
-	ImageURL         *string   `url:"imageUrl,omitempty" json:"imageUrl,omitempty"`
+// writable returns a copy of the space without its read-only fields.
+func (s *Space) writable() *Space {
+	w := *s
+	w.Reserved = false
+	w.AuthorizedPurposes = nil
+	return &w
 }
 
-// CreateSpace creates a Kibana space
+// SpacePurpose is the authorization check applied when listing spaces.
+type SpacePurpose string
+
+// Purposes for [ListSpacesOptions].
+const (
+	SpacePurposeAny                        SpacePurpose = "any"
+	SpacePurposeCopySavedObjectsIntoSpace  SpacePurpose = "copySavedObjectsIntoSpace"
+	SpacePurposeShareSavedObjectsIntoSpace SpacePurpose = "shareSavedObjectsIntoSpace"
+)
+
+// ListSpacesOptions are the options for [SpacesService.List].
+type ListSpacesOptions struct {
+	// Purpose restricts the list to the spaces the user is authorized to use
+	// for that purpose. Kibana defaults to SpacePurposeAny. Cannot be combined
+	// with IncludeAuthorizedPurposes.
+	Purpose SpacePurpose `url:"purpose,omitempty"`
+
+	// IncludeAuthorizedPurposes returns every space the user can access in
+	// any capacity, with the purposes the user is authorized for in
+	// Space.AuthorizedPurposes.
+	IncludeAuthorizedPurposes bool `url:"include_authorized_purposes,omitempty"`
+}
+
+// List returns the spaces the user is authorized to access.
 //
-// Kibana API docs: https://www.elastic.co/guide/en/kibana/current/spaces-api-post.html
-func (s SpacesService) CreateSpace(opt *CreateSpaceOptions, options ...RequestOptionFunc) (*Space, *Response, error) {
-	req, err := s.client.NewRequest(http.MethodPost, "spaces/space", opt, options)
+// Kibana API: GET /api/spaces/space
+// Kibana API docs: https://www.elastic.co/docs/api/doc/kibana/operation/operation-get-spaces-space
+func (s *SpacesService) List(ctx context.Context, opt *ListSpacesOptions, opts ...RequestOption) ([]*Space, *Response, error) {
+	path, err := addQuery("/api/spaces/space", opt)
 	if err != nil {
 		return nil, nil, err
 	}
-
-	sp := new(Space)
-	resp, err := s.client.Do(req, sp)
+	var spaces []*Space
+	resp, err := s.client.do(ctx, http.MethodGet, path, nil, &spaces, opts)
 	if err != nil {
 		return nil, resp, err
 	}
-
-	return sp, resp, err
+	return spaces, resp, nil
 }
 
-// UpdateSpaceOptions represents the available UpdateSpace() options
+// Get returns the space with the given ID.
 //
-// Kibana API docs: https://www.elastic.co/guide/en/kibana/current/spaces-api-put.html
-type UpdateSpaceOptions struct {
-	ID               *string   `url:"id" json:"id"`
-	Name             *string   `url:"name" json:"name"`
-	Description      *string   `url:"description,omitempty" json:"description,omitempty"`
-	Color            *string   `url:"color,omitempty" json:"color,omitempty"`
-	Initials         *string   `url:"initials,omitempty" json:"initials,omitempty"`
-	DisabledFeatures *[]string `url:"disabledFeatures,omitempty" json:"disabledFeatures,omitempty"`
-	ImageURL         *string   `url:"imageUrl,omitempty" json:"imageUrl,omitempty"`
-}
-
-// UpdateSpace updates a Kibana space
-//
-// Kibana API docs: https://www.elastic.co/guide/en/kibana/current/spaces-api-put.html
-func (s SpacesService) UpdateSpace(sid string, opt *UpdateSpaceOptions, options ...RequestOptionFunc) (*Space, *Response, error) {
-	u := fmt.Sprintf("spaces/space/%s", sid)
-	opt.ID = String(sid)
-
-	req, err := s.client.NewRequest(http.MethodPut, u, opt, options)
-	if err != nil {
+// Kibana API: GET /api/spaces/space/{id}
+// Kibana API docs: https://www.elastic.co/docs/api/doc/kibana/operation/operation-get-spaces-space-id
+func (s *SpacesService) Get(ctx context.Context, id string, opts ...RequestOption) (*Space, *Response, error) {
+	if err := requireID("space ID", id); err != nil {
 		return nil, nil, err
 	}
-
-	sp := new(Space)
-	resp, err := s.client.Do(req, sp)
+	space := new(Space)
+	resp, err := s.client.do(ctx, http.MethodGet, pathf("/api/spaces/space/%s", id), nil, space, opts)
 	if err != nil {
 		return nil, resp, err
 	}
-
-	return sp, resp, err
+	return space, resp, nil
 }
 
-// GetSpace lists a single Kibana space
+// Create creates a space. ID and Name are required.
 //
-// Kibana API docs: https://www.elastic.co/guide/en/kibana/current/spaces-api-get.html
-func (s SpacesService) GetSpace(sid string, options ...RequestOptionFunc) (*Space, *Response, error) {
-	u := fmt.Sprintf("spaces/space/%s", sid)
-
-	req, err := s.client.NewRequest(http.MethodGet, u, nil, options)
+// Kibana API: POST /api/spaces/space
+// Kibana API docs: https://www.elastic.co/docs/api/doc/kibana/operation/operation-post-spaces-space
+func (s *SpacesService) Create(ctx context.Context, space *Space, opts ...RequestOption) (*Space, *Response, error) {
+	if space == nil {
+		return nil, nil, errors.New("kibana: space must not be nil")
+	}
+	created := new(Space)
+	resp, err := s.client.do(ctx, http.MethodPost, "/api/spaces/space", space.writable(), created, opts)
 	if err != nil {
+		return nil, resp, err
+	}
+	return created, resp, nil
+}
+
+// Update replaces the space with the given ID: an empty Description,
+// Initials or ImageURL clears the setting, and DisabledFeatures replaces the
+// disabled features. An empty Color, Solution or ProjectRouting is not sent,
+// so Kibana keeps the current value. Read the space with [SpacesService.Get] and
+// change it to keep its other settings. The ID of space is ignored; the space
+// is not modified.
+//
+// Kibana API: PUT /api/spaces/space/{id}
+// Kibana API docs: https://www.elastic.co/docs/api/doc/kibana/operation/operation-put-spaces-space-id
+func (s *SpacesService) Update(ctx context.Context, id string, space *Space, opts ...RequestOption) (*Space, *Response, error) {
+	if err := requireID("space ID", id); err != nil {
 		return nil, nil, err
 	}
-
-	sp := new(Space)
-	resp, err := s.client.Do(req, sp)
+	if space == nil {
+		return nil, nil, errors.New("kibana: space must not be nil")
+	}
+	body := space.writable()
+	body.ID = id
+	updated := new(Space)
+	resp, err := s.client.do(ctx, http.MethodPut, pathf("/api/spaces/space/%s", id), body, updated, opts)
 	if err != nil {
 		return nil, resp, err
 	}
-
-	return sp, resp, err
+	return updated, resp, nil
 }
 
-// GetAllSpacesOptions represents the available ListAllSpaces() options
+// Delete deletes the space with the given ID, and permanently deletes all
+// saved objects in it.
 //
-// Kibana API docs: https://www.elastic.co/guide/en/kibana/current/spaces-api-get-all.html
-type GetAllSpacesOptions struct {
-	Purpose                  *string `url:"purpose,omitempty" json:"purpose,omitempty"`
-	IncludeAuthorizedPurpose *bool   `url:"include_authorized_purpose,omitempty" json:"include_authorized_purpose,omitempty"`
-}
-
-// GetAllSpaces lists all the available Kibana spaces
-//
-// Kibana API docs: https://www.elastic.co/guide/en/kibana/current/spaces-api-get-all.html
-func (s SpacesService) GetAllSpaces(opt *GetAllSpacesOptions, options ...RequestOptionFunc) ([]*Space, *Response, error) {
-	req, err := s.client.NewRequest(http.MethodGet, "spaces/space", opt, options)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	var ss []*Space
-	resp, err := s.client.Do(req, &ss)
-	if err != nil {
-		return nil, resp, err
-	}
-
-	return ss, resp, err
-}
-
-// DeleteSpace deletes a single Kibana space
-//
-// Kibana API docs: https://www.elastic.co/guide/en/kibana/current/spaces-api-delete.html
-func (s SpacesService) DeleteSpace(sid string, options ...RequestOptionFunc) (*Response, error) {
-	u := fmt.Sprintf("spaces/space/%s", sid)
-
-	req, err := s.client.NewRequest(http.MethodDelete, u, nil, options)
-	if err != nil {
+// Kibana API: DELETE /api/spaces/space/{id}
+// Kibana API docs: https://www.elastic.co/docs/api/doc/kibana/operation/operation-delete-spaces-space-id
+func (s *SpacesService) Delete(ctx context.Context, id string, opts ...RequestOption) (*Response, error) {
+	if err := requireID("space ID", id); err != nil {
 		return nil, err
 	}
-
-	return s.client.Do(req, nil)
+	return s.client.do(ctx, http.MethodDelete, pathf("/api/spaces/space/%s", id), nil, nil, opts)
 }
