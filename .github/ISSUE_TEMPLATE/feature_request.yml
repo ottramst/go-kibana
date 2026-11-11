@@ -5,7 +5,8 @@ body:
   - type: markdown
     attributes:
       value: |
-        Check the [roadmap](https://github.com/ottramst/go-kibana/milestones) first:
+        Check the [roadmap](https://github.com/ottramst/go-kibana/milestones) and
+        [COVERAGE.md](https://github.com/ottramst/go-kibana/blob/main/COVERAGE.md) first:
         the endpoint may already be planned.
   - type: textarea
     id: description

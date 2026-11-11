@@ -32,5 +32,6 @@ BUG FIXES:
 
 NOTES:
 
+* `COVERAGE.md` lists every endpoint of the Kibana 8.19.25 and 9.5.6 OpenAPI specs and the method that implements it. `make coverage` regenerates it from the `// Kibana API:` annotations, and CI fails when it is stale ([#8](https://github.com/ottramst/go-kibana/issues/8))
 * Acceptance tests run against Kibana 8.19.25 and 9.5.6 in CI, using `docker-compose.yml` locally ([#5](https://github.com/ottramst/go-kibana/issues/5))
 * Repository tooling modernized: golangci-lint v2, a `GNUmakefile`, a hardened CI/CD pipeline, Dependabot, and community health files ([#2](https://github.com/ottramst/go-kibana/issues/2), [#3](https://github.com/ottramst/go-kibana/issues/3))

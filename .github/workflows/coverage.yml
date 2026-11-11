@@ -1,0 +1,36 @@
+name: Coverage
+
+on:
+  workflow_call:
+
+permissions:
+  contents: read
+
+jobs:
+  coverage:
+    name: API coverage report
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: 'tools/coverage/go.mod'
+          cache: true
+          cache-dependency-path: tools/coverage/go.sum
+      - name: Check tools/coverage go.mod/go.sum are tidy
+        working-directory: tools/coverage
+        run: |
+          go mod tidy
+          git diff --compact-summary --exit-code -- go.mod go.sum || \
+            (echo; echo "tools/coverage/go.mod is not tidy. Run 'go mod tidy' there and commit."; exit 1)
+      - name: Test the coverage tool
+        working-directory: tools/coverage
+        run: go vet ./... && go test ./...
+      - run: make coverage
+      - name: git diff
+        run: |
+          git diff --compact-summary --exit-code -- COVERAGE.md || \
+            (echo; echo "COVERAGE.md is out of date. Run 'make coverage' and commit."; exit 1)

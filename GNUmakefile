@@ -16,4 +16,18 @@ test:
 testacc:
 	KIBANA_ACC=1 go test -v -cover -timeout 15m ./...
 
-.PHONY: default build lint fmt test testacc
+# Kibana OpenAPI specs that COVERAGE.md is generated from: the tested
+# versions, oldest first.
+KIBANA_SPEC_VERSIONS ?= v8.19.25 v9.5.6
+SPEC_DIR = .cache/specs
+
+# Downloads the specs once into .cache/ and regenerates COVERAGE.md.
+coverage:
+	@mkdir -p $(SPEC_DIR)
+	@for v in $(KIBANA_SPEC_VERSIONS); do \
+		f=$(SPEC_DIR)/kibana-$$v.yaml; \
+		[ -s $$f ] || { curl -fsSL --retry 3 -o $$f.tmp https://raw.githubusercontent.com/elastic/kibana/$$v/oas_docs/output/kibana.yaml && mv $$f.tmp $$f; } || exit 1; \
+	done
+	cd tools/coverage && go run . -root ../.. -versions "$(KIBANA_SPEC_VERSIONS)"
+
+.PHONY: default build lint fmt test testacc coverage
