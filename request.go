@@ -72,6 +72,17 @@ func requireID(name, value string) error {
 	return nil
 }
 
+// validEscapedQuery reports whether q contains no characters that must be
+// escaped in a URL query: spaces, control characters and non-ASCII.
+func validEscapedQuery(q string) bool {
+	for i := 0; i < len(q); i++ {
+		if q[i] <= ' ' || q[i] >= 0x7f {
+			return false
+		}
+	}
+	return true
+}
+
 // validEscapedPath reports whether p contains only characters that may
 // appear in an escaped URL path, so that escaped segments such as %2F are
 // kept as they are.

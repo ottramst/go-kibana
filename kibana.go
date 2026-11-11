@@ -141,7 +141,11 @@ func NewClient(baseURL string, opts ...ClientOption) (*Client, error) {
 	}
 	// Keep escaped characters of the base path, such as %2F, as they are.
 	escaped := strings.TrimSuffix(u.EscapedPath(), "/")
-	u.Path = strings.TrimSuffix(u.Path, "/")
+	unescaped, err := url.PathUnescape(escaped)
+	if err != nil {
+		return nil, fmt.Errorf("kibana: invalid base URL: %w", err)
+	}
+	u.Path = unescaped
 	u.RawPath = escaped
 	u.RawQuery = ""
 	u.Fragment = ""
@@ -224,7 +228,7 @@ func (c *Client) NewRequest(ctx context.Context, method, path string, body any, 
 		return nil, fmt.Errorf("kibana: path %q must start with /", path)
 	}
 	rawPath, rawQuery, _ := strings.Cut(path, "?")
-	if strings.Contains(path, "#") || !validEscapedPath(rawPath) {
+	if strings.Contains(path, "#") || !validEscapedPath(rawPath) || !validEscapedQuery(rawQuery) {
 		return nil, fmt.Errorf("kibana: path %q must be escaped", path)
 	}
 

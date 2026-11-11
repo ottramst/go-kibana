@@ -151,9 +151,10 @@ func (s *SpacesService) Create(ctx context.Context, space *Space, opts ...Reques
 	return created, resp, nil
 }
 
-// Update replaces the space with the given ID: empty fields clear the
-// corresponding settings (except Color, which is kept), and DisabledFeatures
-// replaces the disabled features. Read the space with [SpacesService.Get] and
+// Update replaces the space with the given ID: an empty Description,
+// Initials or ImageURL clears the setting, and DisabledFeatures replaces the
+// disabled features. An empty Color, Solution or ProjectRouting is not sent,
+// so Kibana keeps the current value. Read the space with [SpacesService.Get] and
 // change it to keep its other settings. The ID of space is ignored; the space
 // is not modified.
 //

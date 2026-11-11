@@ -167,6 +167,8 @@ func TestNewRequest_url(t *testing.T) {
 			want: "http://k:5601/api/x?b=2&a=1;c&d=%26",
 		},
 		{name: "escaped base path", baseURL: "http://k:5601/a%2Fb/", space: "s", path: "/api/x", want: "http://k:5601/a%2Fb/s/s/api/x"},
+		{name: "base path ending in an escaped slash", baseURL: "http://k:5601/a%2F", path: "/api/x", want: "http://k:5601/a%2F/api/x"},
+		{name: "escaped query", baseURL: "http://k:5601", path: "/api/x?q=a+b&f=[1]&h=%7B%7D", want: "http://k:5601/api/x?q=a+b&f=[1]&h=%7B%7D"},
 		{name: "escaped space", baseURL: "http://k:5601", space: "a/b", path: "/api/x", want: "http://k:5601/s/a%2Fb/api/x"},
 	}
 	for _, tt := range tests {
@@ -191,7 +193,7 @@ func TestNewRequest_invalidPath(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	for _, path := range []string{"api/status", "", "/api/%zz", "/api/a#frag", "/api/a b", "/api/é", "/api/a%2Fb/é"} {
+	for _, path := range []string{"api/status", "", "/api/%zz", "/api/a#frag", "/api/a b", "/api/é", "/api/a%2Fb/é", "/api/x?q=a b", "/api/x?q=é"} {
 		if _, err := c.NewRequest(context.Background(), http.MethodGet, path, nil); err == nil {
 			t.Errorf("NewRequest(%q) error = nil, want error", path)
 		}
