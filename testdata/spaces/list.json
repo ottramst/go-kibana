@@ -1,0 +1,33 @@
+[
+    {
+        "id": "default",
+        "name": "Default",
+        "description": "This is your default space!",
+        "color": "#00bfb3",
+        "disabledFeatures": [],
+        "_reserved": true,
+        "authorizedPurposes": {
+            "any": true,
+            "copySavedObjectsIntoSpace": true,
+            "findSavedObjects": true,
+            "shareSavedObjectsIntoSpace": true
+        }
+    },
+    {
+        "id": "marketing",
+        "name": "Marketing",
+        "description": "Marketing team",
+        "color": "#aabbcc",
+        "initials": "MK",
+        "disabledFeatures": [
+            "dev_tools"
+        ],
+        "solution": "classic",
+        "authorizedPurposes": {
+            "any": true,
+            "copySavedObjectsIntoSpace": true,
+            "findSavedObjects": true,
+            "shareSavedObjectsIntoSpace": true
+        }
+    }
+]

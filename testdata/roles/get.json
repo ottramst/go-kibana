@@ -1,0 +1,63 @@
+{
+    "name": "my_kibana_role",
+    "description": "Read logs and use Discover",
+    "metadata": {
+        "version": 1
+    },
+    "transient_metadata": {
+        "enabled": true
+    },
+    "elasticsearch": {
+        "cluster": [
+            "monitor"
+        ],
+        "indices": [
+            {
+                "names": [
+                    "logs-*"
+                ],
+                "privileges": [
+                    "read",
+                    "view_index_metadata"
+                ],
+                "field_security": {
+                    "grant": [
+                        "*"
+                    ],
+                    "except": [
+                        "secret"
+                    ]
+                },
+                "allow_restricted_indices": false
+            }
+        ],
+        "run_as": []
+    },
+    "kibana": [
+        {
+            "base": [],
+            "feature": {
+                "discover": [
+                    "all"
+                ],
+                "dashboard": [
+                    "read"
+                ]
+            },
+            "spaces": [
+                "marketing"
+            ]
+        },
+        {
+            "base": [
+                "read"
+            ],
+            "feature": {},
+            "spaces": [
+                "default"
+            ]
+        }
+    ],
+    "_transform_error": [],
+    "_unrecognized_applications": []
+}

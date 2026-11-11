@@ -1,0 +1,11 @@
+{
+    "id": "marketing",
+    "name": "Marketing",
+    "description": "Marketing team",
+    "color": "#aabbcc",
+    "initials": "MK",
+    "disabledFeatures": [
+        "dev_tools"
+    ],
+    "solution": "classic"
+}

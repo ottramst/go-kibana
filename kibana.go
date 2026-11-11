@@ -1,333 +1,336 @@
+// Package kibana is a client for the Kibana REST API.
+//
+// Create a client with [NewClient], passing the Kibana URL and an
+// authentication option, then use its services to call the API:
+//
+//	client, err := kibana.NewClient("https://kibana.example.com:5601",
+//		kibana.WithAPIKey(os.Getenv("KIBANA_API_KEY")))
+//	if err != nil {
+//		return err
+//	}
+//	spaces, _, err := client.Spaces.List(ctx, nil)
+//
+// Every service method takes a [context.Context] first and returns the
+// decoded result, the [Response] and an error. API errors are returned as
+// [*ErrorResponse] and can be matched with [errors.Is] against sentinel
+// errors such as [ErrNotFound].
+//
+// Space-aware endpoints act on the default space unless the client is scoped
+// to another space with [WithSpace] or [Client.InSpace].
 package kibana
 
 import (
 	"bytes"
+	"context"
 	"encoding/base64"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
 	"net/url"
-	"sort"
+	"runtime/debug"
 	"strings"
-	"time"
-
-	"github.com/google/go-querystring/query"
 )
 
 const (
-	apiPath = "api/"
+	modulePath       = "github.com/ottramst/go-kibana"
+	defaultUserAgent = "go-kibana"
 
-	userAgent = "go-kibana"
+	// DefaultSpace is the ID of the space Kibana creates on startup. Requests
+	// in the default space are sent without a /s/{space} path prefix.
+	DefaultSpace = "default"
 )
 
-// AuthType represents an authentication type within Kibana
-//
-// Kibana API docs: https://www.elastic.co/guide/en/kibana/current/api.html
-type AuthType int
-
-// List of available authentication types
-//
-// Kibana API docs: https://www.elastic.co/guide/en/kibana/current/api.html
-const (
-	BasicAuth AuthType = iota
-	APIKey
-)
-
-// A Client manages communication with the Kibana API.
+// A Client manages communication with the Kibana API. It is safe for
+// concurrent use by multiple goroutines.
 type Client struct {
-	// HTTP client used to communicate with the API
-	client *http.Client
+	httpClient *http.Client
 
-	// Base URL for API requests, baseURL
-	// should always be specified with a trailing slash.
+	// baseURL is the Kibana URL, including any server.basePath, without a
+	// trailing slash.
 	baseURL *url.URL
 
-	// Token type used to make authenticated API calls.
-	authType AuthType
+	// space is the space requests are scoped to; empty means the default space.
+	space string
 
-	// Username and password used for basic authentication.
-	username, password string
+	// authorization is the value of the Authorization header, if any.
+	authorization string
 
-	// API Key used for authentication
-	apiKey string
+	userAgent string
 
-	// User agent used when communicating with the Kibana API
-	UserAgent string
+	// Reuse a single struct instead of allocating one for each service.
+	common service
 
-	// Services used for talking to different parts of the Kibana API
+	// Services used for talking to different parts of the Kibana API.
 	Roles  *RolesService
 	Spaces *SpacesService
 }
 
-// Response is a Kibana API response. This wraps the standard http.Response
-// returned from Kibana.
-type Response struct {
-	*http.Response
+type service struct {
+	client *Client
 }
 
-// newResponse creates a new Response for the provided http.Response.
-func newResponse(r *http.Response) *Response {
-	response := &Response{Response: r}
-	return response
+// A ClientOption configures a [Client] created with [NewClient].
+type ClientOption func(*Client) error
+
+// WithAPIKey authenticates requests with an Elasticsearch API key. The key
+// is the base64-encoded "id:api_key" value (the "encoded" field returned when
+// the key is created).
+func WithAPIKey(encoded string) ClientOption {
+	return func(c *Client) error {
+		if encoded == "" {
+			return errors.New("kibana: API key must not be empty")
+		}
+		c.authorization = "ApiKey " + encoded
+		return nil
+	}
 }
 
-// BaseURL return a copy of the baseURL.
+// WithBasicAuth authenticates requests with a username and password.
+func WithBasicAuth(username, password string) ClientOption {
+	return func(c *Client) error {
+		if username == "" {
+			return errors.New("kibana: username must not be empty")
+		}
+		c.authorization = "Basic " + base64.StdEncoding.EncodeToString([]byte(username+":"+password))
+		return nil
+	}
+}
+
+// WithHTTPClient sets the HTTP client used for requests. Use it to configure
+// timeouts, TLS, proxies or a retrying transport. The default client has no
+// timeout; pass a context with a deadline to bound individual calls.
+func WithHTTPClient(httpClient *http.Client) ClientOption {
+	return func(c *Client) error {
+		if httpClient == nil {
+			return errors.New("kibana: HTTP client must not be nil")
+		}
+		c.httpClient = httpClient
+		return nil
+	}
+}
+
+// WithUserAgent sets the User-Agent header sent with every request.
+func WithUserAgent(userAgent string) ClientOption {
+	return func(c *Client) error {
+		c.userAgent = userAgent
+		return nil
+	}
+}
+
+// WithSpace scopes the client to a space: space-aware endpoints act on that
+// space instead of the default space. See also [Client.InSpace].
+func WithSpace(spaceID string) ClientOption {
+	return func(c *Client) error {
+		c.space = spaceID
+		return nil
+	}
+}
+
+// NewClient returns a new Kibana API client for the Kibana instance at
+// baseURL, for example "https://kibana.example.com:5601". If Kibana is served
+// under a base path (server.basePath), include it in the URL.
+func NewClient(baseURL string, opts ...ClientOption) (*Client, error) {
+	u, err := url.Parse(baseURL)
+	if err != nil {
+		return nil, fmt.Errorf("kibana: invalid base URL: %w", err)
+	}
+	if u.Scheme != "http" && u.Scheme != "https" || u.Host == "" {
+		return nil, fmt.Errorf("kibana: invalid base URL %q: must be an absolute http or https URL", baseURL)
+	}
+	u.Path = strings.TrimSuffix(u.Path, "/")
+	u.RawPath = ""
+	u.RawQuery = ""
+	u.Fragment = ""
+
+	c := &Client{
+		httpClient: &http.Client{},
+		baseURL:    u,
+		userAgent:  userAgent(),
+	}
+	for _, opt := range opts {
+		if opt == nil {
+			continue
+		}
+		if err := opt(c); err != nil {
+			return nil, err
+		}
+	}
+	c.initServices()
+	return c, nil
+}
+
+func (c *Client) initServices() {
+	c.common.client = c
+	c.Roles = (*RolesService)(&c.common)
+	c.Spaces = (*SpacesService)(&c.common)
+}
+
+// InSpace returns a copy of the client that is scoped to the given space.
+// The copy shares the underlying HTTP client. Pass [DefaultSpace] to get a
+// client for the default space.
+func (c *Client) InSpace(spaceID string) *Client {
+	clone := *c
+	clone.space = spaceID
+	clone.initServices()
+	return &clone
+}
+
+// Space returns the ID of the space the client is scoped to.
+func (c *Client) Space() string {
+	if c.space == "" {
+		return DefaultSpace
+	}
+	return c.space
+}
+
+// BaseURL returns a copy of the Kibana URL the client sends requests to.
 func (c *Client) BaseURL() *url.URL {
 	u := *c.baseURL
 	return &u
 }
 
-func newClient(options ...ClientOptionFunc) (*Client, error) {
-	c := &Client{UserAgent: userAgent}
-
-	// Configure the HTTP client.
-	c.client = &http.Client{
-		Timeout: 10 * time.Second,
+// userAgent returns "go-kibana/<version>" when the module version is known
+// from the build information, and "go-kibana" otherwise.
+func userAgent() string {
+	bi, ok := debug.ReadBuildInfo()
+	if !ok {
+		return defaultUserAgent
 	}
-
-	// Apply any given client options.
-	for _, fn := range options {
-		if fn == nil {
-			continue
-		}
-		if err := fn(c); err != nil {
-			return nil, err
+	for _, dep := range bi.Deps {
+		if dep.Path == modulePath && dep.Version != "" && dep.Version != "(devel)" {
+			return defaultUserAgent + "/" + dep.Version
 		}
 	}
-
-	// Create all the public services
-	c.Roles = &RolesService{client: c}
-	c.Spaces = &SpacesService{client: c}
-
-	return c, nil
+	return defaultUserAgent
 }
 
-// NewClient returns a new Kibana API client. To use API methods which require
-// authentication, provide a valid API key.
-func NewClient(apiKey string, options ...ClientOptionFunc) (*Client, error) {
-	client, err := newClient(options...)
-	if err != nil {
-		return nil, err
+// NewRequest creates an API request. path is the API path as it appears in
+// the Kibana API reference, such as "/api/spaces/space", and may include a
+// query string. Path segments taken from user input must already be escaped.
+// The request is scoped to the client's space.
+//
+// If body is an [io.Reader], it is sent as is; otherwise a non-nil body is
+// JSON encoded. Request options are applied last, so they can override any
+// header the client sets.
+//
+// NewRequest and [Client.Do] can be used to call endpoints the client has no
+// method for yet.
+func (c *Client) NewRequest(ctx context.Context, method, path string, body any, opts ...RequestOption) (*http.Request, error) {
+	if !strings.HasPrefix(path, "/") {
+		return nil, fmt.Errorf("kibana: path %q must start with /", path)
 	}
-	client.authType = APIKey
-	client.apiKey = apiKey
-	return client, nil
-}
+	rawPath, rawQuery, _ := strings.Cut(path, "?")
 
-// NewBasicAuthClient returns a new Kibana API client. To use API methods which
-// require authentication, provide a valid username and password.
-func NewBasicAuthClient(username, password string, options ...ClientOptionFunc) (*Client, error) {
-	client, err := newClient(options...)
-	if err != nil {
-		return nil, err
-	}
-
-	client.authType = BasicAuth
-	client.username = username
-	client.password = password
-
-	return client, nil
-}
-
-// setBaseURL sets the base URL for API requests to a custom endpoint.
-func (c *Client) setBaseURL(urlStr string) error {
-	// Make sure the given URL end with a slash
-	if !strings.HasSuffix(urlStr, "/") {
-		urlStr += "/"
+	prefix := ""
+	if c.space != "" && c.space != DefaultSpace {
+		prefix = "/s/" + url.PathEscape(c.space)
 	}
 
-	baseURL, err := url.Parse(urlStr)
-	if err != nil {
-		return err
-	}
-
-	if !strings.HasSuffix(baseURL.Path, apiPath) {
-		baseURL.Path += apiPath
-	}
-
-	// Update the base URL of the client.
-	c.baseURL = baseURL
-
-	return nil
-}
-
-// NewRequest creates a new API request. The method expects a relative URL
-// path that will be resolved relative to the base URL of the Client.
-// Relative URL paths should always be specified without a preceding slash.
-// If specified, the value pointed to by body is JSON encoded and included
-// as the request body.
-func (c *Client) NewRequest(method, path string, opt interface{}, options []RequestOptionFunc) (*http.Request, error) {
 	u := *c.baseURL
-	unescaped, err := url.PathUnescape(path)
+	u.RawPath = u.EscapedPath() + prefix + rawPath
+	unescaped, err := url.PathUnescape(u.RawPath)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("kibana: invalid path %q: %w", path, err)
 	}
+	u.Path = unescaped
+	u.RawQuery = rawQuery
 
-	// Set the encoded path data
-	u.RawPath = c.baseURL.Path + path
-	u.Path = c.baseURL.Path + unescaped
-
-	// Create a request specific headers map.
-	reqHeaders := make(http.Header)
-	reqHeaders.Set("Accept", "application/json")
-
-	if c.UserAgent != "" {
-		reqHeaders.Set("User-Agent", c.UserAgent)
-	}
-
-	var body []byte
-	switch {
-	case method == http.MethodPost || method == http.MethodPut:
-		reqHeaders.Set("kbn-xsrf", "true")
-		reqHeaders.Set("Content-Type", "application/json")
-
-		if opt != nil {
-			body, err = json.Marshal(opt)
-			if err != nil {
-				return nil, err
-			}
-		}
-	case method == http.MethodDelete:
-		reqHeaders.Set("kbn-xsrf", "true")
-	case opt != nil:
-		q, err := query.Values(opt)
+	var (
+		bodyReader  io.Reader
+		contentType string
+	)
+	switch b := body.(type) {
+	case nil:
+	case io.Reader:
+		bodyReader = b
+	default:
+		buf, err := json.Marshal(body)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("kibana: encoding request body: %w", err)
 		}
-		u.RawQuery = q.Encode()
+		bodyReader = bytes.NewReader(buf)
+		contentType = "application/json"
 	}
 
-	req, err := http.NewRequest(method, u.String(), bytes.NewBuffer(body))
+	req, err := http.NewRequestWithContext(ctx, method, u.String(), bodyReader)
 	if err != nil {
 		return nil, err
 	}
 
-	for _, fn := range options {
-		if fn == nil {
+	req.Header.Set("Accept", "application/json")
+	// Kibana rejects requests that change state without this header; it is
+	// harmless on reads, so it is always sent.
+	req.Header.Set("kbn-xsrf", "true")
+	if contentType != "" {
+		req.Header.Set("Content-Type", contentType)
+	}
+	if c.userAgent != "" {
+		req.Header.Set("User-Agent", c.userAgent)
+	}
+	if c.authorization != "" {
+		req.Header.Set("Authorization", c.authorization)
+	}
+
+	for _, opt := range opts {
+		if opt == nil {
 			continue
 		}
-		if err := fn(req); err != nil {
+		if err := opt(req); err != nil {
 			return nil, err
 		}
 	}
-
-	// Set the request specific headers.
-	for k, v := range reqHeaders {
-		req.Header[k] = v
-	}
-
 	return req, nil
 }
 
-// Do sends an API request and returns the API response. The API response is
-// JSON decoded and stored in the value pointed to by v, or returned as an
-// error if an API error has occurred. If v implements the io.Writer
-// interface, the raw response body will be written to v, without attempting to
-// first decode it.
-func (c Client) Do(req *http.Request, v interface{}) (*Response, error) {
-	// Set the correct authentication header. If using basic auth, then check
-	// if we already have a token and if not first authenticate and get one.
-	switch c.authType {
-	case BasicAuth:
-		auth := base64.StdEncoding.EncodeToString([]byte(c.username + ":" + c.password))
-		if values := req.Header.Values("Authorization"); len(values) == 0 {
-			req.Header.Set("Authorization", "Basic "+auth)
-		}
-	case APIKey:
-		if values := req.Header.Values("Authorization"); len(values) == 0 {
-			req.Header.Set("Authorization", "ApiKey "+c.apiKey)
-		}
-	}
+// Response wraps the [http.Response] returned by Kibana. Its body has already
+// been read and closed.
+type Response struct {
+	*http.Response
+}
 
-	resp, err := c.client.Do(req)
+// Do sends an API request and returns the API response.
+//
+// If the response status is not 2xx, Do returns an [*ErrorResponse]. Otherwise
+// the response body is handled according to v: a nil v discards it, an
+// [io.Writer] receives the raw body, and any other value is decoded from JSON.
+// An empty body, such as a 204 No Content response, leaves v unchanged.
+func (c *Client) Do(req *http.Request, v any) (*Response, error) {
+	resp, err := c.httpClient.Do(req)
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
+	defer func() {
+		// Drain the body so the connection can be reused.
+		_, _ = io.Copy(io.Discard, resp.Body)
+		_ = resp.Body.Close()
+	}()
 
-	response := newResponse(resp)
-
-	err = CheckResponse(resp)
-	if err != nil {
+	response := &Response{Response: resp}
+	if err := CheckResponse(resp); err != nil {
 		return response, err
 	}
 
-	if v != nil {
-		if w, ok := v.(io.Writer); ok {
-			_, err = io.Copy(w, resp.Body)
-		} else {
-			err = json.NewDecoder(resp.Body).Decode(v)
+	switch v := v.(type) {
+	case nil:
+	case io.Writer:
+		if _, err := io.Copy(v, resp.Body); err != nil {
+			return response, fmt.Errorf("kibana: reading response body: %w", err)
 		}
-	}
-
-	return response, err
-}
-
-// An ErrorResponse reports one or more errors caused by an API request.
-type ErrorResponse struct {
-	Body     []byte
-	Response *http.Response
-	Message  string
-}
-
-func (e *ErrorResponse) Error() string {
-	path, _ := url.QueryUnescape(e.Response.Request.URL.Path)
-	u := fmt.Sprintf("%s://%s%s", e.Response.Request.URL.Scheme, e.Response.Request.URL.Host, path)
-	return fmt.Sprintf("%s %s: %d %s", e.Response.Request.Method, u, e.Response.StatusCode, e.Message)
-}
-
-// CheckResponse checks the API response for errors, and returns them if present.
-func CheckResponse(r *http.Response) error {
-	switch r.StatusCode {
-	case 200, 201, 202, 204, 304:
-		return nil
-	}
-
-	errorResponse := &ErrorResponse{Response: r}
-	data, err := io.ReadAll(r.Body)
-	if err == nil && data != nil {
-		errorResponse.Body = data
-
-		var raw interface{}
-		if err := json.Unmarshal(data, &raw); err != nil {
-			errorResponse.Message = "failed to parse unknown error format"
-		} else {
-			errorResponse.Message = parseError(raw)
-		}
-	}
-
-	return errorResponse
-}
-
-// Format:
-// {
-//	 "statusCode": 401,
-//   "error": "Unauthorized",
-//   "message": "[security_exception: [security_exception] Reason: unable to authenticate user [elastic] for REST request [/_security/_authenticate]]: unable to authenticate user [elastic] for REST request [/_security/_authenticate]"
-// }
-
-func parseError(raw interface{}) string {
-	switch raw := raw.(type) {
-	case string:
-		return raw
-
-	case []interface{}:
-		var errs []string
-		for _, v := range raw {
-			errs = append(errs, parseError(v))
-		}
-		return fmt.Sprintf("[%s]", strings.Join(errs, ", "))
-
-	case map[string]interface{}:
-		var errs []string
-		for k, v := range raw {
-			errs = append(errs, fmt.Sprintf("{%s: %s}", k, parseError(v)))
-		}
-		sort.Strings(errs)
-		return strings.Join(errs, ", ")
-
 	default:
-		return fmt.Sprintf("failed to parse unexpected error type: %T", raw)
+		if err := json.NewDecoder(resp.Body).Decode(v); err != nil && !errors.Is(err, io.EOF) {
+			return response, fmt.Errorf("kibana: decoding response body: %w", err)
+		}
 	}
+	return response, nil
+}
+
+// do creates and sends a request in one step, for service methods.
+func (c *Client) do(ctx context.Context, method, path string, body, v any, opts []RequestOption) (*Response, error) {
+	req, err := c.NewRequest(ctx, method, path, body, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return c.Do(req, v)
 }

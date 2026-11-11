@@ -1,0 +1,92 @@
+package kibana_test
+
+import (
+	"context"
+	"errors"
+	"net/http"
+	"strings"
+	"testing"
+
+	"github.com/ottramst/go-kibana"
+)
+
+func TestErrorResponse(t *testing.T) {
+	tests := []struct {
+		name        string
+		status      int
+		body        string
+		sentinel    error
+		wantMessage string
+		wantText    string
+	}{
+		{name: "bad request", status: 400, body: `{"statusCode":400,"error":"Bad Request","message":"[request body.name]: expected value of type [string]"}`,
+			sentinel: kibana.ErrBadRequest, wantMessage: "[request body.name]: expected value of type [string]", wantText: "Bad Request"},
+		{name: "unauthorized", status: 401, body: `{"statusCode":401,"error":"Unauthorized","message":"Unauthorized"}`,
+			sentinel: kibana.ErrUnauthorized, wantMessage: "Unauthorized", wantText: "Unauthorized"},
+		{name: "forbidden", status: 403, body: `{"statusCode":403,"error":"Forbidden","message":"forbidden"}`,
+			sentinel: kibana.ErrForbidden, wantMessage: "forbidden", wantText: "Forbidden"},
+		{name: "not found", status: 404, body: notFound, sentinel: kibana.ErrNotFound, wantMessage: "Not Found", wantText: "Not Found"},
+		{name: "conflict", status: 409, body: `{"statusCode":409,"error":"Conflict","message":"A space with the identifier x already exists."}`,
+			sentinel: kibana.ErrConflict, wantMessage: "A space with the identifier x already exists.", wantText: "Conflict"},
+		{name: "plain text body", status: 502, body: "Bad Gateway\n", wantMessage: "Bad Gateway"},
+		{name: "empty body", status: 503},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			mux, client := setup(t)
+			mux.HandleFunc("GET /api/spaces/space/x", func(w http.ResponseWriter, _ *http.Request) {
+				writeJSON(t, w, tt.status, []byte(tt.body))
+			})
+
+			_, resp, err := client.Spaces.Get(context.Background(), "x")
+			var errResp *kibana.ErrorResponse
+			if !errors.As(err, &errResp) {
+				t.Fatalf("error = %v (%T), want *kibana.ErrorResponse", err, err)
+			}
+			if resp == nil || resp.StatusCode != tt.status {
+				t.Errorf("Response = %v, want status %d", resp, tt.status)
+			}
+			if errResp.StatusCode != tt.status {
+				t.Errorf("StatusCode = %d, want %d", errResp.StatusCode, tt.status)
+			}
+			if errResp.Message != tt.wantMessage {
+				t.Errorf("Message = %q, want %q", errResp.Message, tt.wantMessage)
+			}
+			if errResp.StatusText != tt.wantText {
+				t.Errorf("StatusText = %q, want %q", errResp.StatusText, tt.wantText)
+			}
+			if string(errResp.Body) != tt.body {
+				t.Errorf("Body = %q, want %q", errResp.Body, tt.body)
+			}
+			if tt.sentinel != nil && !errors.Is(err, tt.sentinel) {
+				t.Errorf("errors.Is(err, %v) = false, want true", tt.sentinel)
+			}
+			for _, other := range []error{kibana.ErrBadRequest, kibana.ErrUnauthorized, kibana.ErrForbidden, kibana.ErrNotFound, kibana.ErrConflict} {
+				if errors.Is(other, tt.sentinel) {
+					continue
+				}
+				if errors.Is(err, other) {
+					t.Errorf("errors.Is(err, %v) = true, want false", other)
+				}
+			}
+			if msg := err.Error(); !strings.Contains(msg, "GET ") || !strings.Contains(msg, "/api/spaces/space/x") {
+				t.Errorf("Error() = %q, want method and URL", msg)
+			}
+		})
+	}
+}
+
+func TestErrorResponse_withoutRequest(t *testing.T) {
+	err := &kibana.ErrorResponse{StatusCode: 404}
+	if got, want := err.Error(), "kibana: 404 Not Found"; got != want {
+		t.Errorf("Error() = %q, want %q", got, want)
+	}
+}
+
+func TestCheckResponse_success(t *testing.T) {
+	for _, code := range []int{200, 201, 204, 299} {
+		if err := kibana.CheckResponse(&http.Response{StatusCode: code}); err != nil {
+			t.Errorf("CheckResponse(%d) = %v, want nil", code, err)
+		}
+	}
+}

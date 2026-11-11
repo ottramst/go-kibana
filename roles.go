@@ -1,162 +1,245 @@
 package kibana
 
 import (
-	"fmt"
+	"context"
+	"encoding/json"
+	"errors"
 	"net/http"
 )
 
-// RolesService handles communication with the roles related methods of the
-// Kibana API
+// RolesService handles communication with the role management methods of
+// the Kibana API.
 //
-// Kibana API docs: https://www.elastic.co/guide/en/kibana/current/role-management-api.html
-type RolesService struct {
-	client *Client
-}
+// Kibana API docs: https://www.elastic.co/docs/api/doc/kibana/group/endpoint-roles
+type RolesService service
 
-// Feature represents a single Kibana feature privileges
-//
-// Kibana API docs: https://www.elastic.co/guide/en/kibana/current/kibana-privileges.html
-type Feature struct {
-	Discover         []string `json:"discover,omitempty"`
-	Visualize        []string `json:"visualize,omitempty"`
-	Dashboard        []string `json:"dashboard,omitempty"`
-	DevTools         []string `json:"dev_tools,omitempty"`
-	AdvancedSettings []string `json:"advancedSettings,omitempty"`
-	IndexPatterns    []string `json:"indexPatterns,omitempty"`
-	Graph            []string `json:"graph,omitempty"`
-	APM              []string `json:"apm,omitempty"`
-	Maps             []string `json:"maps,omitempty"`
-	Canvas           []string `json:"canvas,omitempty"`
-	Infrastructure   []string `json:"infrastructure,omitempty"`
-	Logs             []string `json:"logs,omitempty"`
-	Uptime           []string `json:"uptime,omitempty"`
-}
-
-// Privilege represents a Kibana feature privilege
-//
-// Kibana API docs: https://www.elastic.co/guide/en/kibana/current/kibana-privileges.html
-type Privilege struct {
-	Base    []string `json:"base"`
-	Feature *Feature `json:"feature"`
-	Spaces  []string `json:"spaces"`
-}
-
-// ElasticsearchIndex represents an Elasticsearch index privilege
-//
-// Elasticsearch API docs: https://www.elastic.co/guide/en/elasticsearch/reference/7.17/defining-roles.html
-type ElasticsearchIndex struct {
-	Names         []string `json:"names"`
-	Privileges    []string `json:"privileges"`
-	FieldSecurity struct {
-		Grant  []string `json:"grant"`
-		Except []string `json:"except"`
-	} `json:"field_security"`
-	// TODO: Query
-	AllowRestrictedIndices bool `json:"allow_restricted_indices"`
-}
-
-// Role represents a Kibana Role
-//
-// Kibana API docs: https://www.elastic.co/guide/en/kibana/current/role-management-api.html
+// Role is a Kibana role: Elasticsearch cluster and index privileges plus
+// Kibana privileges per space. The same type is used to read and write roles,
+// so a role can be read, changed and written back.
 type Role struct {
-	Name     string `json:"name"`
-	Metadata struct {
-		Version int `json:"version"`
-	} `json:"metadata"`
-	TransientMetadata struct {
-		Enabled bool `json:"enabled"`
-	} `json:"transient_metadata"`
-	Elasticsearch struct {
-		Cluster []string              `json:"cluster"`
-		Indices *[]ElasticsearchIndex `json:"indices"`
-		RunAs   []string              `json:"run_as"`
-	} `json:"elasticsearch"`
-	Kibana *[]Privilege `json:"kibana"`
+	// Name is the role name. It is read-only: [RolesService.CreateOrUpdate]
+	// takes the name as an argument.
+	Name string `json:"name,omitempty"`
+
+	Description string `json:"description,omitempty"`
+
+	// Metadata holds arbitrary metadata. Keys starting with "_" are reserved
+	// for system use.
+	Metadata map[string]any `json:"metadata,omitempty"`
+
+	// TransientMetadata is read-only. Its "enabled" key is false when the role
+	// is disabled, for example because it needs a higher license level.
+	TransientMetadata map[string]any `json:"transient_metadata,omitempty"`
+
+	Elasticsearch RoleElasticsearch `json:"elasticsearch"`
+
+	Kibana []KibanaPrivilege `json:"kibana,omitempty"`
+
+	// UnrecognizedApplications is read-only and lists application privileges
+	// of the role that Kibana does not manage.
+	UnrecognizedApplications []string `json:"_unrecognized_applications,omitempty"`
+
+	// TransformErrors is read-only and lists the application privileges
+	// Kibana could not convert to Kibana privileges.
+	TransformErrors []RoleTransformError `json:"_transform_error,omitempty"`
 }
 
-// CreateOrUpdateRoleOptions represents the available CreateOrUpdateRole() options
+// RoleTransformError describes application privileges of a role that
+// Kibana could not convert to Kibana privileges.
+type RoleTransformError struct {
+	Reason string          `json:"reason"`
+	State  json.RawMessage `json:"state,omitempty"`
+}
+
+// RoleElasticsearch are the Elasticsearch privileges of a role.
+type RoleElasticsearch struct {
+	// Cluster lists cluster privileges, such as "monitor" or "manage".
+	Cluster []string `json:"cluster,omitempty"`
+
+	Indices []IndexPrivilege `json:"indices,omitempty"`
+
+	RemoteIndices []RemoteIndexPrivilege `json:"remote_indices,omitempty"`
+
+	RemoteCluster []RemoteClusterPrivilege `json:"remote_cluster,omitempty"`
+
+	// RunAs lists the users the role can impersonate.
+	RunAs []string `json:"run_as,omitempty"`
+}
+
+// IndexPrivilege grants privileges on a set of Elasticsearch indices.
+type IndexPrivilege struct {
+	// Names lists index names or patterns. Required.
+	Names []string `json:"names"`
+
+	// Privileges lists index privileges, such as "read". Required.
+	Privileges []string `json:"privileges"`
+
+	// FieldSecurity restricts the fields the role can read, with "grant" and
+	// "except" lists of field names.
+	FieldSecurity map[string][]string `json:"field_security,omitempty"`
+
+	// Query is a document level security query, as a JSON string.
+	Query string `json:"query,omitempty"`
+
+	AllowRestrictedIndices bool `json:"allow_restricted_indices,omitempty"`
+}
+
+// RemoteIndexPrivilege grants privileges on indices of remote clusters.
+type RemoteIndexPrivilege struct {
+	// Clusters lists remote cluster aliases or patterns. Required.
+	Clusters []string `json:"clusters"`
+
+	// Names lists index names or patterns. Required.
+	Names []string `json:"names"`
+
+	// Privileges lists index privileges, such as "read". Required.
+	Privileges []string `json:"privileges"`
+
+	FieldSecurity map[string][]string `json:"field_security,omitempty"`
+
+	Query string `json:"query,omitempty"`
+
+	AllowRestrictedIndices bool `json:"allow_restricted_indices,omitempty"`
+}
+
+// RemoteClusterPrivilege grants cluster privileges on remote clusters.
+type RemoteClusterPrivilege struct {
+	// Clusters lists remote cluster aliases or patterns. Required.
+	Clusters []string `json:"clusters"`
+
+	// Privileges lists remote cluster privileges, such as "monitor_enrich".
+	// Required.
+	Privileges []string `json:"privileges"`
+}
+
+// KibanaPrivilege grants Kibana privileges in a set of spaces. Set either
+// Base or Feature.
+type KibanaPrivilege struct {
+	// Base lists base privileges, "all" or "read", that apply to every
+	// feature.
+	Base []string `json:"base"`
+
+	// Feature maps feature IDs to feature privileges, for example
+	// {"discover": {"read"}, "dashboard": {"all"}}. The available features
+	// depend on the Kibana version and license.
+	Feature map[string][]string `json:"feature,omitempty"`
+
+	// Spaces lists the space IDs the privileges apply to, or "*" for all
+	// spaces.
+	Spaces []string `json:"spaces,omitempty"`
+
+	// Reserved is read-only and lists reserved privileges.
+	Reserved []string `json:"_reserved,omitempty"`
+}
+
+// rolePayload is the request body of the create or update role endpoint,
+// which rejects the read-only fields of [Role].
+type rolePayload struct {
+	Description   string            `json:"description,omitempty"`
+	Metadata      map[string]any    `json:"metadata,omitempty"`
+	Elasticsearch RoleElasticsearch `json:"elasticsearch"`
+	Kibana        []KibanaPrivilege `json:"kibana,omitempty"`
+}
+
+func newRolePayload(r *Role) *rolePayload {
+	p := &rolePayload{
+		Description:   r.Description,
+		Metadata:      r.Metadata,
+		Elasticsearch: r.Elasticsearch,
+	}
+	if r.Kibana != nil {
+		p.Kibana = make([]KibanaPrivilege, len(r.Kibana))
+		for i, k := range r.Kibana {
+			k.Reserved = nil
+			// base is required, and must be an empty list for feature privileges.
+			if k.Base == nil {
+				k.Base = []string{}
+			}
+			p.Kibana[i] = k
+		}
+	}
+	return p
+}
+
+// GetRoleOptions are the options for [RolesService.Get] and
+// [RolesService.List].
+type GetRoleOptions struct {
+	// ReplaceDeprecatedPrivileges replaces privileges of deprecated features
+	// with the privileges of the features that replace them.
+	ReplaceDeprecatedPrivileges bool `url:"replaceDeprecatedPrivileges,omitempty"`
+}
+
+// List returns all roles.
 //
-// Kibana API docs: https://www.elastic.co/guide/en/kibana/current/role-management-api-put.html
+// Kibana API: GET /api/security/role
+// Kibana API docs: https://www.elastic.co/docs/api/doc/kibana/operation/operation-get-security-role
+func (s *RolesService) List(ctx context.Context, opt *GetRoleOptions, opts ...RequestOption) ([]*Role, *Response, error) {
+	path, err := addQuery("/api/security/role", opt)
+	if err != nil {
+		return nil, nil, err
+	}
+	var roles []*Role
+	resp, err := s.client.do(ctx, http.MethodGet, path, nil, &roles, opts)
+	if err != nil {
+		return nil, resp, err
+	}
+	return roles, resp, nil
+}
+
+// Get returns the role with the given name.
+//
+// Kibana API: GET /api/security/role/{name}
+// Kibana API docs: https://www.elastic.co/docs/api/doc/kibana/operation/operation-get-security-role-name
+func (s *RolesService) Get(ctx context.Context, name string, opt *GetRoleOptions, opts ...RequestOption) (*Role, *Response, error) {
+	if err := requireID("role name", name); err != nil {
+		return nil, nil, err
+	}
+	path, err := addQuery(pathf("/api/security/role/%s", name), opt)
+	if err != nil {
+		return nil, nil, err
+	}
+	role := new(Role)
+	resp, err := s.client.do(ctx, http.MethodGet, path, nil, role, opts)
+	if err != nil {
+		return nil, resp, err
+	}
+	return role, resp, nil
+}
+
+// CreateOrUpdateRoleOptions are the options for [RolesService.CreateOrUpdate].
 type CreateOrUpdateRoleOptions struct {
-	Metadata *struct {
-		Version *int `url:"version,omitempty" json:"version,omitempty"`
-	} `url:"metadata,omitempty" json:"metadata,omitempty"`
-	Elasticsearch *struct {
-		Cluster *[]string             `url:"cluster,omitempty" json:"cluster,omitempty"`
-		Indices *[]ElasticsearchIndex `url:"indices,omitempty" json:"indices,omitempty"`
-		RunAs   *[]string             `url:"run_as,omitempty" json:"run_as,omitempty"`
-	} `url:"elasticsearch,omitempty" json:"elasticsearch,omitempty"`
-	Kibana *[]Privilege `url:"kibana" json:"kibana"`
+	// CreateOnly makes the request fail with a conflict instead of
+	// overwriting an existing role.
+	CreateOnly bool `url:"createOnly,omitempty"`
 }
 
-// CreateOrUpdateRole creates or updates a Kibana role
+// CreateOrUpdate creates the role with the given name, or replaces it if it
+// exists. The read-only fields of role are ignored.
 //
-// Kibana API docs: https://www.elastic.co/guide/en/kibana/current/role-management-api-put.html
-func (s RolesService) CreateOrUpdateRole(rName string, opt *CreateOrUpdateRoleOptions, options ...RequestOptionFunc) (*Role, *Response, error) {
-	u := fmt.Sprintf("security/role/%s", rName)
-
-	req, err := s.client.NewRequest(http.MethodPut, u, opt, options)
-	if err != nil {
-		return nil, nil, err
+// Kibana API: PUT /api/security/role/{name}
+// Kibana API docs: https://www.elastic.co/docs/api/doc/kibana/operation/operation-put-security-role-name
+func (s *RolesService) CreateOrUpdate(ctx context.Context, name string, role *Role, opt *CreateOrUpdateRoleOptions, opts ...RequestOption) (*Response, error) {
+	if err := requireID("role name", name); err != nil {
+		return nil, err
 	}
-
-	r := new(Role)
-	resp, err := s.client.Do(req, r)
-	if err != nil {
-		return nil, resp, err
+	if role == nil {
+		return nil, errors.New("kibana: role must not be nil")
 	}
-
-	return r, resp, err
-}
-
-// GetRole lists a single Kibana role
-//
-// Kibana API docs: https://www.elastic.co/guide/en/kibana/current/role-management-specific-api-get.html
-func (s RolesService) GetRole(rName string, options ...RequestOptionFunc) (*Role, *Response, error) {
-	u := fmt.Sprintf("security/role/%s", rName)
-
-	req, err := s.client.NewRequest(http.MethodGet, u, nil, options)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	r := new(Role)
-	resp, err := s.client.Do(req, r)
-	if err != nil {
-		return nil, resp, err
-	}
-
-	return r, resp, err
-}
-
-// GetAllRoles lists all Kibana roles
-//
-// Kibana API docs: https://www.elastic.co/guide/en/kibana/current/role-management-api-get.html
-func (s RolesService) GetAllRoles(options ...RequestOptionFunc) ([]*Role, *Response, error) {
-	req, err := s.client.NewRequest(http.MethodGet, "security/role", nil, options)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	var rs []*Role
-	resp, err := s.client.Do(req, &rs)
-	if err != nil {
-		return nil, resp, err
-	}
-
-	return rs, resp, err
-}
-
-// DeleteRole deletes a single Kibana role
-//
-// Kibana API docs: https://www.elastic.co/guide/en/kibana/current/role-management-api-delete.html
-func (s RolesService) DeleteRole(rName string, options ...RequestOptionFunc) (*Response, error) {
-	u := fmt.Sprintf("security/role/%s", rName)
-
-	req, err := s.client.NewRequest(http.MethodDelete, u, nil, options)
+	path, err := addQuery(pathf("/api/security/role/%s", name), opt)
 	if err != nil {
 		return nil, err
 	}
+	// Kibana answers 204 No Content.
+	return s.client.do(ctx, http.MethodPut, path, newRolePayload(role), nil, opts)
+}
 
-	return s.client.Do(req, nil)
+// Delete deletes the role with the given name.
+//
+// Kibana API: DELETE /api/security/role/{name}
+// Kibana API docs: https://www.elastic.co/docs/api/doc/kibana/operation/operation-delete-security-role-name
+func (s *RolesService) Delete(ctx context.Context, name string, opts ...RequestOption) (*Response, error) {
+	if err := requireID("role name", name); err != nil {
+		return nil, err
+	}
+	return s.client.do(ctx, http.MethodDelete, pathf("/api/security/role/%s", name), nil, nil, opts)
 }
