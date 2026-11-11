@@ -1,4 +1,4 @@
-## Unreleased
+## v0.1.0
 
 BREAKING CHANGES:
 
@@ -32,6 +32,8 @@ BUG FIXES:
 
 NOTES:
 
+* First release of the revived module, tested against Kibana 8.19.25 and 9.5.6 on Go 1.26 and 1.27. The [roadmap](https://github.com/ottramst/go-kibana/milestones) lists what comes next
+* Requires `github.com/google/go-querystring` v1.2.0 ([#66](https://github.com/ottramst/go-kibana/pull/66))
 * README rewritten with usage, compatibility and support policy, and roadmap sections; `Example*` functions on pkg.go.dev; `CLAUDE.md` with architecture notes and verified Kibana API quirks ([#9](https://github.com/ottramst/go-kibana/issues/9))
 * `COVERAGE.md` lists every endpoint of the Kibana 8.19.25 and 9.5.6 OpenAPI specs and the method that implements it. `make coverage` regenerates it from the `// Kibana API:` annotations, and CI fails when it is stale ([#8](https://github.com/ottramst/go-kibana/issues/8))
 * Acceptance tests run against Kibana 8.19.25 and 9.5.6 in CI, using `docker-compose.yml` locally ([#5](https://github.com/ottramst/go-kibana/issues/5))
