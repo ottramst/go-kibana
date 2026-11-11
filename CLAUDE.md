@@ -37,7 +37,7 @@ make testacc
 docker compose down -v                                        # needed before switching versions
 ```
 
-The stack runs with security enabled and a trial license. Credentials are `elastic` / `changeme`, Kibana is on `http://localhost:5601`, and Elasticsearch on `:9200`. A one-shot `kibana-setup` container sets the `kibana_system` password. Tests read `KIBANA_URL`, `KIBANA_API_KEY` or `KIBANA_USERNAME`/`KIBANA_PASSWORD`, falling back to those defaults.
+The stack runs with security enabled and a trial license, on ports bound to 127.0.0.1. Tear it down after use; it takes about 4 GB of RAM. Credentials are `elastic` / `changeme`, Kibana is on `http://localhost:5601`, and Elasticsearch on `:9200`. A one-shot `kibana-setup` container sets the `kibana_system` password. Tests read `KIBANA_URL`, `KIBANA_API_KEY` or `KIBANA_USERNAME`/`KIBANA_PASSWORD`, falling back to those defaults.
 
 ## Architecture
 
@@ -45,24 +45,25 @@ The stack runs with security enabled and a trial license. Credentials are `elast
 - `NewClient(baseURL, ...ClientOption)`. Options: `WithAPIKey`, `WithBasicAuth`, `WithHTTPClient`, `WithUserAgent`, `WithSpace`. The base URL keeps any `server.basePath` and loses its trailing slash. The default `http.Client` has no timeout; contexts govern. The User-Agent is `go-kibana/<module version>`, read from build info.
 - Services use the go-github pattern: `type SpacesService service`, all sharing `Client.common`. A new service needs a field on `Client` and a line in `initServices()`. `InSpace(id)` copies the `Client` and calls `initServices()` on the copy, so services must never cache the client elsewhere.
 - `NewRequest(ctx, method, path, body, ...RequestOption)`:
-  - `path` is the literal API path from the spec (`/api/...`), with segments already escaped and an optional `?query`.
+  - `path` is the literal API path from the spec (`/api/...`), with segments already escaped and an optional `?query`. Paths with a `#` or characters that must be escaped are rejected. Escaped characters of the base path (`%2F`) are kept.
   - The space prefix `/s/{space}` goes between the base path and `path`, unless the space is empty or `default`.
   - Header order: `Accept`, `kbn-xsrf: true` (always, even on GET), `Content-Type` (JSON bodies only), `User-Agent`, `Authorization`, then the caller's `RequestOption`s. So callers can override anything.
-  - Body: an `io.Reader` is sent raw; anything else is JSON-encoded.
+  - Body: an `io.Reader` is sent raw, with no `Content-Type` (the caller sets it, e.g. for the planned multipart import); anything else is JSON-encoded.
 - `Do(req, v)`:
   - Non-2xx returns `*ErrorResponse`, through `CheckResponse`.
   - `v == nil` drains the body; an `io.Writer` gets the raw body (for ndjson exports).
-  - Anything else is JSON-decoded. An empty body (204) is success and leaves `v` untouched.
+  - Anything else is JSON-decoded. An empty body (204) is success and leaves `v` untouched. Data after the JSON value is an error.
   - The body is always drained and closed.
 - Service methods call the unexported `c.do(ctx, method, path, body, v, opts)`.
 - Helpers:
   - `pathf("/api/x/%s", id)` escapes each segment with `url.PathEscape`. Never `fmt.Sprintf` a path.
   - `addQuery(path, opt)` encodes `url:"..."` struct tags with go-querystring, for any HTTP method.
-  - `requireID(name, v)` rejects empty path parameters before sending.
-- `ErrorResponse{StatusCode, StatusText (the "error" field), Message, Attributes, Body}`. `Is()` maps 400/401/403/404/409 to `ErrBadRequest`/`ErrUnauthorized`/`ErrForbidden`/`ErrNotFound`/`ErrConflict`. Non-JSON bodies, such as proxy pages, become `Message`.
+  - `WithQueryParam` appends to the existing query string without re-encoding it.
+  - `requireID(name, v)` rejects empty, `.` and `..` path parameters before sending.
+- `ErrorResponse{StatusCode, StatusText (the "error" field), Message, Attributes, Body}`. `Is()` maps 400/401/403/404/409 to `ErrBadRequest`/`ErrUnauthorized`/`ErrForbidden`/`ErrNotFound`/`ErrConflict`. Fields of unexpected types are skipped. Bodies that are not a JSON object, such as proxy pages, become `Message`, cut to 512 bytes; `Body` keeps the whole body (up to 1 MiB).
 
 **Service conventions** (`spaces.go` is the template):
-- Method names: `List`, `Get`, `Create`, `Update`, `Delete`; other operations are named after the endpoint (`CopySavedObjects`, `Query`, `QueryAll`).
+- Method names: `List`, `Get`, `Create`, `Update`, `Delete`. Other operations will be named after the endpoint; the planned ones include `CopySavedObjects` (#12) and `Query`/`QueryAll` (#16).
 - Signatures: `(ctx, ids..., body/options, ...RequestOption) (*T, *Response, error)`, or `(*Response, error)` when Kibana returns no body.
 - Every method's doc comment ends with two lines that `tools/coverage` parses:
   ```go
@@ -71,7 +72,8 @@ The stack runs with security enabled and a trial license. Credentials are `elast
   ```
   The annotation path must match the spec exactly, including the `{param}` names.
 - Prefer one type for reads and writes, so read → modify → write works, and strip read-only fields in an unexported conversion: `Space.writable()`, `newRolePayload()`. Never mutate the caller's value.
-- Fields use values with `omitempty`. Use pointers only when the zero value means something different from "not set". There are no `String()`/`Bool()` helpers; Go 1.26 has `new(expr)`.
+- Fields use plain values. Use `omitempty` only where Kibana rejects the empty value (e.g. `Space.Color`) or the field must not be sent; otherwise send it, so that `""` clears it on a full-replacement PUT. Use pointers only when the zero value means something different from "not set". There are no `String()`/`Bool()` helpers; Go 1.26 has `new(expr)`.
+- Reject inputs that Kibana would silently widen, such as a role privilege without spaces.
 - Options structs (`ListSpacesOptions`, `CreateOrUpdateRoleOptions`) hold query parameters, are pointers, and may be nil.
 - Paginated endpoints get an iterator variant returning `iter.Seq2[*T, error]` (e.g. `QueryAll`) next to the single-page method.
 - Deprecated endpoints (saved objects CRUD/bulk/find) get a `// Deprecated:` paragraph naming the replacement.
@@ -80,16 +82,17 @@ The stack runs with security enabled and a trial license. Credentials are `elast
 - Kibana rejects state-changing requests without `kbn-xsrf`. Since 9.0, internal APIs (`/internal/...`) also need `x-elastic-internal-origin`. Never call internal APIs. Don't send `elastic-api-version` by default; stateful Kibana defaults to the oldest version.
 - `/s/{space}` scoping works on every route: Kibana strips it before routing. Copy-to-space takes the source space from the path.
 - Spaces:
-  - Create and update bodies are `additionalProperties: false`, so unknown fields are a 400. `authorizedPurposes` (read-only) is stripped.
-  - `_reserved` is accepted, so a reserved space, including `default`, can be written back unchanged.
+  - Create and update bodies are `additionalProperties: false`, so unknown fields are a 400. The read-only `authorizedPurposes` and `_reserved` are stripped. Kibana keeps `_reserved` when it is left out.
+  - `description`, `initials` and `imageUrl` accept `""`, which clears them. `color: ""` is a 400 ("must be a 6 digit hex color"), so `Color` is `omitempty` and cannot be cleared.
   - `projectRouting` only exists in 9.5+; sending it to 8.19 is a 400, which is why it is `omitempty`.
-  - PUT replaces the whole space and returns 200 with it. DELETE returns 204 and deletes the space's saved objects.
+  - PUT returns 200 with the space. Text fields left out keep their value, `disabledFeatures` left out becomes `[]`. DELETE returns 204 and deletes the space's saved objects.
   - Conflicts are 409.
   - The list's `authorizedPurposes` also contains `findSavedObjects`, which is not in the spec's purpose enum.
 - Roles:
   - `PUT /api/security/role/{name}` returns **204** with an empty body. The pre-redesign client failed on this.
   - The PUT body only accepts `description`, `metadata`, `elasticsearch` (required) and `kibana`.
   - `kibana[].base` is required: send `[]` for feature privileges, never `null`. `_reserved` is response-only.
+  - `kibana[].spaces` left out defaults to `["*"]` (all spaces), while `[]` or `null` is a 400. The client rejects empty `Spaces` before sending.
   - GET adds `transient_metadata`, `_transform_error`, `_unrecognized_applications` and `run_as: []`.
   - `?createOnly=true` on an existing role is a 409.
   - A missing role's 404 has the unhelpful message `"[{}]: undefined"`, so match on the status, not the message.
@@ -108,7 +111,8 @@ The stack runs with security enabled and a trial license. Credentials are `elast
 
 **Tooling:** `tools/coverage/` is a separate module, so the library keeps one dependency.
 - It parses the pinned specs and the `// Kibana API:` annotations, then writes `COVERAGE.md`.
-- It fails on annotations that match no spec, are not on a method, or are duplicated.
+- It fails on malformed annotations (e.g. a lower case method), annotations that match no spec, are not on a method, or are duplicated.
+- Versions are passed oldest first; the newest spec's tag and x-state win. Untagged operations get the tag of the closest path.
 
 ## Test Patterns
 
@@ -116,7 +120,7 @@ The stack runs with security enabled and a trial license. Credentials are `elast
 - Helpers in `helpers_test.go`:
   - `setup(t)` returns `(*http.ServeMux, *kibana.Client)`, using a basic-auth client against an `httptest.Server`.
   - `testHeader`, `testQuery`, `testJSONBody` (semantic JSON comparison), `fixture(t, "spaces/get.json")`, `writeJSON`.
-- Register handlers with method patterns (`mux.HandleFunc("PUT /api/security/role/{name}", ...)`), so a wrong method or path gives a 404 and fails the test.
+- Register handlers with method patterns (`mux.HandleFunc("PUT /api/security/role/{name}", ...)`), so a wrong path (404) or method (405) fails the test.
 - Cover for each method:
   - Happy path and the exact request body.
   - Read-only fields are not sent, and the caller's value is not mutated.
@@ -127,6 +131,7 @@ The stack runs with security enabled and a trial license. Credentials are `elast
 - Acceptance tests (`*_acc_test.go`, `TestAcc*`):
   - Use `accClient(t)`, which skips unless `KIBANA_ACC` is set.
   - Name objects with `randName(t, "acc")` and remove them in `cleanup(t, ...)`, which runs with a non-canceled context.
+  - Changes to shared state, such as writing the default space, only run when `localStack()` (`KIBANA_URL` unset, i.e. the compose stack).
   - Each test runs a full lifecycle: create, conflict, get, read-modify-write update, list, delete, then get returning `ErrNotFound`.
   - Gate version-specific endpoints on the `kibanaVersion(t, client)` result.
 - `example_test.go` holds compile-only `Example*` functions (no `// Output:`), shown on pkg.go.dev.
@@ -138,9 +143,10 @@ GitHub Actions workflows in `.github/workflows/`:
 - `build`: go.mod tidy check, build, vet, and race-enabled unit tests on Go 1.26.x and 1.27.x, the two supported Go releases. The go.mod `go` directive is the oldest one.
 - `test`: acceptance tests on a Kibana {8.19.25, 9.5.6} matrix via `docker compose up -d --wait`. The image tag comes from `ELASTIC_STACK_VERSION`, whose default in `docker-compose.yml` is the newest. Dependabot does not bump the stack; see CONTRIBUTING.md for the version bump checklist (test matrix, compose default, `KIBANA_SPEC_VERSIONS`, README, this file).
 - `coverage`: tests the coverage tool, runs `make coverage`, and fails if `COVERAGE.md` changed.
-- Also: CodeQL, govulncheck and dependency review (`security.yml`), OpenSSF Scorecard, actionlint plus zizmor for workflow changes, lock threads, and waiting-response triage.
-- `release.yml`: pushing a `vX.Y.Z` tag creates the GitHub release from the `## vX.Y.Z` section of `CHANGELOG.md` and warms proxy.golang.org.
-- All actions are pinned to commit SHAs with a version comment. Workflows use top-level `permissions: {}`, job-level timeouts and `persist-credentials: false`.
+- Also: CodeQL (`codeql.yml`), govulncheck and dependency review (`security.yml`), OpenSSF Scorecard, actionlint plus zizmor for workflow changes (zizmor fails the job on findings, without uploading SARIF), lock threads, and waiting-response triage.
+- `release.yml`: pushing a `vX.Y.Z` tag creates the GitHub release from the `## vX.Y.Z` section of `CHANGELOG.md` (the heading must match exactly) and warms proxy.golang.org. It runs in the `release` environment, which only allows `v*` tags.
+- All actions are pinned to commit SHAs with a version comment. Workflows triggered by events use top-level `permissions: {}` and grant permissions per job; the reusable workflows (`build`, `lint`, `test`, `coverage`) declare `contents: read`. Every job has a timeout, and checkouts use `persist-credentials: false`.
+- Never commit downloaded files: `.cache/` (the OpenAPI specs) must stay in `.gitignore`.
 
 ## Rules
 

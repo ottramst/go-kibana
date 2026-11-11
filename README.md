@@ -63,8 +63,9 @@ if err != nil {
 spaces, _, err := client.Spaces.List(ctx, nil)
 ```
 
-Every method returns the decoded result, the `*kibana.Response` (which wraps `*http.Response`)
-and an error.
+Methods return the decoded result, the `*kibana.Response` (which wraps `*http.Response`) and an
+error. Methods for endpoints without a response body, such as `Delete`, return only the
+`*kibana.Response` and the error.
 
 ### Authentication
 
@@ -73,7 +74,9 @@ and an error.
 | `kibana.WithAPIKey(encoded)` | `Authorization: ApiKey <encoded>`. Use the base64 `encoded` value of an Elasticsearch API key. |
 | `kibana.WithBasicAuth(user, password)` | `Authorization: Basic ...` |
 
-Any other scheme can be set per request with `kibana.WithHeader("Authorization", "Bearer ...")`.
+For other schemes, such as a bearer token, set the header per request with
+`kibana.WithHeader("Authorization", "Bearer ...")`, or for every request with an `http.RoundTripper`
+passed in `kibana.WithHTTPClient`.
 
 If Kibana runs under a base path (`server.basePath`), include it in the URL:
 `kibana.NewClient("https://example.com/kibana", ...)`.
@@ -86,14 +89,25 @@ space, _, err := client.Spaces.Create(ctx, &kibana.Space{
 	Name:             "Marketing",
 	DisabledFeatures: []string{"dev_tools"},
 })
+if err != nil {
+	return err
+}
 
 // Update replaces the whole object: read it, change it, write it back.
 space, _, err = client.Spaces.Get(ctx, "marketing")
+if err != nil {
+	return err
+}
 space.Description = "Campaign dashboards"
 space, _, err = client.Spaces.Update(ctx, space.ID, space)
 ```
 
-Roles use Kibana's feature privileges as plain maps, so every feature of your Kibana version works:
+Empty fields are sent too, so setting `space.Description = ""` clears the description. Read-only
+fields, such as `Space.Reserved` or `Role.TransientMetadata`, are never sent.
+
+Roles use Kibana's feature privileges as plain maps, so every feature of your Kibana version works.
+Every Kibana privilege must list its spaces (`"*"` for all spaces); `CreateOrUpdate` rejects an empty
+list, which Kibana would otherwise treat as all spaces:
 
 ```go
 _, err := client.Roles.CreateOrUpdate(ctx, "marketing_analyst", &kibana.Role{
@@ -113,8 +127,9 @@ Space-aware endpoints act on the default space unless the client is scoped to an
 
 ```go
 marketing := client.InSpace("marketing") // requests go to /s/marketing/api/...
-// or, for the whole client:
-client, err := kibana.NewClient(url, kibana.WithAPIKey(key), kibana.WithSpace("marketing"))
+
+// or, for a whole new client:
+scoped, err := kibana.NewClient(kibanaURL, kibana.WithAPIKey(apiKey), kibana.WithSpace("marketing"))
 ```
 
 `InSpace` returns a cheap copy that shares the HTTP client.
@@ -140,8 +155,8 @@ The client does not retry. To retry, for example on the 503 Kibana returns while
 retrying transport:
 
 ```go
-client, err := kibana.NewClient(url,
-	kibana.WithAPIKey(key),
+client, err := kibana.NewClient(kibanaURL,
+	kibana.WithAPIKey(apiKey),
 	kibana.WithHTTPClient(&http.Client{Timeout: 30 * time.Second, Transport: myRetryingTransport}),
 )
 ```
@@ -150,11 +165,18 @@ client, err := kibana.NewClient(url,
 
 ```go
 req, err := client.NewRequest(ctx, http.MethodGet, "/api/status", nil)
+if err != nil {
+	return err
+}
 var status map[string]any
-_, err = client.Do(req, &status)
+if _, err := client.Do(req, &status); err != nil {
+	return err
+}
 ```
 
-The request gets the client's authentication, space scoping and `kbn-xsrf` header. Responses with
+The path is the escaped API path from the [Kibana API reference](https://www.elastic.co/docs/api/doc/kibana)
+(escape IDs with `url.PathEscape`). The request gets the client's authentication, space scoping
+and `kbn-xsrf` header; set `Content-Type` with `kibana.WithHeader` when the body is an `io.Reader`. Responses with
 a non-2xx status return an `*ErrorResponse`. If the value passed to `Do` is an `io.Writer`, the
 response body is copied into it as is.
 
@@ -200,6 +222,7 @@ make lint                      # golangci-lint
 docker compose up -d --wait    # Elasticsearch + Kibana on localhost:5601 (elastic / changeme)
 make testacc                   # unit + acceptance tests against it
 make coverage                  # regenerate COVERAGE.md
+docker compose down -v         # stop the stack (about 4 GB of RAM)
 ```
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for details.
