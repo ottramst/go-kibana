@@ -1,0 +1,39 @@
+name: Tests
+
+on:
+  workflow_call:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: Acceptance tests (Kibana ${{ matrix.stack-version }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      # ELASTIC_STACK_VERSION selects the docker-compose.yml image tags.
+      ELASTIC_STACK_VERSION: ${{ matrix.stack-version }}
+    strategy:
+      fail-fast: false
+      matrix:
+        # The latest patch of the supported release lines (see the support
+        # policy in README.md). Keep the default in docker-compose.yml in sync.
+        stack-version:
+          - '8.19.25'
+          - '9.5.6'
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: 'go.mod'
+          cache: true
+      - name: Start Elasticsearch and Kibana
+        run: docker compose up -d --wait
+      - run: go mod download
+      - run: make testacc
+      - name: Stack logs
+        if: failure()
+        run: docker compose logs --tail 200

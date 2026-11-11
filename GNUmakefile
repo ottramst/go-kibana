@@ -12,4 +12,8 @@ fmt:
 test:
 	go test -v -cover -timeout=120s -parallel=10 ./...
 
-.PHONY: default build lint fmt test
+# Needs a running Kibana: docker compose up -d --wait
+testacc:
+	KIBANA_ACC=1 go test -v -cover -timeout 30m ./...
+
+.PHONY: default build lint fmt test testacc

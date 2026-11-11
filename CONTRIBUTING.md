@@ -25,6 +25,40 @@ make lint    # golangci-lint
 make fmt     # gofmt -s
 ```
 
+## Acceptance tests
+
+Acceptance tests (`TestAcc*`) run against a real Elasticsearch and Kibana. They are skipped unless
+`KIBANA_ACC` is set. A Docker Compose file is provided (about 4 GB of memory);
+`ELASTIC_STACK_VERSION` selects the image tags and defaults to the newest supported version.
+
+```shell
+docker compose up -d --wait
+# ELASTIC_STACK_VERSION=8.19.25 docker compose up -d --wait
+
+make testacc
+# or a single test:
+KIBANA_ACC=1 go test -v -run TestAccSpaces ./...
+
+docker compose down -v
+```
+
+The tests log in as `elastic` / `changeme`. To run them against another Kibana, set `KIBANA_URL` and
+either `KIBANA_API_KEY` or `KIBANA_USERNAME` and `KIBANA_PASSWORD`. Each test creates its own
+uniquely named objects and deletes them afterwards.
+
+Behavior that differs between Kibana versions must be covered for each supported version: run the suite
+against every version in the test matrix before opening a pull request.
+
+## Supported Kibana versions
+
+CI tests the latest patch of the supported Kibana release lines (see the
+[support policy](README.md#support-policy)). When Elastic ships a new patch or minor release, bump these together:
+
+1. The matrix in `.github/workflows/test.yml`
+2. The `ELASTIC_STACK_VERSION` default in `docker-compose.yml`
+3. The spec versions in `GNUmakefile` (`KIBANA_SPEC_VERSIONS`), then run `make coverage`
+4. The tested versions in `README.md` and `CLAUDE.md`
+
 ## Pull requests
 
 - Keep each pull request focused on one change, and add or update tests for it.
@@ -32,7 +66,8 @@ make fmt     # gofmt -s
   pull requests are squash-merged with that title. Mark breaking changes with `!`.
 - Add an entry to `CHANGELOG.md` under `## Unreleased` (`BREAKING CHANGES`, `FEATURES`, `ENHANCEMENTS`,
   `BUG FIXES` or `NOTES`).
-- CI must pass: the `CI gate` check covers lint, build and unit tests on every supported Go version.
+- CI must pass: the `CI gate` check covers lint, build and unit tests on every supported Go version, and the
+  acceptance test matrix.
 
 ## Releases
 

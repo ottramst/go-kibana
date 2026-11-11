@@ -24,13 +24,17 @@ jobs:
     uses: ./.github/workflows/build.yml
     permissions:
       contents: read
+  test:
+    uses: ./.github/workflows/test.yml
+    permissions:
+      contents: read
 
   # Single required status check for branch protection: it always reports,
   # and fails if any job above failed, was cancelled or was skipped.
   ci-gate:
     name: CI gate
     if: always()
-    needs: [lint, build]
+    needs: [lint, build, test]
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
