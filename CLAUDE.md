@@ -45,7 +45,7 @@ The stack runs with security enabled and a trial license, on ports bound to 127.
 - `NewClient(baseURL, ...ClientOption)`. Options: `WithAPIKey`, `WithBasicAuth`, `WithHTTPClient`, `WithUserAgent`, `WithSpace`. The base URL keeps any `server.basePath` and loses its trailing slash. The default `http.Client` has no timeout; contexts govern. The User-Agent is `go-kibana/<module version>`, read from build info.
 - Services use the go-github pattern: `type SpacesService service`, all sharing `Client.common`. A new service needs a field on `Client` and a line in `initServices()`. `InSpace(id)` copies the `Client` and calls `initServices()` on the copy, so services must never cache the client elsewhere.
 - `NewRequest(ctx, method, path, body, ...RequestOption)`:
-  - `path` is the literal API path from the spec (`/api/...`), with segments already escaped and an optional `?query`. Paths with a `#` or characters that must be escaped are rejected. Escaped characters of the base path (`%2F`) are kept.
+  - `path` is the literal API path from the spec (`/api/...`), with segments already escaped and an optional `?query`. Paths with a `#`, and paths or query strings with characters that must be escaped (spaces, control characters, non-ASCII), are rejected. Escaped characters of the base path (`%2F`) are kept.
   - The space prefix `/s/{space}` goes between the base path and `path`, unless the space is empty or `default`.
   - Header order: `Accept`, `kbn-xsrf: true` (always, even on GET), `Content-Type` (JSON bodies only), `User-Agent`, `Authorization`, then the caller's `RequestOption`s. So callers can override anything.
   - Body: an `io.Reader` is sent raw, with no `Content-Type` (the caller sets it, e.g. for the planned multipart import); anything else is JSON-encoded.
@@ -72,7 +72,7 @@ The stack runs with security enabled and a trial license, on ports bound to 127.
   ```
   The annotation path must match the spec exactly, including the `{param}` names.
 - Prefer one type for reads and writes, so read → modify → write works, and strip read-only fields in an unexported conversion: `Space.writable()`, `newRolePayload()`. Never mutate the caller's value.
-- Fields use plain values. Use `omitempty` only where Kibana rejects the empty value (e.g. `Space.Color`) or the field must not be sent; otherwise send it, so that `""` clears it on a full-replacement PUT. Use pointers only when the zero value means something different from "not set". There are no `String()`/`Bool()` helpers; Go 1.26 has `new(expr)`.
+- Fields use plain values. Use `omitempty` only where Kibana rejects the empty value (e.g. `Space.Color`) or the field must not be sent; otherwise send it, so that `""` clears it: Kibana's PUT endpoints keep fields that are left out (see the Spaces quirks). Use pointers only when the zero value means something different from "not set". There are no `String()`/`Bool()` helpers; Go 1.26 has `new(expr)`.
 - Reject inputs that Kibana would silently widen, such as a role privilege without spaces.
 - Options structs (`ListSpacesOptions`, `CreateOrUpdateRoleOptions`) hold query parameters, are pointers, and may be nil.
 - Paginated endpoints get an iterator variant returning `iter.Seq2[*T, error]` (e.g. `QueryAll`) next to the single-page method.

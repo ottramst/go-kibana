@@ -102,7 +102,8 @@ space.Description = "Campaign dashboards"
 space, _, err = client.Spaces.Update(ctx, space.ID, space)
 ```
 
-Empty fields are sent too, so setting `space.Description = ""` clears the description. Read-only
+Empty text fields are sent too, so setting `space.Description = ""` clears the description (likewise
+`Initials` and `ImageURL`; an empty `Color` or `Solution` keeps the current value). Read-only
 fields, such as `Space.Reserved` or `Role.TransientMetadata`, are never sent.
 
 Roles use Kibana's feature privileges as plain maps, so every feature of your Kibana version works.
