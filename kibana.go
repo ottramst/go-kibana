@@ -11,7 +11,7 @@
 //	spaces, _, err := client.Spaces.List(ctx, nil)
 //
 // Every service method takes a [context.Context] first and returns the
-// decoded result, the [Response] and an error. API errors are returned as
+// decoded result (if Kibana returns one), the [Response] and an error. API errors are returned as
 // [*ErrorResponse] and can be matched with [errors.Is] against sentinel
 // errors such as [ErrNotFound].
 //
@@ -139,8 +139,10 @@ func NewClient(baseURL string, opts ...ClientOption) (*Client, error) {
 	if u.Scheme != "http" && u.Scheme != "https" || u.Host == "" {
 		return nil, fmt.Errorf("kibana: invalid base URL %q: must be an absolute http or https URL", baseURL)
 	}
+	// Keep escaped characters of the base path, such as %2F, as they are.
+	escaped := strings.TrimSuffix(u.EscapedPath(), "/")
 	u.Path = strings.TrimSuffix(u.Path, "/")
-	u.RawPath = ""
+	u.RawPath = escaped
 	u.RawQuery = ""
 	u.Fragment = ""
 
@@ -222,6 +224,9 @@ func (c *Client) NewRequest(ctx context.Context, method, path string, body any, 
 		return nil, fmt.Errorf("kibana: path %q must start with /", path)
 	}
 	rawPath, rawQuery, _ := strings.Cut(path, "?")
+	if strings.Contains(path, "#") || !validEscapedPath(rawPath) {
+		return nil, fmt.Errorf("kibana: path %q must be escaped", path)
+	}
 
 	prefix := ""
 	if c.space != "" && c.space != DefaultSpace {
@@ -319,8 +324,15 @@ func (c *Client) Do(req *http.Request, v any) (*Response, error) {
 			return response, fmt.Errorf("kibana: reading response body: %w", err)
 		}
 	default:
-		if err := json.NewDecoder(resp.Body).Decode(v); err != nil && !errors.Is(err, io.EOF) {
+		dec := json.NewDecoder(resp.Body)
+		if err := dec.Decode(v); err != nil {
+			if errors.Is(err, io.EOF) {
+				return response, nil
+			}
 			return response, fmt.Errorf("kibana: decoding response body: %w", err)
+		}
+		if _, err := dec.Token(); !errors.Is(err, io.EOF) {
+			return response, errors.New("kibana: decoding response body: unexpected data after the JSON value")
 		}
 	}
 	return response, nil

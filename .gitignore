@@ -8,7 +8,7 @@
 *.prof
 coverage.txt
 
-# Downloaded OpenAPI specs (`make coverage`)
+# Downloaded files, such as the OpenAPI specs of `make coverage`; never commit them
 .cache/
 
 # Editors and OS files

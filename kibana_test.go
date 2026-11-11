@@ -161,6 +161,13 @@ func TestNewRequest_url(t *testing.T) {
 			opts: []kibana.RequestOption{kibana.WithQueryParam("x", "1 2")},
 			want: "http://k:5601/api/spaces/space?purpose=any&x=1+2",
 		},
+		{
+			name: "query param option keeps existing query", baseURL: "http://k:5601", path: "/api/x?b=2&a=1;c",
+			opts: []kibana.RequestOption{kibana.WithQueryParam("d", "&")},
+			want: "http://k:5601/api/x?b=2&a=1;c&d=%26",
+		},
+		{name: "escaped base path", baseURL: "http://k:5601/a%2Fb/", space: "s", path: "/api/x", want: "http://k:5601/a%2Fb/s/s/api/x"},
+		{name: "escaped space", baseURL: "http://k:5601", space: "a/b", path: "/api/x", want: "http://k:5601/s/a%2Fb/api/x"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -184,7 +191,7 @@ func TestNewRequest_invalidPath(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	for _, path := range []string{"api/status", "", "/api/%zz"} {
+	for _, path := range []string{"api/status", "", "/api/%zz", "/api/a#frag", "/api/a b", "/api/é", "/api/a%2Fb/é"} {
 		if _, err := c.NewRequest(context.Background(), http.MethodGet, path, nil); err == nil {
 			t.Errorf("NewRequest(%q) error = nil, want error", path)
 		}
@@ -258,6 +265,12 @@ func TestDo(t *testing.T) {
 	mux.HandleFunc("GET /bad-json", func(w http.ResponseWriter, _ *http.Request) {
 		writeJSON(t, w, http.StatusOK, []byte(`{"a":`))
 	})
+	mux.HandleFunc("GET /trailing-data", func(w http.ResponseWriter, _ *http.Request) {
+		writeJSON(t, w, http.StatusOK, []byte(`{"a":"b"} junk`))
+	})
+	mux.HandleFunc("GET /trailing-space", func(w http.ResponseWriter, _ *http.Request) {
+		writeJSON(t, w, http.StatusOK, []byte("{\"a\":\"b\"}\n\n"))
+	})
 	mux.HandleFunc("GET /ndjson", func(w http.ResponseWriter, _ *http.Request) {
 		_, _ = io.WriteString(w, "{\"a\":1}\n{\"b\":2}\n")
 	})
@@ -296,6 +309,12 @@ func TestDo(t *testing.T) {
 	}
 	if _, err := do(http.MethodGet, "/bad-json", &got); err == nil {
 		t.Error("Do(bad json) error = nil, want error")
+	}
+	if _, err := do(http.MethodGet, "/trailing-data", &got); err == nil {
+		t.Error("Do(trailing data) error = nil, want error")
+	}
+	if _, err := do(http.MethodGet, "/trailing-space", &got); err != nil {
+		t.Errorf("Do(trailing whitespace) error = %v", err)
 	}
 
 	var buf bytes.Buffer

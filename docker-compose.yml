@@ -5,8 +5,6 @@
 # Credentials: elastic / changeme (superuser). Not for production use.
 name: go-kibana
 
-x-stack-version: &stack-version ${ELASTIC_STACK_VERSION:-9.5.6}
-
 services:
   elasticsearch:
     image: docker.elastic.co/elasticsearch/elasticsearch:${ELASTIC_STACK_VERSION:-9.5.6}
@@ -20,7 +18,7 @@ services:
       cluster.routing.allocation.disk.threshold_enabled: "false"
       ES_JAVA_OPTS: -Xms1g -Xmx1g
     ports:
-      - "9200:9200"
+      - "127.0.0.1:9200:9200"
     mem_limit: 2g
     healthcheck:
       test: ["CMD-SHELL", "curl -fsS -u elastic:changeme 'http://localhost:9200/_cluster/health?wait_for_status=yellow&timeout=1s'"]
@@ -35,18 +33,19 @@ services:
       elasticsearch:
         condition: service_healthy
     restart: "no"
+    # The security index can briefly be unavailable after the cluster turns
+    # yellow, so retry for up to two minutes.
     command:
-      - curl
-      - -fsS
-      - -u
-      - elastic:changeme
-      - -X
-      - POST
-      - http://elasticsearch:9200/_security/user/kibana_system/_password
-      - -H
-      - "Content-Type: application/json"
-      - -d
-      - '{"password":"changeme"}'
+      - sh
+      - -c
+      - |
+        for attempt in $$(seq 1 60); do
+          curl -fsS -u elastic:changeme -X POST http://elasticsearch:9200/_security/user/kibana_system/_password \
+            -H 'Content-Type: application/json' -d '{"password":"changeme"}' && exit 0
+          echo "attempt $$attempt failed, retrying"
+          sleep 2
+        done
+        exit 1
 
   kibana:
     image: docker.elastic.co/kibana/kibana:${ELASTIC_STACK_VERSION:-9.5.6}
@@ -63,10 +62,11 @@ services:
       XPACK_REPORTING_ENCRYPTIONKEY: go-kibana-acceptance-tests-reporting-key-0001
       TELEMETRY_OPTIN: "false"
     ports:
-      - "5601:5601"
+      - "127.0.0.1:5601:5601"
     mem_limit: 2g
     healthcheck:
-      test: ["CMD-SHELL", "curl -fsS -u elastic:changeme http://localhost:5601/api/status | grep -q '\"level\":\"available\"'"]
+      # Every plugin reports a level too: match the overall status.
+      test: ["CMD-SHELL", "curl -fsS -u elastic:changeme http://localhost:5601/api/status | grep -q '\"overall\":{\"level\":\"available\"'"]
       interval: 10s
       timeout: 10s
       retries: 60

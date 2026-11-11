@@ -22,6 +22,14 @@ paths:
     delete:
       tags: [things]
       x-state: Technical Preview; added in 9.1.0
+    put:
+      tags: [things]
+      x-state: "a | b"
+  /api/things/_query:
+    post: {}
+  /api/other:
+    get:
+      tags: [Things]
 `
 
 func writeRepo(t *testing.T, goSrc string) string {
@@ -47,6 +55,16 @@ func TestRun(t *testing.T) {
 // Kibana API: GET /api/things
 // Kibana API docs: https://example.com
 func (s *ThingsService) List() {}
+
+// Query queries things; a value receiver.
+//
+// Kibana API: POST /api/things/_query
+func (s ThingsService) Query() {}
+
+// Generic receiver.
+//
+// Kibana API: GET /api/other
+func (s *Others[T]) Get() {}
 `)
 	if err := run(root, ".cache/specs", []string{"v1"}, "COVERAGE.md"); err != nil {
 		t.Fatalf("run() error = %v", err)
@@ -57,8 +75,14 @@ func (s *ThingsService) List() {}
 	}
 	got := string(data)
 	for _, want := range []string{
-		"**1 of 3 endpoints implemented.**",
-		"| [things](#things) | 1 / 3 |",
+		"**3 of 6 endpoints implemented.**",
+		// Tags that differ only in case get distinct anchors, like on GitHub.
+		"| [Things](#things) | 1 / 1 |",
+		"| [things](#things-1) | 2 / 5 |",
+		// The untagged operation gets the tag of its closest path.
+		"| POST | `/api/things/_query` | ✅ | `ThingsService.Query` |  |",
+		"| GET | `/api/other` | ✅ | `Others.Get` |  |",
+		"| PUT | `/api/things/{id}` | ✅ |  | a \\| b |",
 		"| GET | `/api/things` | ✅ | `ThingsService.List` |  |",
 		"| POST | `/api/things` | ✅ |  | deprecated |",
 		"| DELETE | `/api/things/{id}` | ✅ |  | Technical Preview; added in 9.1.0 |",
@@ -75,6 +99,12 @@ func TestRun_errors(t *testing.T) {
 		"not on a method":  "package kibana\n\n// Kibana API: GET /api/things\nvar x = 1\n",
 		"duplicate": "package kibana\n\n// Kibana API: GET /api/things\nfunc (s *ThingsService) A() {}\n\n" +
 			"// Kibana API: GET /api/things\nfunc (s *ThingsService) B() {}\n",
+		"lower case method":  "package kibana\n\n// Kibana API: get /api/things\nfunc (s *ThingsService) A() {}\n",
+		"mixed case method":  "package kibana\n\n// Kibana API: Get /api/things\nfunc (s *ThingsService) A() {}\n",
+		"trailing space":     "package kibana\n\n// Kibana API: GET /api/things \nfunc (s *ThingsService) A() {}\n",
+		"unsupported method": "package kibana\n\n// Kibana API: HEAD /api/things\nfunc (s *ThingsService) A() {}\n",
+		"indented":           "package kibana\n\nfunc f() {\n\t// Kibana API: GET /api/things\n}\n",
+		"end of file":        "package kibana\n\n// Kibana API: GET /api/things\n",
 	}
 	for name, src := range tests {
 		t.Run(name, func(t *testing.T) {
