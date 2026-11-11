@@ -150,3 +150,8 @@ For complete usage of go-kibana, see the full [package docs](https://godoc.org/g
 ## Issues
 
 - If you have an issue: report it on the [issue tracker](https://github.com/ottramst/go-kibana/issues)
+
+## Support policy
+
+go-kibana supports the two newest Go releases, and the latest patch of the newest Kibana 9.x minor
+release and of 8.19, the last 8.x release line. Older versions get best-effort support.

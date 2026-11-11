@@ -26,6 +26,10 @@ const (
 
 // Space is a Kibana space. The same type is used to read, create and update
 // spaces, so a space can be read, changed and written back.
+//
+// Description, Initials and ImageURL are always sent, so setting them to ""
+// clears them. Color cannot be cleared: Kibana requires a hex color when it
+// is sent, so an empty Color is left out.
 type Space struct {
 	// ID is part of the Kibana URL inside the space. It is limited to
 	// lowercase alphanumeric, underscore and hyphen characters, and cannot be
@@ -35,18 +39,18 @@ type Space struct {
 	// Name is the display name of the space.
 	Name string `json:"name"`
 
-	Description string `json:"description,omitempty"`
+	Description string `json:"description"`
 
-	// Color is the hexadecimal color code of the space avatar. Kibana
-	// generates one from the name when it is empty.
+	// Color is the hexadecimal color code of the space avatar, such as
+	// "#aabbcc". Kibana generates one from the name when it is empty.
 	Color string `json:"color,omitempty"`
 
 	// Initials are one or two characters shown in the space avatar. Kibana
 	// generates them from the name when they are empty.
-	Initials string `json:"initials,omitempty"`
+	Initials string `json:"initials"`
 
 	// ImageURL is a data URL of the image shown in the space avatar.
-	ImageURL string `json:"imageUrl,omitempty"`
+	ImageURL string `json:"imageUrl"`
 
 	// DisabledFeatures lists the IDs of the features turned off in the space.
 	DisabledFeatures []string `json:"disabledFeatures,omitempty"`
@@ -59,6 +63,7 @@ type Space struct {
 	ProjectRouting string `json:"projectRouting,omitempty"`
 
 	// Reserved is true for spaces Kibana manages, such as the default space.
+	// It is read-only and never sent.
 	Reserved bool `json:"_reserved,omitempty"`
 
 	// AuthorizedPurposes is returned by [SpacesService.List] when
@@ -66,10 +71,10 @@ type Space struct {
 	AuthorizedPurposes map[string]bool `json:"authorizedPurposes,omitempty"`
 }
 
-// writable returns a copy of the space without the fields Kibana rejects in
-// create and update requests.
+// writable returns a copy of the space without its read-only fields.
 func (s *Space) writable() *Space {
 	w := *s
+	w.Reserved = false
 	w.AuthorizedPurposes = nil
 	return &w
 }
@@ -146,10 +151,11 @@ func (s *SpacesService) Create(ctx context.Context, space *Space, opts ...Reques
 	return created, resp, nil
 }
 
-// Update replaces the space with the given ID. Fields left empty are reset to
-// their defaults, so read the space with [SpacesService.Get] and change it to
-// keep its other settings. The ID of space is ignored; the space is not
-// modified.
+// Update replaces the space with the given ID: empty fields clear the
+// corresponding settings (except Color, which is kept), and DisabledFeatures
+// replaces the disabled features. Read the space with [SpacesService.Get] and
+// change it to keep its other settings. The ID of space is ignored; the space
+// is not modified.
 //
 // Kibana API: PUT /api/spaces/space/{id}
 // Kibana API docs: https://www.elastic.co/docs/api/doc/kibana/operation/operation-put-spaces-space-id

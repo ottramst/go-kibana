@@ -121,7 +121,7 @@ func TestSpacesService_Create(t *testing.T) {
 	mux.HandleFunc("POST /api/spaces/space", func(w http.ResponseWriter, r *http.Request) {
 		testHeader(t, r, "kbn-xsrf", "true")
 		testHeader(t, r, "Content-Type", "application/json")
-		testJSONBody(t, r, `{"id":"marketing","name":"Marketing","description":"Marketing team","color":"#aabbcc","initials":"MK","disabledFeatures":["dev_tools"],"solution":"classic"}`)
+		testJSONBody(t, r, `{"id":"marketing","name":"Marketing","description":"Marketing team","color":"#aabbcc","initials":"MK","imageUrl":"","disabledFeatures":["dev_tools"],"solution":"classic"}`)
 		writeJSON(t, w, http.StatusOK, fixture(t, "spaces/get.json"))
 	})
 
@@ -161,7 +161,8 @@ func TestSpacesService_Create_conflict(t *testing.T) {
 func TestSpacesService_Update(t *testing.T) {
 	mux, client := setup(t)
 	mux.HandleFunc("PUT /api/spaces/space/marketing", func(w http.ResponseWriter, r *http.Request) {
-		testJSONBody(t, r, `{"id":"marketing","name":"Marketing 2","_reserved":true}`)
+		// Empty text fields are sent to clear them; read-only fields are not.
+		testJSONBody(t, r, `{"id":"marketing","name":"Marketing 2","description":"","initials":"","imageUrl":""}`)
 		writeJSON(t, w, http.StatusOK, fixture(t, "spaces/get.json"))
 	})
 
@@ -169,7 +170,7 @@ func TestSpacesService_Update(t *testing.T) {
 	if _, _, err := client.Spaces.Update(context.Background(), "marketing", in); err != nil {
 		t.Fatalf("Update() error = %v", err)
 	}
-	if in.ID != "ignored" || in.AuthorizedPurposes == nil {
+	if in.ID != "ignored" || !in.Reserved || in.AuthorizedPurposes == nil {
 		t.Errorf("Update() modified the caller's space: %+v", in)
 	}
 }

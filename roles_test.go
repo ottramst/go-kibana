@@ -17,17 +17,27 @@ func TestRolesService_List(t *testing.T) {
 		writeJSON(t, w, http.StatusOK, fixture(t, "roles/list.json"))
 	})
 
-	roles, _, err := client.Roles.List(context.Background(), &kibana.GetRoleOptions{ReplaceDeprecatedPrivileges: true})
+	roles, _, err := client.Roles.List(context.Background(), &kibana.ListRolesOptions{ReplaceDeprecatedPrivileges: true})
 	if err != nil {
 		t.Fatalf("List() error = %v", err)
 	}
-	if len(roles) == 0 {
-		t.Fatal("List() returned no roles")
-	}
+	var names []string
 	for _, r := range roles {
-		if r.Name == "" {
-			t.Errorf("role without name: %+v", r)
-		}
+		names = append(names, r.Name)
+	}
+	if want := []string{"editor", "my_kibana_role", "viewer"}; !reflect.DeepEqual(names, want) {
+		t.Fatalf("role names = %v, want %v", names, want)
+	}
+	editor := roles[0]
+	if editor.Metadata["_reserved"] != true {
+		t.Errorf("editor Metadata = %v, want _reserved=true", editor.Metadata)
+	}
+	wantKibana := []kibana.KibanaPrivilege{{Base: []string{"all"}, Feature: map[string][]string{}, Spaces: []string{"*"}}}
+	if !reflect.DeepEqual(editor.Kibana, wantKibana) {
+		t.Errorf("editor Kibana = %+v, want %+v", editor.Kibana, wantKibana)
+	}
+	if got := roles[1].Kibana[0].Feature["discover"]; !reflect.DeepEqual(got, []string{"all"}) {
+		t.Errorf("my_kibana_role discover privileges = %v, want [all]", got)
 	}
 }
 
@@ -159,9 +169,19 @@ func TestRolesService_invalidArguments(t *testing.T) {
 	_, checks["CreateOrUpdate empty name"] = client.Roles.CreateOrUpdate(ctx, "", &kibana.Role{}, nil)
 	_, checks["CreateOrUpdate nil"] = client.Roles.CreateOrUpdate(ctx, "r", nil, nil)
 	_, checks["Delete empty name"] = client.Roles.Delete(ctx, "")
+	_, checks["Delete dot-dot name"] = client.Roles.Delete(ctx, "..")
+	_, _, checks["Get dot name"] = client.Roles.Get(ctx, ".", nil)
+	// An empty Spaces list would make Kibana grant the privilege in every space.
+	_, checks["CreateOrUpdate privilege without spaces"] = client.Roles.CreateOrUpdate(ctx, "r", &kibana.Role{
+		Kibana: []kibana.KibanaPrivilege{{Base: []string{"read"}, Spaces: []string{}}},
+	}, nil)
 	for name, err := range checks {
 		if err == nil {
 			t.Errorf("%s: error = nil, want error", name)
+		}
+		var errResp *kibana.ErrorResponse
+		if errors.As(err, &errResp) {
+			t.Errorf("%s: request was sent: %v", name, err)
 		}
 	}
 }

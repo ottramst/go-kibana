@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"strings"
 
 	"github.com/google/go-querystring/query"
 )
@@ -20,12 +21,16 @@ func WithHeader(key, value string) RequestOption {
 	}
 }
 
-// WithQueryParam adds a query parameter to the request URL.
+// WithQueryParam adds a query parameter to the request URL. Existing query
+// parameters are kept as they are.
 func WithQueryParam(key, value string) RequestOption {
 	return func(req *http.Request) error {
-		q := req.URL.Query()
-		q.Add(key, value)
-		req.URL.RawQuery = q.Encode()
+		param := url.QueryEscape(key) + "=" + url.QueryEscape(value)
+		if req.URL.RawQuery == "" {
+			req.URL.RawQuery = param
+		} else {
+			req.URL.RawQuery += "&" + param
+		}
 		return nil
 	}
 }
@@ -55,11 +60,30 @@ func addQuery(path string, opt any) (string, error) {
 	return path + "?" + v.Encode(), nil
 }
 
-// requireID returns an error if a required path parameter is empty, so that
-// no request is sent to a different endpoint than intended.
+// requireID returns an error if a required path parameter is empty, "." or
+// "..", so that no request is sent to a different endpoint than intended.
 func requireID(name, value string) error {
-	if value == "" {
+	switch value {
+	case "":
 		return fmt.Errorf("kibana: %s must not be empty", name)
+	case ".", "..":
+		return fmt.Errorf("kibana: invalid %s %q", name, value)
 	}
 	return nil
+}
+
+// validEscapedPath reports whether p contains only characters that may
+// appear in an escaped URL path, so that escaped segments such as %2F are
+// kept as they are.
+func validEscapedPath(p string) bool {
+	for i := 0; i < len(p); i++ {
+		c := p[i]
+		switch {
+		case 'a' <= c && c <= 'z', 'A' <= c && c <= 'Z', '0' <= c && c <= '9':
+		case strings.IndexByte("-._~!$&'()*+,;=:@/%", c) >= 0:
+		default:
+			return false
+		}
+	}
+	return true
 }

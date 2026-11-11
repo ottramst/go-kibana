@@ -7,6 +7,7 @@ import (
 	"io"
 	"net/http"
 	"strings"
+	"unicode/utf8"
 )
 
 // Sentinel errors for common API failures. An [*ErrorResponse] matches the
@@ -23,8 +24,14 @@ var (
 	ErrConflict     = errors.New("kibana: conflict")
 )
 
-// maxErrorBodySize limits how much of an error response body is read.
-const maxErrorBodySize = 1 << 20
+const (
+	// maxErrorBodySize limits how much of an error response body is read.
+	maxErrorBodySize = 1 << 20
+
+	// maxTextMessageLength limits the message taken from a body that is not
+	// a Kibana error, such as the HTML error page of a proxy.
+	maxTextMessageLength = 512
+)
 
 // ErrorResponse is returned for API responses with a non-2xx status code.
 // Kibana error bodies look like:
@@ -96,12 +103,40 @@ func CheckResponse(r *http.Response) error {
 	data, err := io.ReadAll(io.LimitReader(r.Body, maxErrorBodySize))
 	if err == nil && len(data) > 0 {
 		errResp.Body = data
-		if json.Unmarshal(data, errResp) != nil {
-			// Not a JSON error body, e.g. a proxy error page.
-			errResp.Message = strings.TrimSpace(string(data))
-		}
+		parseErrorBody(errResp, data)
 	}
 	// The body's statusCode is informational; the HTTP status is authoritative.
 	errResp.StatusCode = r.StatusCode
 	return errResp
+}
+
+// parseErrorBody sets the fields of e from a Kibana error body. Fields of an
+// unexpected type are skipped. A body that is not a JSON object, such as the
+// error page of a proxy, becomes the message, shortened.
+func parseErrorBody(e *ErrorResponse, data []byte) {
+	var fields map[string]json.RawMessage
+	if json.Unmarshal(data, &fields) != nil {
+		e.Message = truncate(strings.TrimSpace(string(data)), maxTextMessageLength)
+		return
+	}
+	if v, ok := fields["message"]; ok {
+		_ = json.Unmarshal(v, &e.Message)
+	}
+	if v, ok := fields["error"]; ok {
+		_ = json.Unmarshal(v, &e.StatusText)
+	}
+	if v, ok := fields["attributes"]; ok {
+		e.Attributes = v
+	}
+}
+
+// truncate shortens s to at most n bytes without splitting a UTF-8 sequence.
+func truncate(s string, n int) string {
+	if len(s) <= n {
+		return s
+	}
+	for n > 0 && !utf8.RuneStart(s[n]) {
+		n--
+	}
+	return s[:n] + "…"
 }
