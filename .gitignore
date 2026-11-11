@@ -8,9 +8,6 @@
 *.prof
 coverage.txt
 
-# Downloaded OpenAPI specs (`make coverage`)
-.cache/
-
 # Editors and OS files
 .idea
 *.iml

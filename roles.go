@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net/http"
 )
 
@@ -125,8 +126,9 @@ type KibanaPrivilege struct {
 	Feature map[string][]string `json:"feature,omitempty"`
 
 	// Spaces lists the space IDs the privileges apply to, or "*" for all
-	// spaces.
-	Spaces []string `json:"spaces,omitempty"`
+	// spaces. Required: [RolesService.CreateOrUpdate] rejects an empty list,
+	// because Kibana would grant the privileges in all spaces.
+	Spaces []string `json:"spaces"`
 
 	// Reserved is read-only and lists reserved privileges.
 	Reserved []string `json:"_reserved,omitempty"`
@@ -141,7 +143,7 @@ type rolePayload struct {
 	Kibana        []KibanaPrivilege `json:"kibana,omitempty"`
 }
 
-func newRolePayload(r *Role) *rolePayload {
+func newRolePayload(r *Role) (*rolePayload, error) {
 	p := &rolePayload{
 		Description:   r.Description,
 		Metadata:      r.Metadata,
@@ -150,6 +152,9 @@ func newRolePayload(r *Role) *rolePayload {
 	if r.Kibana != nil {
 		p.Kibana = make([]KibanaPrivilege, len(r.Kibana))
 		for i, k := range r.Kibana {
+			if len(k.Spaces) == 0 {
+				return nil, fmt.Errorf("kibana: Kibana privilege %d has no spaces; use \"*\" for all spaces", i)
+			}
 			k.Reserved = nil
 			// base is required, and must be an empty list for feature privileges.
 			if k.Base == nil {
@@ -158,11 +163,17 @@ func newRolePayload(r *Role) *rolePayload {
 			p.Kibana[i] = k
 		}
 	}
-	return p
+	return p, nil
 }
 
-// GetRoleOptions are the options for [RolesService.Get] and
-// [RolesService.List].
+// ListRolesOptions are the options for [RolesService.List].
+type ListRolesOptions struct {
+	// ReplaceDeprecatedPrivileges replaces privileges of deprecated features
+	// with the privileges of the features that replace them.
+	ReplaceDeprecatedPrivileges bool `url:"replaceDeprecatedPrivileges,omitempty"`
+}
+
+// GetRoleOptions are the options for [RolesService.Get].
 type GetRoleOptions struct {
 	// ReplaceDeprecatedPrivileges replaces privileges of deprecated features
 	// with the privileges of the features that replace them.
@@ -173,7 +184,7 @@ type GetRoleOptions struct {
 //
 // Kibana API: GET /api/security/role
 // Kibana API docs: https://www.elastic.co/docs/api/doc/kibana/operation/operation-get-security-role
-func (s *RolesService) List(ctx context.Context, opt *GetRoleOptions, opts ...RequestOption) ([]*Role, *Response, error) {
+func (s *RolesService) List(ctx context.Context, opt *ListRolesOptions, opts ...RequestOption) ([]*Role, *Response, error) {
 	path, err := addQuery("/api/security/role", opt)
 	if err != nil {
 		return nil, nil, err
@@ -214,7 +225,8 @@ type CreateOrUpdateRoleOptions struct {
 }
 
 // CreateOrUpdate creates the role with the given name, or replaces it if it
-// exists. The read-only fields of role are ignored.
+// exists. The read-only fields of role are ignored. Every Kibana privilege
+// must list at least one space.
 //
 // Kibana API: PUT /api/security/role/{name}
 // Kibana API docs: https://www.elastic.co/docs/api/doc/kibana/operation/operation-put-security-role-name
@@ -225,12 +237,16 @@ func (s *RolesService) CreateOrUpdate(ctx context.Context, name string, role *Ro
 	if role == nil {
 		return nil, errors.New("kibana: role must not be nil")
 	}
+	payload, err := newRolePayload(role)
+	if err != nil {
+		return nil, err
+	}
 	path, err := addQuery(pathf("/api/security/role/%s", name), opt)
 	if err != nil {
 		return nil, err
 	}
 	// Kibana answers 204 No Content.
-	return s.client.do(ctx, http.MethodPut, path, newRolePayload(role), nil, opts)
+	return s.client.do(ctx, http.MethodPut, path, payload, nil, opts)
 }
 
 // Delete deletes the role with the given name.

@@ -14,7 +14,7 @@ test:
 
 # Needs a running Kibana: docker compose up -d --wait
 testacc:
-	KIBANA_ACC=1 go test -v -cover -timeout 30m ./...
+	KIBANA_ACC=1 go test -v -cover -timeout 15m ./...
 
 # Kibana OpenAPI specs that COVERAGE.md is generated from: the tested versions.
 KIBANA_SPEC_VERSIONS ?= v8.19.25 v9.5.6

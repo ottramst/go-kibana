@@ -8,8 +8,8 @@ BREAKING CHANGES:
   * Every service method takes a `context.Context` first.
   * Methods are named `List`, `Get`, `Create`, `Update` and `Delete`.
   * `RequestOptionFunc` is now `RequestOption`, `ClientOptionFunc` is now `ClientOption`, and the `String`/`Bool` pointer helpers are removed.
-* spaces: `Space` is used for reads and writes, and `CreateSpaceOptions`/`UpdateSpaceOptions` are removed ([#6](https://github.com/ottramst/go-kibana/issues/6))
-* roles: `KibanaPrivilege.Feature` is now `map[string][]string`, so it works with every Kibana feature, and the anonymous structs are replaced with named types. `CreateOrUpdate` returns only the response, because Kibana answers 204 No Content ([#7](https://github.com/ottramst/go-kibana/issues/7))
+* spaces: `Space` is used for reads and writes, and `CreateSpaceOptions`/`UpdateSpaceOptions` are removed. `Description`, `Initials` and `ImageURL` are always sent, so they can be cleared ([#6](https://github.com/ottramst/go-kibana/issues/6))
+* roles: `KibanaPrivilege.Feature` is now `map[string][]string`, so it works with every Kibana feature, and the anonymous structs are replaced with named types. `CreateOrUpdate` returns only the response, because Kibana answers 204 No Content. `CreateOrUpdate` rejects Kibana privileges without `Spaces`, which Kibana would otherwise grant in all spaces ([#7](https://github.com/ottramst/go-kibana/issues/7))
 
 FEATURES:
 
@@ -18,7 +18,7 @@ FEATURES:
 * `WithHTTPClient`, `WithUserAgent`, and the request options `WithHeader` and `WithQueryParam` ([#4](https://github.com/ottramst/go-kibana/issues/4))
 * `Client.NewRequest` and `Client.Do` can call endpoints that have no method yet ([#4](https://github.com/ottramst/go-kibana/issues/4))
 * spaces: `Space` now includes `Solution`, `ProjectRouting` (Kibana 9.5+), `Reserved` and `AuthorizedPurposes` ([#6](https://github.com/ottramst/go-kibana/issues/6))
-* roles: Added `description`, remote indices and remote cluster privileges, the `createOnly` option and the `replaceDeprecatedPrivileges` option ([#7](https://github.com/ottramst/go-kibana/issues/7))
+* roles: Added `description`, remote indices and remote cluster privileges, the `createOnly` option (`CreateOrUpdateRoleOptions`) and the `replaceDeprecatedPrivileges` option (`ListRolesOptions`, `GetRoleOptions`) ([#7](https://github.com/ottramst/go-kibana/issues/7))
 
 BUG FIXES:
 

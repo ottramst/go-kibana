@@ -37,6 +37,13 @@ func accClient(t *testing.T) *kibana.Client {
 	return client
 }
 
+// localStack reports whether the tests run against the local compose stack
+// (KIBANA_URL unset), where they may change shared state such as the default
+// space.
+func localStack() bool {
+	return os.Getenv("KIBANA_URL") == ""
+}
+
 func envOr(key, fallback string) string {
 	if v := os.Getenv(key); v != "" {
 		return v

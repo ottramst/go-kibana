@@ -45,4 +45,4 @@ jobs:
         env:
           TAG: ${{ github.ref_name }}
         # pkg.go.dev picks up the version from proxy.golang.org.
-        run: curl -fsS "https://proxy.golang.org/github.com/${GITHUB_REPOSITORY,,}/@v/${TAG}.info"
+        run: curl -fsS --retry 5 --retry-all-errors "https://proxy.golang.org/github.com/${GITHUB_REPOSITORY,,}/@v/${TAG}.info"
