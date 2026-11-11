@@ -3,9 +3,11 @@ package kibana_test
 import (
 	"context"
 	"errors"
+	"io"
 	"net/http"
 	"strings"
 	"testing"
+	"unicode/utf8"
 
 	"github.com/ottramst/go-kibana"
 )
@@ -29,6 +31,9 @@ func TestErrorResponse(t *testing.T) {
 		{name: "conflict", status: 409, body: `{"statusCode":409,"error":"Conflict","message":"A space with the identifier x already exists."}`,
 			sentinel: kibana.ErrConflict, wantMessage: "A space with the identifier x already exists.", wantText: "Conflict"},
 		{name: "plain text body", status: 502, body: "Bad Gateway\n", wantMessage: "Bad Gateway"},
+		{name: "unexpected field type", status: 400, body: `{"statusCode":400,"error":{"type":"x"},"message":"bad input"}`,
+			sentinel: kibana.ErrBadRequest, wantMessage: "bad input"},
+		{name: "JSON array body", status: 500, body: `["x"]`, wantMessage: `["x"]`},
 		{name: "empty body", status: 503},
 	}
 	for _, tt := range tests {
@@ -88,5 +93,29 @@ func TestCheckResponse_success(t *testing.T) {
 		if err := kibana.CheckResponse(&http.Response{StatusCode: code}); err != nil {
 			t.Errorf("CheckResponse(%d) = %v, want nil", code, err)
 		}
+	}
+}
+
+func TestErrorResponse_longTextBody(t *testing.T) {
+	mux, client := setup(t)
+	body := "<html>" + strings.Repeat("é", 2000) + "</html>"
+	mux.HandleFunc("GET /api/spaces/space/x", func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusBadGateway)
+		_, _ = io.WriteString(w, body)
+	})
+
+	_, _, err := client.Spaces.Get(context.Background(), "x")
+	var errResp *kibana.ErrorResponse
+	if !errors.As(err, &errResp) {
+		t.Fatalf("error = %v, want *kibana.ErrorResponse", err)
+	}
+	if len(errResp.Message) > 520 || !strings.HasPrefix(errResp.Message, "<html>") {
+		t.Errorf("Message is %d bytes, want a truncated prefix of the body", len(errResp.Message))
+	}
+	if !utf8.ValidString(errResp.Message) {
+		t.Error("Message is not valid UTF-8 after truncation")
+	}
+	if string(errResp.Body) != body {
+		t.Error("Body was truncated, want the full body")
 	}
 }
