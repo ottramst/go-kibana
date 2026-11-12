@@ -6,7 +6,7 @@ Endpoints of the official Kibana OpenAPI specs (v8.19.25, v9.5.6) and the go-kib
 
 Endpoint data comes from the [Kibana OpenAPI specification](https://github.com/elastic/kibana/tree/main/oas_docs) by Elastic, licensed under [CC BY-NC-ND 4.0](https://creativecommons.org/licenses/by-nc-nd/4.0/).
 
-**12 of 726 endpoints implemented.**
+**17 of 726 endpoints implemented.**
 
 | Area | Implemented |
 |---|---|
@@ -62,7 +62,7 @@ Endpoint data comes from the [Kibana OpenAPI specification](https://github.com/e
 | [short url](#short-url) | 0 / 4 |
 | [significant_events](#significant_events) | 0 / 5 |
 | [slo](#slo) | 0 / 13 |
-| [spaces](#spaces) | 5 / 10 |
+| [spaces](#spaces) | 10 / 10 |
 | [streams](#streams) | 0 / 18 |
 | [synthetics](#synthetics) | 0 / 18 |
 | [system](#system) | 0 / 2 |
@@ -966,11 +966,11 @@ Endpoint data comes from the [Kibana OpenAPI specification](https://github.com/e
 
 | Method | Path | v8.19.25 | v9.5.6 | go-kibana | Notes |
 |---|---|:-:|:-:|---|---|
-| POST | `/api/spaces/_copy_saved_objects` | ✅ | ✅ |  |  |
-| POST | `/api/spaces/_disable_legacy_url_aliases` | ✅ | ✅ |  |  |
-| POST | `/api/spaces/_get_shareable_references` | ✅ | ✅ |  |  |
-| POST | `/api/spaces/_resolve_copy_saved_objects_errors` | ✅ | ✅ |  |  |
-| POST | `/api/spaces/_update_objects_spaces` | ✅ | ✅ |  |  |
+| POST | `/api/spaces/_copy_saved_objects` | ✅ | ✅ | `SpacesService.CopySavedObjects` |  |
+| POST | `/api/spaces/_disable_legacy_url_aliases` | ✅ | ✅ | `SpacesService.DisableLegacyURLAliases` |  |
+| POST | `/api/spaces/_get_shareable_references` | ✅ | ✅ | `SpacesService.GetShareableReferences` |  |
+| POST | `/api/spaces/_resolve_copy_saved_objects_errors` | ✅ | ✅ | `SpacesService.ResolveCopySavedObjectsErrors` |  |
+| POST | `/api/spaces/_update_objects_spaces` | ✅ | ✅ | `SpacesService.UpdateObjectsSpaces` |  |
 | GET | `/api/spaces/space` | ✅ | ✅ | `SpacesService.List` |  |
 | POST | `/api/spaces/space` | ✅ | ✅ | `SpacesService.Create` |  |
 | GET | `/api/spaces/space/{id}` | ✅ | ✅ | `SpacesService.Get` |  |

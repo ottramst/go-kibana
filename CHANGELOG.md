@@ -2,6 +2,9 @@
 
 FEATURES:
 
+* spaces: `CopySavedObjects` and `ResolveCopySavedObjectsErrors` copy saved objects between spaces and resolve copy conflicts; per-object errors are reported in the result ([#12](https://github.com/ottramst/go-kibana/issues/12))
+* spaces: `DisableLegacyURLAliases` ([#13](https://github.com/ottramst/go-kibana/issues/13))
+* spaces: `GetShareableReferences` and `UpdateObjectsSpaces` share saved objects between spaces ([#14](https://github.com/ottramst/go-kibana/issues/14))
 * roles: `Query` returns a page of roles, and `QueryAll` iterates over all matching roles (`iter.Seq2`) ([#16](https://github.com/ottramst/go-kibana/issues/16))
 * roles: `BulkCreateOrUpdate` creates or updates several roles in one request; per-role errors are reported in the result ([#17](https://github.com/ottramst/go-kibana/issues/17))
 * New `UserSessions` service: `Invalidate` invalidates user sessions ([#18](https://github.com/ottramst/go-kibana/issues/18))

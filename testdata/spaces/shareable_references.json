@@ -1,0 +1,29 @@
+{
+  "objects": [
+    {
+      "type": "index-pattern",
+      "id": "probe-ip1",
+      "spaces": [
+        "probe-src"
+      ],
+      "inboundReferences": [],
+      "spacesWithMatchingOrigins": [
+        "probe-dst",
+        "probe-nope"
+      ]
+    },
+    {
+      "type": "index-pattern",
+      "id": "probe-nope",
+      "spaces": [],
+      "inboundReferences": [],
+      "isMissing": true
+    },
+    {
+      "type": "visualization",
+      "id": "probe-vis1",
+      "spaces": [],
+      "inboundReferences": []
+    }
+  ]
+}

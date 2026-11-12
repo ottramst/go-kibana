@@ -1,0 +1,19 @@
+{
+  "probe-dst": {
+    "success": true,
+    "successCount": 1,
+    "successResults": [
+      {
+        "type": "index-pattern",
+        "id": "probe-ip1",
+        "meta": {
+          "title": "logs-*",
+          "icon": "indexPatternApp"
+        },
+        "overwrite": true,
+        "destinationId": "9b2ff723-07fa-4e02-a0e6-c1174fb61a76",
+        "managed": false
+      }
+    ]
+  }
+}

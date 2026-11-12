@@ -63,7 +63,7 @@ The stack runs with security enabled and a trial license, on ports bound to 127.
 - `ErrorResponse{StatusCode, StatusText (the "error" field), Message, Attributes, Body}`. `Is()` maps 400/401/403/404/409 to `ErrBadRequest`/`ErrUnauthorized`/`ErrForbidden`/`ErrNotFound`/`ErrConflict`. Fields of unexpected types are skipped. Bodies that are not a JSON object, such as proxy pages, become `Message`, cut to 512 bytes; `Body` keeps the whole body (up to 1 MiB).
 
 **Service conventions** (`spaces.go` is the template):
-- Method names: `List`, `Get`, `Create`, `Update`, `Delete`. Other operations are named after the endpoint, e.g. `Query`.
+- Method names: `List`, `Get`, `Create`, `Update`, `Delete`. Other operations are named after the endpoint, e.g. `CopySavedObjects` or `Query`.
 - Signatures: `(ctx, ids..., body/options, ...RequestOption) (*T, *Response, error)`, or `(*Response, error)` when Kibana returns no body.
 - Every method's doc comment ends with two lines that `tools/coverage` parses:
   ```go
@@ -74,7 +74,7 @@ The stack runs with security enabled and a trial license, on ports bound to 127.
 - Prefer one type for reads and writes, so read → modify → write works, and strip read-only fields in an unexported conversion: `Space.writable()`, `newRolePayload()`. Never mutate the caller's value.
 - Fields use plain values. Use `omitempty` only where Kibana rejects the empty value (e.g. `Space.Color`) or the field must not be sent; otherwise send it, so that `""` clears it: Kibana's PUT endpoints keep fields that are left out (see the Spaces quirks). Use pointers only when the zero value means something different from "not set". There are no `String()`/`Bool()` helpers; Go 1.26 has `new(expr)`.
 - Reject inputs that Kibana would silently widen, such as a role privilege without spaces.
-- Options structs (`ListSpacesOptions`, `CreateOrUpdateRoleOptions`) hold query parameters, are pointers, and may be nil.
+- Options structs (`ListSpacesOptions`, `CreateOrUpdateRoleOptions`) hold query parameters, are pointers, and may be nil. Request bodies that are not a domain object (such as `Space` or `Role`) use a `…Request` struct (e.g. `CopySavedObjectsRequest`).
 - Paginated endpoints get an iterator variant returning `iter.Seq2[*T, error]` (e.g. `RolesService.QueryAll`) next to the single-page method, built on the internal offset paginator `paginate` (`pagination.go`): lazy, restartable, yields an error once and stops, and stops on an empty page.
 - Deprecated endpoints (saved objects CRUD/bulk/find) get a `// Deprecated:` paragraph naming the replacement.
 
@@ -88,6 +88,16 @@ The stack runs with security enabled and a trial license, on ports bound to 127.
   - PUT returns 200 with the space. Text fields left out keep their value, `disabledFeatures` left out becomes `[]`. DELETE returns 204 and deletes the space's saved objects.
   - Conflicts are 409.
   - The list's `authorizedPurposes` also contains `findSavedObjects`, which is not in the spec's purpose enum.
+- Spaces saved-object operations (copy, resolve, sharing; verified on 8.19.25 and 9.5.6, which return the same shapes; the specs have no response schemas, only examples):
+  - The source space is the request's space (`/s/{space}`), i.e. `client.InSpace(src)`.
+  - `createNewCopies` defaults to **true**. `overwrite: true` without `createNewCopies: false` is a 400 on copy ("cannot use [overwrite] with [createNewCopies]"), but on resolve Kibana silently ignores `overwrite` and creates a new copy. The client rejects both combinations.
+  - Copying into a space that does not exist **succeeds** and writes objects into it. Nothing checks target spaces.
+  - Copies of shareable types (e.g. `index-pattern`) get a new `destinationId` even with `createNewCopies: false`; copying again reports a `conflict` with that `destinationId`.
+  - Copy and resolve return 200 when objects fail: `{"<space>": {success, successCount, successResults[], errors[]}}`. An `errors[]` item is an object error (`{type, id, meta, error: {type, destinationId?, destinations?, references?}}`) or, for a failure of the whole space, a Boom payload whose `error` is a string. A missing source object fails the whole request with a 404 whose `attributes.objects` lists it.
+  - Resolve `retries` must list every object to copy into a space, including the ones copied before.
+  - `_disable_legacy_url_aliases` returns 204, also for aliases that don't exist; an empty `aliases` list is a 403.
+  - `_update_objects_spaces` rejects `null` lists (400) and both lists empty (400). Per-object failures are `objects[].error` (`{statusCode, error, message}`). Removing an object from all its spaces deletes it.
+  - `_get_shareable_references` adds `isMissing`, `spacesWithMatchingOrigins` and `spacesWithMatchingAliases` (not in the spec). Objects of types that can't be shared report `spaces: []`.
 - Roles:
   - `PUT /api/security/role/{name}` returns **204** with an empty body. The pre-redesign client failed on this.
   - The PUT body only accepts `description`, `metadata`, `elasticsearch` (required) and `kibana`.
@@ -105,7 +115,7 @@ The stack runs with security enabled and a trial license, on ports bound to 127.
   - Saved objects operationIds differ between the specs.
   - `/api/tags` only exists in 9.5+ (experimental). Data views v2 is 9.6+.
 - Planned endpoints (see the sub-issues):
-  - Saved objects import (multipart) and copy-to-space return 200 even when objects fail; check `success` and `errors[]`.
+  - Saved objects import (multipart) returns 200 even when objects fail; check `success` and `errors[]`.
   - Export is ndjson that ends with a summary line.
   - `_find` sends `has_reference` as JSON inside the query string, and `type` as a repeated parameter.
   - `_rotate_key` needs `xpack.encryptedSavedObjects.keyRotation.decryptionOnlyKeys`, otherwise 400, and returns 429 while a rotation runs.
@@ -158,3 +168,4 @@ GitHub Actions workflows in `.github/workflows/`:
 - Pull request titles follow Conventional Commits (`feat(spaces): ...`, `fix(roles)!: ...`). PRs are squash-merged and reference their issue (`Closes #N`).
 - Keep the library to the standard library plus go-querystring. Tooling dependencies belong in `tools/`.
 - Record newly discovered Kibana API quirks in the "Kibana API quirks" section above.
+- Every pull request, including Dependabot and release pull requests, gets an independent review by the `pr-reviewer` subagent (`.claude/agents/pr-reviewer.md`) before it is merged. Spawn it with the PR number and the PR's purpose only, not your own conclusions, so the review is independent. Fix confirmed findings on the PR branch, and have the fix commits reviewed again before merging.
