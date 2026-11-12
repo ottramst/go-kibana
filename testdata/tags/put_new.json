@@ -1,0 +1,13 @@
+{
+  "id": "probe-new-id",
+  "data": {
+    "name": "probe-tag-new",
+    "color": "#fbf1ce"
+  },
+  "meta": {
+    "created_at": "2026-11-12T16:43:39.946Z",
+    "managed": false,
+    "updated_at": "2026-11-12T16:43:39.946Z",
+    "version": "WzIxLDFd"
+  }
+}

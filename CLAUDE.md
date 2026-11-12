@@ -120,6 +120,11 @@ The stack runs with security enabled and a trial license, on ports bound to 127.
   - `_find` sends `has_reference` as JSON inside the query string, and `type` as a repeated parameter.
   - `_rotate_key` needs `xpack.encryptedSavedObjects.keyRotation.decryptionOnlyKeys`, otherwise 400, and returns 429 while a rotation runs.
 
+- Tags (`/api/tags`, 9.5.6; 8.19.25 answers 404 on every tag route):
+  - Responses are `{id, data: {name, description?, color}, meta: {created_at, updated_at, managed, version}}`; `Tag` flattens `data`. Lists are `{data, meta: {page, per_page, total}}`; `per_page` defaults to 20, at most 1000.
+  - Create and update bodies only accept `name`, `description` and `color` (`additionalProperties: false`). `color: ""` is a 400; a missing color gets a **random** color, also on PUT, so `Color` is `omitempty` and updates must send it.
+  - PUT replaces every field (a missing `description` clears it) and is an upsert: 200 when it updated, 201 when it created the tag with that ID. Its response leaves out `created_at`. There is no optimistic concurrency: `meta.version` cannot be sent.
+  - POST answers 201. Duplicate names in a space are 409. DELETE answers 204. Tags belong to a space (404 from another one).
 - User sessions: `POST /api/security/session/_invalidate` needs a superuser (403 otherwise) and returns `{total}`. `match: "query"` requires `query.provider.type`, and `match: "all"` with a `query` is a 400. Sessions only exist for interactive logins, so API key or basic auth requests create none.
 - Platform (same shapes on 8.19.25 and 9.5.6):
   - `GET /api/status` answers 503 with the full status body only when a **core** service (Elasticsearch, saved objects) is unavailable or critical. A degraded Kibana, or one with unavailable plugins, answers 200. `Status.Get` returns the decoded status together with the 503 `*ErrorResponse`. A 503 without a status body (e.g. from a proxy) returns only the error.
@@ -151,7 +156,7 @@ The stack runs with security enabled and a trial license, on ports bound to 127.
   - Name objects with `randName(t, "acc")` and remove them in `cleanup(t, ...)`, which runs with a non-canceled context.
   - Changes to shared state, such as writing the default space, only run when `localStack()` (`KIBANA_URL` unset, i.e. the compose stack).
   - Each test runs a full lifecycle: create, conflict, get, read-modify-write update, list, delete, then get returning `ErrNotFound`.
-  - Gate version-specific endpoints on `client.Status.Get` (`Version.Number`).
+  - Gate version-specific endpoints with `skipBelow(t, client, "9.5.0")`, built on `Status.Get`. It fails when the version is hidden (no `monitor` privilege) instead of skipping.
 - `example_test.go` holds compile-only `Example*` functions (no `// Output:`), shown on pkg.go.dev.
 
 ## CI

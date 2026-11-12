@@ -1,0 +1,5 @@
+{
+  "statusCode": 400,
+  "error": "Bad Request",
+  "message": "[request body.color]: value has length [0] but it must have a minimum length of [1]."
+}
