@@ -41,6 +41,14 @@ type TagMeta struct {
 	CreatedAt time.Time `json:"created_at,omitzero"`
 	UpdatedAt time.Time `json:"updated_at,omitzero"`
 
+	// CreatedBy and UpdatedBy are user profile IDs. They are empty for
+	// tags written with basic auth, which has no user profile.
+	CreatedBy string `json:"created_by,omitempty"`
+	UpdatedBy string `json:"updated_by,omitempty"`
+
+	// Owner is the user profile ID of the tag's owner, if any.
+	Owner string `json:"owner,omitempty"`
+
 	// Managed tags are managed by Kibana or an integration.
 	Managed bool `json:"managed"`
 

@@ -11,11 +11,7 @@ import (
 
 func TestAccTags_unsupported(t *testing.T) {
 	client := accClient(t)
-	status, _, err := client.Status.Get(t.Context())
-	if err != nil {
-		t.Fatalf("Status.Get() error = %v", err)
-	}
-	if compareVersions(status.Version.Number, "9.5.0") >= 0 {
+	if compareVersions(kibanaVersion(t, client), "9.5.0") >= 0 {
 		t.Skip("Kibana 9.5+ has the tags API")
 	}
 	if _, _, err := client.Tags.List(t.Context(), nil); !errors.Is(err, kibana.ErrNotFound) {

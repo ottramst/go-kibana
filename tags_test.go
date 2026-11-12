@@ -339,3 +339,16 @@ func TestTag_roundTrip(t *testing.T) {
 		t.Errorf("round trip = %+v, want %+v", got, tag)
 	}
 }
+
+func TestTagMeta_users(t *testing.T) {
+	// The user fields are only set for users with a profile.
+	var tag kibana.Tag
+	data := `{"id":"t","data":{"name":"n","color":"#000000"},"meta":{"created_by":"u_1","updated_by":"u_2","owner":"u_1","managed":true}}`
+	if err := json.Unmarshal([]byte(data), &tag); err != nil {
+		t.Fatalf("Unmarshal() error = %v", err)
+	}
+	want := kibana.TagMeta{CreatedBy: "u_1", UpdatedBy: "u_2", Owner: "u_1", Managed: true}
+	if tag.Meta != want {
+		t.Errorf("Meta = %+v, want %+v", tag.Meta, want)
+	}
+}

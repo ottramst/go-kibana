@@ -164,7 +164,7 @@ The stack runs with security enabled and a trial license, on ports bound to 127.
   - Name objects with `randName(t, "acc")` and remove them in `cleanup(t, ...)`, which runs with a non-canceled context.
   - Changes to shared state, such as writing the default space, only run when `localStack()` (`KIBANA_URL` unset, i.e. the compose stack).
   - Each test runs a full lifecycle: create, conflict, get, read-modify-write update, list, delete, then get returning `ErrNotFound`.
-  - Gate version-specific endpoints with `skipBelow(t, client, "9.5.0")`, built on `Status.Get`. It fails when the version is hidden (no `monitor` privilege) instead of skipping.
+  - Gate version-specific endpoints with `skipBelow(t, client, "9.5.0")`, or compare `kibanaVersion(t, client)` with `compareVersions`. Both use `Status.Get` and fail when the version is hidden (no `monitor` privilege) instead of skipping.
 - `example_test.go` holds compile-only `Example*` functions (no `// Output:`), shown on pkg.go.dev.
 
 ## CI

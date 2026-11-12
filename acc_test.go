@@ -66,9 +66,9 @@ func randName(t *testing.T, prefix string) string {
 	return prefix + "-" + hex.EncodeToString(b)
 }
 
-// skipBelow skips the test if the acceptance test Kibana is older than
-// version minVersion, such as "9.5.0".
-func skipBelow(t *testing.T, client *kibana.Client, minVersion string) {
+// kibanaVersion returns the version of the acceptance test Kibana, such as
+// "9.5.6".
+func kibanaVersion(t *testing.T, client *kibana.Client) string {
 	t.Helper()
 	status, _, err := client.Status.Get(t.Context())
 	if err != nil {
@@ -79,13 +79,15 @@ func skipBelow(t *testing.T, client *kibana.Client, minVersion string) {
 	if status.Version.Number == "" {
 		t.Fatal("Status.Get() returned no version; the test user needs the monitor cluster privilege")
 	}
-	// Kibana 9.5+ hides the version from users without the monitor cluster
-	// privilege.
-	if status.Version.Number == "" {
-		t.Fatal("Status.Get() returned no version; the test user needs the monitor cluster privilege")
-	}
-	if compareVersions(status.Version.Number, minVersion) < 0 {
-		t.Skipf("needs Kibana %s or later, got %s", minVersion, status.Version.Number)
+	return status.Version.Number
+}
+
+// skipBelow skips the test if the acceptance test Kibana is older than
+// version minVersion, such as "9.5.0".
+func skipBelow(t *testing.T, client *kibana.Client, minVersion string) {
+	t.Helper()
+	if v := kibanaVersion(t, client); compareVersions(v, minVersion) < 0 {
+		t.Skipf("needs Kibana %s or later, got %s", minVersion, v)
 	}
 }
 
