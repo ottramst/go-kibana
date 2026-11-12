@@ -77,19 +77,23 @@ func (e *ErrorResponse) Error() string {
 // Is reports whether target is the sentinel error for the response's status
 // code, such as [ErrNotFound] for 404 Not Found.
 func (e *ErrorResponse) Is(target error) bool {
-	switch target {
-	case ErrBadRequest:
-		return e.StatusCode == http.StatusBadRequest
-	case ErrUnauthorized:
-		return e.StatusCode == http.StatusUnauthorized
-	case ErrForbidden:
-		return e.StatusCode == http.StatusForbidden
-	case ErrNotFound:
-		return e.StatusCode == http.StatusNotFound
-	case ErrConflict:
-		return e.StatusCode == http.StatusConflict
-	}
-	return false
+	return statusIs(e.StatusCode, target)
+}
+
+// sentinelStatus maps the sentinel errors to their HTTP status codes.
+var sentinelStatus = map[error]int{
+	ErrBadRequest:   http.StatusBadRequest,
+	ErrUnauthorized: http.StatusUnauthorized,
+	ErrForbidden:    http.StatusForbidden,
+	ErrNotFound:     http.StatusNotFound,
+	ErrConflict:     http.StatusConflict,
+}
+
+// statusIs reports whether target is the sentinel error for the HTTP status
+// code.
+func statusIs(code int, target error) bool {
+	status, ok := sentinelStatus[target]
+	return ok && status == code
 }
 
 // CheckResponse returns an [*ErrorResponse] if the response has a non-2xx

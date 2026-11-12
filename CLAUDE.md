@@ -63,7 +63,7 @@ The stack runs with security enabled and a trial license, on ports bound to 127.
 - `ErrorResponse{StatusCode, StatusText (the "error" field), Message, Attributes, Body}`. `Is()` maps 400/401/403/404/409 to `ErrBadRequest`/`ErrUnauthorized`/`ErrForbidden`/`ErrNotFound`/`ErrConflict`. Fields of unexpected types are skipped. Bodies that are not a JSON object, such as proxy pages, become `Message`, cut to 512 bytes; `Body` keeps the whole body (up to 1 MiB).
 
 **Service conventions** (`spaces.go` is the template):
-- Method names: `List`, `Get`, `Create`, `Update`, `Delete`. Other operations will be named after the endpoint; the planned ones include `CopySavedObjects` (#12) and `Query`/`QueryAll` (#16).
+- Method names: `List`, `Get`, `Create`, `Update`, `Delete`. Other operations are named after the endpoint, e.g. `CopySavedObjects`.
 - Signatures: `(ctx, ids..., body/options, ...RequestOption) (*T, *Response, error)`, or `(*Response, error)` when Kibana returns no body.
 - Every method's doc comment ends with two lines that `tools/coverage` parses:
   ```go

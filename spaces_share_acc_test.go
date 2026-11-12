@@ -64,18 +64,24 @@ func TestAccSpacesSavedObjects(t *testing.T) {
 	if err != nil {
 		t.Fatalf("UpdateObjectsSpaces(add) error = %v", err)
 	}
-	if len(updated) != 2 || !slices.Contains(updated[0].Spaces, shared) || updated[0].Error != nil {
+	if len(updated) != 2 {
+		t.Fatalf("UpdateObjectsSpaces(add) returned %d objects, want 2", len(updated))
+	}
+	if !slices.Contains(updated[0].Spaces, shared) || updated[0].Error != nil {
 		t.Errorf("UpdateObjectsSpaces(add)[0] = %+v, want it in %s", updated[0], shared)
 	}
-	if len(updated) == 2 && (updated[1].Error == nil || updated[1].Error.StatusCode != 404) {
-		t.Errorf("UpdateObjectsSpaces(add)[1].Error = %+v, want a 404", updated[1].Error)
+	if !errors.Is(updated[1].Error, kibana.ErrNotFound) {
+		t.Errorf("UpdateObjectsSpaces(add)[1].Error = %v, want ErrNotFound", updated[1].Error)
 	}
 	refs, _, err := srcClient.Spaces.GetShareableReferences(ctx, []kibana.SavedObjectRef{ip, missing})
 	if err != nil {
 		t.Fatalf("GetShareableReferences() error = %v", err)
 	}
-	if len(refs) != 2 || !slices.Contains(refs[0].Spaces, src) || !slices.Contains(refs[0].Spaces, shared) || !refs[1].IsMissing {
-		t.Errorf("GetShareableReferences() = %+v, %+v; want the object in both spaces and the missing one marked", refs[0], refs[len(refs)-1])
+	if len(refs) != 2 {
+		t.Fatalf("GetShareableReferences() returned %d objects, want 2", len(refs))
+	}
+	if !slices.Contains(refs[0].Spaces, src) || !slices.Contains(refs[0].Spaces, shared) || !refs[1].IsMissing {
+		t.Errorf("GetShareableReferences() = %+v, %+v; want the object in both spaces and the missing one marked", refs[0], refs[1])
 	}
 	if _, _, err := srcClient.Spaces.UpdateObjectsSpaces(ctx, &kibana.UpdateObjectsSpacesRequest{
 		Objects: []kibana.SavedObjectRef{ip}, SpacesToRemove: []string{shared},

@@ -147,6 +147,10 @@ type CopySavedObjectsError struct {
 	Meta  SavedObjectMeta `json:"meta"`
 	Error *CopyErrorDetail
 
+	// Overwrite is true if the object would have overwritten an existing
+	// object.
+	Overwrite bool `json:"overwrite,omitempty"`
+
 	StatusCode int    `json:"statusCode,omitempty"`
 	StatusText string `json:"-"`
 	Message    string `json:"message,omitempty"`
@@ -188,6 +192,10 @@ type CopyErrorDetail struct {
 
 	// References lists the missing objects, for missing references.
 	References []SavedObjectRef `json:"references,omitempty"`
+
+	// StatusCode and Message describe unknown errors.
+	StatusCode int    `json:"statusCode,omitempty"`
+	Message    string `json:"message,omitempty"`
 }
 
 // CopyErrorDestination is one of the objects of an ambiguous conflict.

@@ -2,6 +2,7 @@ package kibana_test
 
 import (
 	"context"
+	"errors"
 	"net/http"
 	"reflect"
 	"testing"
@@ -59,6 +60,9 @@ func TestSpacesService_UpdateObjectsSpaces(t *testing.T) {
 	if req.SpacesToRemove != nil {
 		t.Error("UpdateObjectsSpaces() modified the caller's request")
 	}
+	if len(got) != 2 {
+		t.Fatalf("UpdateObjectsSpaces() returned %d objects, want 2", len(got))
+	}
 	want := []*kibana.ObjectSpaces{
 		{Type: "index-pattern", ID: "probe-ip2", Spaces: []string{"probe-dst", "probe-src"}},
 		{Type: "index-pattern", ID: "probe-nope", Spaces: []string{}, Error: &kibana.ObjectError{
@@ -70,6 +74,9 @@ func TestSpacesService_UpdateObjectsSpaces(t *testing.T) {
 	}
 	if msg := got[1].Error.Error(); msg != "kibana: 404 Saved object [index-pattern/probe-nope] not found" {
 		t.Errorf("Error() = %q", msg)
+	}
+	if !errors.Is(got[1].Error, kibana.ErrNotFound) || errors.Is(got[1].Error, kibana.ErrConflict) {
+		t.Error("errors.Is(ObjectError) does not match the status code")
 	}
 }
 
