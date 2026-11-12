@@ -1,0 +1,5 @@
+{
+  "statusCode": 400,
+  "error": "Bad Request",
+  "message": "Can't specify both \"types\" and \"objects\" properties when exporting"
+}

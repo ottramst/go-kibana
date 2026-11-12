@@ -2,7 +2,6 @@ package kibana
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
@@ -83,127 +82,48 @@ type CopyRetry struct {
 }
 
 // CopySavedObjectsResult is the result of copying saved objects into one
-// space.
-type CopySavedObjectsResult struct {
-	// Success is true if all objects were copied.
-	Success bool `json:"success"`
-
-	SuccessCount   int                       `json:"successCount"`
-	SuccessResults []CopySavedObjectsSuccess `json:"successResults,omitempty"`
-	Errors         []CopySavedObjectsError   `json:"errors,omitempty"`
-}
+// space. Kibana copies objects between spaces by importing them, so it has
+// the same form as the result of an import.
+//
+// Deprecated: Use [ImportSavedObjectsResult].
+type CopySavedObjectsResult = ImportSavedObjectsResult
 
 // CopySavedObjectsSuccess is an object that was copied.
-type CopySavedObjectsSuccess struct {
-	Type string          `json:"type"`
-	ID   string          `json:"id"`
-	Meta SavedObjectMeta `json:"meta"`
-
-	// DestinationID is the ID of the copy. Copies of objects that can be
-	// shared between spaces get a new ID even without CreateNewCopies.
-	DestinationID string `json:"destinationId,omitempty"`
-
-	// Overwrite is true if the copy overwrote an existing object.
-	Overwrite bool `json:"overwrite,omitempty"`
-
-	Managed bool `json:"managed,omitempty"`
-}
+//
+// Deprecated: Use [ImportSuccess].
+type CopySavedObjectsSuccess = ImportSuccess
 
 // CopyErrorType is the type of a [CopyErrorDetail].
-type CopyErrorType string
+//
+// Deprecated: Use [ImportErrorType].
+type CopyErrorType = ImportErrorType
 
 // Types of copy errors.
+//
+// Deprecated: Use the ImportError constants, such as [ImportErrorConflict].
 const (
-	// CopyErrorConflict: an object with the same ID or origin exists in the
-	// target space. Retry with CopyRetry.Overwrite, or with
-	// CopyRetry.CreateNewCopy.
-	CopyErrorConflict CopyErrorType = "conflict"
-
-	// CopyErrorAmbiguousConflict: several objects in the target space
-	// conflict with the object. Retry with CopyRetry.Overwrite and the
-	// DestinationID of one of CopyErrorDetail.Destinations.
-	CopyErrorAmbiguousConflict CopyErrorType = "ambiguous_conflict"
-
-	// CopyErrorMissingReferences: objects the object references do not
-	// exist. Retry with CopyRetry.IgnoreMissingReferences.
-	CopyErrorMissingReferences CopyErrorType = "missing_references"
-
-	// CopyErrorUnsupportedType: objects of the type cannot be copied.
-	CopyErrorUnsupportedType CopyErrorType = "unsupported_type"
-
-	// CopyErrorUnknown: any other error.
-	CopyErrorUnknown CopyErrorType = "unknown"
+	CopyErrorConflict          = ImportErrorConflict
+	CopyErrorAmbiguousConflict = ImportErrorAmbiguousConflict
+	CopyErrorMissingReferences = ImportErrorMissingReferences
+	CopyErrorUnsupportedType   = ImportErrorUnsupportedType
+	CopyErrorUnknown           = ImportErrorUnknown
 )
 
 // CopySavedObjectsError is an object that was not copied, or an error that
 // stopped the copy into a space.
 //
-// For an object, Type, ID, Meta and Error are set. When the copy into the
-// whole space failed, only StatusCode, StatusText and Message are set.
-type CopySavedObjectsError struct {
-	Type  string          `json:"type,omitempty"`
-	ID    string          `json:"id,omitempty"`
-	Title string          `json:"title,omitempty"`
-	Meta  SavedObjectMeta `json:"meta"`
-	Error *CopyErrorDetail
-
-	// Overwrite is true if the object would have overwritten an existing
-	// object.
-	Overwrite bool `json:"overwrite,omitempty"`
-
-	StatusCode int    `json:"statusCode,omitempty"`
-	StatusText string `json:"-"`
-	Message    string `json:"message,omitempty"`
-}
-
-// UnmarshalJSON decodes both shapes of copy errors: the "error" field is an
-// object for an object's error, and a string (the HTTP status text) for a
-// failure of the whole space.
-func (e *CopySavedObjectsError) UnmarshalJSON(data []byte) error {
-	type plain CopySavedObjectsError
-	var raw struct {
-		plain
-		Error json.RawMessage `json:"error"`
-	}
-	if err := json.Unmarshal(data, &raw); err != nil {
-		return err
-	}
-	*e = CopySavedObjectsError(raw.plain)
-	switch {
-	case len(raw.Error) == 0 || string(raw.Error) == "null":
-	case raw.Error[0] == '"':
-		return json.Unmarshal(raw.Error, &e.StatusText)
-	default:
-		e.Error = new(CopyErrorDetail)
-		return json.Unmarshal(raw.Error, e.Error)
-	}
-	return nil
-}
+// Deprecated: Use [ImportError].
+type CopySavedObjectsError = ImportError
 
 // CopyErrorDetail describes why an object was not copied.
-type CopyErrorDetail struct {
-	Type CopyErrorType `json:"type"`
-
-	// DestinationID is the ID of the conflicting object, for conflicts.
-	DestinationID string `json:"destinationId,omitempty"`
-
-	// Destinations lists the conflicting objects, for ambiguous conflicts.
-	Destinations []CopyErrorDestination `json:"destinations,omitempty"`
-
-	// References lists the missing objects, for missing references.
-	References []SavedObjectRef `json:"references,omitempty"`
-
-	// StatusCode and Message describe unknown errors.
-	StatusCode int    `json:"statusCode,omitempty"`
-	Message    string `json:"message,omitempty"`
-}
+//
+// Deprecated: Use [ImportErrorDetail].
+type CopyErrorDetail = ImportErrorDetail
 
 // CopyErrorDestination is one of the objects of an ambiguous conflict.
-type CopyErrorDestination struct {
-	ID        string `json:"id"`
-	Title     string `json:"title,omitempty"`
-	UpdatedAt string `json:"updatedAt,omitempty"`
-}
+//
+// Deprecated: Use [ImportErrorDestination].
+type CopyErrorDestination = ImportErrorDestination
 
 // validateCopyModes returns an error for option combinations Kibana rejects
 // or silently ignores.
@@ -219,13 +139,13 @@ func validateCopyModes(overwrite, compatibilityMode bool, createNewCopies *bool)
 //
 // The result maps each target space to the outcome of the copy into it.
 // Objects that could not be copied, for example because of conflicts, are
-// reported in [CopySavedObjectsResult.Errors]; the call itself still
+// reported in [ImportSavedObjectsResult.Errors]; the call itself still
 // succeeds. Retry them with [SpacesService.ResolveCopySavedObjectsErrors].
 // The call fails with [ErrNotFound] if one of the objects does not exist.
 //
 // Kibana API: POST /api/spaces/_copy_saved_objects
 // Kibana API docs: https://www.elastic.co/docs/api/doc/kibana/operation/operation-post-spaces-copy-saved-objects
-func (s *SpacesService) CopySavedObjects(ctx context.Context, req *CopySavedObjectsRequest, opts ...RequestOption) (map[string]*CopySavedObjectsResult, *Response, error) {
+func (s *SpacesService) CopySavedObjects(ctx context.Context, req *CopySavedObjectsRequest, opts ...RequestOption) (map[string]*ImportSavedObjectsResult, *Response, error) {
 	if req == nil {
 		return nil, nil, errors.New("kibana: request must not be nil")
 	}
@@ -243,7 +163,7 @@ func (s *SpacesService) CopySavedObjects(ctx context.Context, req *CopySavedObje
 	if err := validateCopyModes(req.Overwrite, req.CompatibilityMode, req.CreateNewCopies); err != nil {
 		return nil, nil, err
 	}
-	var result map[string]*CopySavedObjectsResult
+	var result map[string]*ImportSavedObjectsResult
 	resp, err := s.client.do(ctx, http.MethodPost, "/api/spaces/_copy_saved_objects", req, &result, opts)
 	if err != nil {
 		return nil, resp, err
@@ -260,7 +180,7 @@ func (s *SpacesService) CopySavedObjects(ctx context.Context, req *CopySavedObje
 //
 // Kibana API: POST /api/spaces/_resolve_copy_saved_objects_errors
 // Kibana API docs: https://www.elastic.co/docs/api/doc/kibana/operation/operation-post-spaces-resolve-copy-saved-objects-errors
-func (s *SpacesService) ResolveCopySavedObjectsErrors(ctx context.Context, req *ResolveCopySavedObjectsErrorsRequest, opts ...RequestOption) (map[string]*CopySavedObjectsResult, *Response, error) {
+func (s *SpacesService) ResolveCopySavedObjectsErrors(ctx context.Context, req *ResolveCopySavedObjectsErrorsRequest, opts ...RequestOption) (map[string]*ImportSavedObjectsResult, *Response, error) {
 	if req == nil {
 		return nil, nil, errors.New("kibana: request must not be nil")
 	}
@@ -287,7 +207,7 @@ func (s *SpacesService) ResolveCopySavedObjectsErrors(ctx context.Context, req *
 	if err := validateCopyModes(overwrite, req.CompatibilityMode, req.CreateNewCopies); err != nil {
 		return nil, nil, err
 	}
-	var result map[string]*CopySavedObjectsResult
+	var result map[string]*ImportSavedObjectsResult
 	resp, err := s.client.do(ctx, http.MethodPost, "/api/spaces/_resolve_copy_saved_objects_errors", req, &result, opts)
 	if err != nil {
 		return nil, resp, err

@@ -1,0 +1,5 @@
+{
+  "statusCode": 400,
+  "error": "Bad Request",
+  "message": "[request query.batch_size]: Value must be equal to or lower than [10000]."
+}

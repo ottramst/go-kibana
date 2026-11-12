@@ -63,14 +63,16 @@ type Client struct {
 	common service
 
 	// Services used for talking to different parts of the Kibana API.
-	Features     *FeaturesService
-	Roles        *RolesService
-	ShortURLs    *ShortURLsService
-	Spaces       *SpacesService
-	Status       *StatusService
-	Tags         *TagsService
-	TaskManager  *TaskManagerService
-	UserSessions *UserSessionsService
+	EncryptedSavedObjects *EncryptedSavedObjectsService
+	Features              *FeaturesService
+	Roles                 *RolesService
+	SavedObjects          *SavedObjectsService
+	ShortURLs             *ShortURLsService
+	Spaces                *SpacesService
+	Status                *StatusService
+	Tags                  *TagsService
+	TaskManager           *TaskManagerService
+	UserSessions          *UserSessionsService
 }
 
 type service struct {
@@ -175,8 +177,10 @@ func NewClient(baseURL string, opts ...ClientOption) (*Client, error) {
 
 func (c *Client) initServices() {
 	c.common.client = c
+	c.EncryptedSavedObjects = (*EncryptedSavedObjectsService)(&c.common)
 	c.Features = (*FeaturesService)(&c.common)
 	c.Roles = (*RolesService)(&c.common)
+	c.SavedObjects = (*SavedObjectsService)(&c.common)
 	c.ShortURLs = (*ShortURLsService)(&c.common)
 	c.Spaces = (*SpacesService)(&c.common)
 	c.Status = (*StatusService)(&c.common)

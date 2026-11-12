@@ -30,6 +30,8 @@ func TestErrorResponse(t *testing.T) {
 		{name: "not found", status: 404, body: notFound, sentinel: kibana.ErrNotFound, wantMessage: "Not Found", wantText: "Not Found"},
 		{name: "conflict", status: 409, body: `{"statusCode":409,"error":"Conflict","message":"A space with the identifier x already exists."}`,
 			sentinel: kibana.ErrConflict, wantMessage: "A space with the identifier x already exists.", wantText: "Conflict"},
+		{name: "too many requests", status: 429, body: `{"statusCode":429,"error":"Too Many Requests","message":"Encryption key rotation is in progress already."}`,
+			sentinel: kibana.ErrTooManyRequests, wantMessage: "Encryption key rotation is in progress already.", wantText: "Too Many Requests"},
 		{name: "plain text body", status: 502, body: "Bad Gateway\n", wantMessage: "Bad Gateway"},
 		{name: "unexpected field type", status: 400, body: `{"statusCode":400,"error":{"type":"x"},"message":"bad input"}`,
 			sentinel: kibana.ErrBadRequest, wantMessage: "bad input"},
@@ -66,7 +68,7 @@ func TestErrorResponse(t *testing.T) {
 			if tt.sentinel != nil && !errors.Is(err, tt.sentinel) {
 				t.Errorf("errors.Is(err, %v) = false, want true", tt.sentinel)
 			}
-			for _, other := range []error{kibana.ErrBadRequest, kibana.ErrUnauthorized, kibana.ErrForbidden, kibana.ErrNotFound, kibana.ErrConflict} {
+			for _, other := range []error{kibana.ErrBadRequest, kibana.ErrUnauthorized, kibana.ErrForbidden, kibana.ErrNotFound, kibana.ErrConflict, kibana.ErrTooManyRequests} {
 				if errors.Is(other, tt.sentinel) {
 					continue
 				}

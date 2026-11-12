@@ -1,0 +1,43 @@
+{
+  "successCount": 0,
+  "success": false,
+  "warnings": [],
+  "errors": [
+    {
+      "type": "index-pattern",
+      "id": "probe-ip",
+      "meta": {
+        "title": "probe2-*",
+        "icon": "indexPatternApp"
+      },
+      "error": {
+        "type": "conflict",
+        "destinationId": "e9fa6a65-eab7-499b-b2cb-4b9fcbcb7688"
+      }
+    },
+    {
+      "type": "visualization",
+      "id": "probe-vis",
+      "meta": {
+        "title": "probe vis",
+        "icon": "visualizeApp"
+      },
+      "error": {
+        "type": "conflict",
+        "destinationId": "4577e77a-8008-4bc1-bc01-092e8b412afb"
+      }
+    },
+    {
+      "type": "dashboard",
+      "id": "probe-dash",
+      "meta": {
+        "title": "probe dash",
+        "icon": "dashboardApp"
+      },
+      "error": {
+        "type": "conflict",
+        "destinationId": "20c11a7f-4b5b-4226-8e33-ea9873bd18e3"
+      }
+    }
+  ]
+}

@@ -272,3 +272,48 @@ func ExampleTagsService_ListAll() {
 		fmt.Println(tag.ID, tag.Name, tag.Color)
 	}
 }
+
+func ExampleSavedObjectsService_Export() {
+	client, err := kibana.NewClient("http://localhost:5601", kibana.WithAPIKey(os.Getenv("KIBANA_API_KEY")))
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	f, err := os.Create("dashboards.ndjson")
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer f.Close()
+
+	// Export all dashboards and the objects they use.
+	_, err = client.SavedObjects.Export(context.Background(), &kibana.ExportSavedObjectsRequest{
+		Types:                 []string{"dashboard"},
+		IncludeReferencesDeep: true,
+	}, f)
+	if err != nil {
+		log.Fatal(err)
+	}
+}
+
+func ExampleSavedObjectsService_Import() {
+	client, err := kibana.NewClient("http://localhost:5601", kibana.WithAPIKey(os.Getenv("KIBANA_API_KEY")))
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	f, err := os.Open("dashboards.ndjson")
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer f.Close()
+
+	result, _, err := client.InSpace("marketing").SavedObjects.Import(context.Background(), f, &kibana.ImportSavedObjectsOptions{Overwrite: true})
+	if err != nil {
+		log.Fatal(err)
+	}
+	// Objects can fail although the import succeeded.
+	for _, e := range result.Errors {
+		fmt.Println("not imported:", e.Type, e.ID, e.Error.Type)
+	}
+	fmt.Println("imported", result.SuccessCount, "objects")
+}
