@@ -46,6 +46,15 @@ func TestRolesService_BulkCreateOrUpdate(t *testing.T) {
 	}
 }
 
+func TestBulkRoleError_Error(t *testing.T) {
+	if got := (kibana.BulkRoleError{Type: "t", Reason: "r"}).Error(); got != "kibana: t: r" {
+		t.Errorf("Error() = %q, want %q", got, "kibana: t: r")
+	}
+	if got := (kibana.BulkRoleError{Reason: "r"}).Error(); got != "kibana: r" {
+		t.Errorf("Error() without a type = %q, want %q", got, "kibana: r")
+	}
+}
+
 func TestRolesService_BulkCreateOrUpdate_readOnlyFields(t *testing.T) {
 	mux, client := setup(t)
 	mux.HandleFunc("POST /api/security/roles", func(w http.ResponseWriter, r *http.Request) {
