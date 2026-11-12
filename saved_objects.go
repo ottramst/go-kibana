@@ -5,6 +5,13 @@ import (
 	"fmt"
 )
 
+// SavedObjectsService handles communication with the saved object methods
+// of the Kibana API. Saved objects belong to a space: use [Client.InSpace]
+// to work with the objects of another space.
+//
+// Kibana API docs: https://www.elastic.co/docs/api/doc/kibana/group/endpoint-saved-objects
+type SavedObjectsService service
+
 // SavedObjectRef identifies a saved object by its type and ID, such as
 // {Type: "dashboard", ID: "7adfa750-4c81-11e8-b3d7-01146121b73d"}.
 type SavedObjectRef struct {

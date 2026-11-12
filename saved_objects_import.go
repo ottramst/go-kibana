@@ -10,13 +10,6 @@ import (
 	"net/http"
 )
 
-// SavedObjectsService handles communication with the saved object methods
-// of the Kibana API. Saved objects belong to a space: use [Client.InSpace]
-// to work with the objects of another space.
-//
-// Kibana API docs: https://www.elastic.co/docs/api/doc/kibana/group/endpoint-saved-objects
-type SavedObjectsService service
-
 // ImportSavedObjectsResult is the result of an import, and of a copy of
 // saved objects into a space.
 type ImportSavedObjectsResult struct {
