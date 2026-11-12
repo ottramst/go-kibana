@@ -80,20 +80,25 @@ func (e *ErrorResponse) Is(target error) bool {
 	return statusIs(e.StatusCode, target)
 }
 
-// sentinelStatus maps the sentinel errors to their HTTP status codes.
-var sentinelStatus = map[error]int{
-	ErrBadRequest:   http.StatusBadRequest,
-	ErrUnauthorized: http.StatusUnauthorized,
-	ErrForbidden:    http.StatusForbidden,
-	ErrNotFound:     http.StatusNotFound,
-	ErrConflict:     http.StatusConflict,
-}
-
 // statusIs reports whether target is the sentinel error for the HTTP status
-// code.
+// code. It compares the target by identity, like errors.Is does, so that
+// targets of any type, including ones that cannot be hashed, are safe.
+//
+//nolint:errorlint // Is methods compare targets by identity.
 func statusIs(code int, target error) bool {
-	status, ok := sentinelStatus[target]
-	return ok && status == code
+	switch target {
+	case ErrBadRequest:
+		return code == http.StatusBadRequest
+	case ErrUnauthorized:
+		return code == http.StatusUnauthorized
+	case ErrForbidden:
+		return code == http.StatusForbidden
+	case ErrNotFound:
+		return code == http.StatusNotFound
+	case ErrConflict:
+		return code == http.StatusConflict
+	}
+	return false
 }
 
 // CheckResponse returns an [*ErrorResponse] if the response has a non-2xx

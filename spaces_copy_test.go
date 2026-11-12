@@ -124,6 +124,23 @@ func TestCopySavedObjectsError_spaceFailure(t *testing.T) {
 	}
 }
 
+func TestCopySavedObjectsError_unknownError(t *testing.T) {
+	// An object error of type "unknown", in the shape of Kibana's
+	// SavedObjectsImportUnknownError (not reproducible on demand).
+	var got kibana.CopySavedObjectsError
+	data := `{"type":"dashboard","id":"d","meta":{"title":"D"},"overwrite":true,"error":{"type":"unknown","statusCode":500,"message":"boom"}}`
+	if err := json.Unmarshal([]byte(data), &got); err != nil {
+		t.Fatalf("Unmarshal() error = %v", err)
+	}
+	want := kibana.CopySavedObjectsError{
+		Type: "dashboard", ID: "d", Meta: kibana.SavedObjectMeta{Title: "D"}, Overwrite: true,
+		Error: &kibana.CopyErrorDetail{Type: kibana.CopyErrorUnknown, StatusCode: 500, Message: "boom"},
+	}
+	if !reflect.DeepEqual(got, want) {
+		t.Errorf("CopySavedObjectsError = %+v (detail %+v), want %+v (detail %+v)", got, got.Error, want, want.Error)
+	}
+}
+
 func TestSpacesService_CopySavedObjects_missingObject(t *testing.T) {
 	mux, client := setup(t)
 	mux.HandleFunc("POST /api/spaces/_copy_saved_objects", func(w http.ResponseWriter, _ *http.Request) {

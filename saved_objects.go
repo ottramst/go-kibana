@@ -48,5 +48,5 @@ func (e *ObjectError) Error() string {
 // Is reports whether target is the sentinel error for the error's status
 // code, such as [ErrNotFound] for 404 Not Found.
 func (e *ObjectError) Is(target error) bool {
-	return statusIs(e.StatusCode, target)
+	return e != nil && statusIs(e.StatusCode, target)
 }

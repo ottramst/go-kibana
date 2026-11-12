@@ -70,7 +70,7 @@ func TestAccSpacesSavedObjects(t *testing.T) {
 	if !slices.Contains(updated[0].Spaces, shared) || updated[0].Error != nil {
 		t.Errorf("UpdateObjectsSpaces(add)[0] = %+v, want it in %s", updated[0], shared)
 	}
-	if !errors.Is(updated[1].Error, kibana.ErrNotFound) {
+	if updated[1].Error == nil || !errors.Is(updated[1].Error, kibana.ErrNotFound) {
 		t.Errorf("UpdateObjectsSpaces(add)[1].Error = %v, want ErrNotFound", updated[1].Error)
 	}
 	refs, _, err := srcClient.Spaces.GetShareableReferences(ctx, []kibana.SavedObjectRef{ip, missing})
