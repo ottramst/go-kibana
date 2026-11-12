@@ -138,4 +138,8 @@ func TestErrorResponse_isUnhashableTarget(t *testing.T) {
 	if errors.Is(nilObjErr, kibana.ErrNotFound) {
 		t.Error("errors.Is(nil *ObjectError, ErrNotFound) = true, want false")
 	}
+	var nilErrResp *kibana.ErrorResponse
+	if errors.Is(nilErrResp, kibana.ErrNotFound) || errors.Is(nilErrResp, sliceErr{"a"}) {
+		t.Error("errors.Is(nil *ErrorResponse, ...) = true, want false")
+	}
 }

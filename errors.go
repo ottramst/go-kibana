@@ -77,7 +77,7 @@ func (e *ErrorResponse) Error() string {
 // Is reports whether target is the sentinel error for the response's status
 // code, such as [ErrNotFound] for 404 Not Found.
 func (e *ErrorResponse) Is(target error) bool {
-	return statusIs(e.StatusCode, target)
+	return e != nil && statusIs(e.StatusCode, target)
 }
 
 // statusIs reports whether target is the sentinel error for the HTTP status
