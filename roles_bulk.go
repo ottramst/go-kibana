@@ -34,7 +34,11 @@ type BulkRoleError struct {
 	Reason string `json:"reason"`
 }
 
+// Error returns the error type and reason.
 func (e BulkRoleError) Error() string {
+	if e.Type == "" {
+		return "kibana: " + e.Reason
+	}
 	return "kibana: " + e.Type + ": " + e.Reason
 }
 

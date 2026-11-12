@@ -81,8 +81,9 @@ func (s *RolesService) Query(ctx context.Context, req *QueryRolesRequest, opts .
 // starting at req.From and fetching req.Size roles per page (100 if zero).
 // Roles are sorted by name unless req.Sort is set, so that pages don't
 // overlap. If a page fails, the iterator yields the error and stops.
-// Elasticsearch limits the iteration to the first 10,000 roles; beyond them,
-// the iterator yields a [ErrBadRequest] error.
+// Elasticsearch rejects pages beyond the first 10,000 roles: once the offset
+// plus the page size exceeds 10,000, the iterator yields an [ErrBadRequest]
+// error.
 //
 //	for role, err := range client.Roles.QueryAll(ctx, nil) {
 //		if err != nil {
