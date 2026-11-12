@@ -1,0 +1,60 @@
+{
+  "roles": [
+    {
+      "name": "probe-q-1",
+      "metadata": {},
+      "transient_metadata": {
+        "enabled": true
+      },
+      "elasticsearch": {
+        "cluster": [
+          "monitor"
+        ],
+        "indices": [],
+        "run_as": []
+      },
+      "kibana": [
+        {
+          "base": [
+            "read"
+          ],
+          "feature": {},
+          "spaces": [
+            "default"
+          ]
+        }
+      ],
+      "_transform_error": [],
+      "_unrecognized_applications": []
+    },
+    {
+      "name": "probe-q-2",
+      "metadata": {},
+      "transient_metadata": {
+        "enabled": true
+      },
+      "elasticsearch": {
+        "cluster": [
+          "monitor"
+        ],
+        "indices": [],
+        "run_as": []
+      },
+      "kibana": [
+        {
+          "base": [
+            "read"
+          ],
+          "feature": {},
+          "spaces": [
+            "default"
+          ]
+        }
+      ],
+      "_transform_error": [],
+      "_unrecognized_applications": []
+    }
+  ],
+  "count": 2,
+  "total": 3
+}

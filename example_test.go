@@ -186,3 +186,36 @@ func ExampleSpacesService_CopySavedObjects() {
 		}
 	}
 }
+
+func ExampleRolesService_QueryAll() {
+	client, err := kibana.NewClient("http://localhost:5601", kibana.WithAPIKey(os.Getenv("KIBANA_API_KEY")))
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// Iterate over all roles whose name or description matches "analyst",
+	// fetching 50 roles per request.
+	for role, err := range client.Roles.QueryAll(context.Background(), &kibana.QueryRolesRequest{Query: "analyst", Size: 50}) {
+		if err != nil {
+			log.Fatal(err)
+		}
+		fmt.Println(role.Name)
+	}
+}
+
+func ExampleUserSessionsService_Invalidate() {
+	client, err := kibana.NewClient("http://localhost:5601", kibana.WithAPIKey(os.Getenv("KIBANA_API_KEY")))
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// Log a user out of all their sessions with the basic auth provider.
+	result, _, err := client.UserSessions.Invalidate(context.Background(), &kibana.InvalidateSessionsRequest{
+		Match: kibana.SessionMatchQuery,
+		Query: &kibana.SessionQuery{Provider: kibana.SessionProvider{Type: "basic"}, Username: "jdoe"},
+	})
+	if err != nil {
+		log.Fatal(err)
+	}
+	fmt.Println("invalidated sessions:", result.Total)
+}

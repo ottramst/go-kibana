@@ -6,7 +6,7 @@ Endpoints of the official Kibana OpenAPI specs (v8.19.25, v9.5.6) and the go-kib
 
 Endpoint data comes from the [Kibana OpenAPI specification](https://github.com/elastic/kibana/tree/main/oas_docs) by Elastic, licensed under [CC BY-NC-ND 4.0](https://creativecommons.org/licenses/by-nc-nd/4.0/).
 
-**14 of 726 endpoints implemented.**
+**17 of 726 endpoints implemented.**
 
 | Area | Implemented |
 |---|---|
@@ -45,7 +45,7 @@ Endpoint data comes from the [Kibana OpenAPI specification](https://github.com/e
 | [Message Signing Service](#message-signing-service) | 0 / 1 |
 | [ml](#ml) | 0 / 3 |
 | [observability_ai_assistant](#observability_ai_assistant) | 0 / 1 |
-| [roles](#roles) | 4 / 6 |
+| [roles](#roles) | 6 / 6 |
 | [saved objects](#saved-objects) | 0 / 17 |
 | [Security AI Assistant API](#security-ai-assistant-api) | 0 / 21 |
 | [Security Attack discovery API](#security-attack-discovery-api) | 0 / 16 |
@@ -70,7 +70,7 @@ Endpoint data comes from the [Kibana OpenAPI specification](https://github.com/e
 | [task manager](#task-manager) | 0 / 1 |
 | [upgrade](#upgrade) | 0 / 6 |
 | [uptime](#uptime) | 0 / 2 |
-| [user session](#user-session) | 0 / 1 |
+| [user session](#user-session) | 1 / 1 |
 | [Visualizations](#visualizations) | 0 / 5 |
 | [workflows](#workflows) | 0 / 30 |
 
@@ -593,11 +593,11 @@ Endpoint data comes from the [Kibana OpenAPI specification](https://github.com/e
 | Method | Path | v8.19.25 | v9.5.6 | go-kibana | Notes |
 |---|---|:-:|:-:|---|---|
 | GET | `/api/security/role` | ✅ | ✅ | `RolesService.List` |  |
-| POST | `/api/security/role/_query` | ✅ | ✅ |  |  |
+| POST | `/api/security/role/_query` | ✅ | ✅ | `RolesService.Query` |  |
 | GET | `/api/security/role/{name}` | ✅ | ✅ | `RolesService.Get` |  |
 | PUT | `/api/security/role/{name}` | ✅ | ✅ | `RolesService.CreateOrUpdate` |  |
 | DELETE | `/api/security/role/{name}` | ✅ | ✅ | `RolesService.Delete` |  |
-| POST | `/api/security/roles` | ✅ | ✅ |  |  |
+| POST | `/api/security/roles` | ✅ | ✅ | `RolesService.BulkCreateOrUpdate` |  |
 
 ## saved objects
 
@@ -1068,7 +1068,7 @@ Endpoint data comes from the [Kibana OpenAPI specification](https://github.com/e
 
 | Method | Path | v8.19.25 | v9.5.6 | go-kibana | Notes |
 |---|---|:-:|:-:|---|---|
-| POST | `/api/security/session/_invalidate` | ✅ | ✅ |  |  |
+| POST | `/api/security/session/_invalidate` | ✅ | ✅ | `UserSessionsService.Invalidate` |  |
 
 ## Visualizations
 

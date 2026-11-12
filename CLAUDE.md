@@ -63,7 +63,7 @@ The stack runs with security enabled and a trial license, on ports bound to 127.
 - `ErrorResponse{StatusCode, StatusText (the "error" field), Message, Attributes, Body}`. `Is()` maps 400/401/403/404/409 to `ErrBadRequest`/`ErrUnauthorized`/`ErrForbidden`/`ErrNotFound`/`ErrConflict`. Fields of unexpected types are skipped. Bodies that are not a JSON object, such as proxy pages, become `Message`, cut to 512 bytes; `Body` keeps the whole body (up to 1 MiB).
 
 **Service conventions** (`spaces.go` is the template):
-- Method names: `List`, `Get`, `Create`, `Update`, `Delete`. Other operations are named after the endpoint, e.g. `CopySavedObjects`.
+- Method names: `List`, `Get`, `Create`, `Update`, `Delete`. Other operations are named after the endpoint, e.g. `CopySavedObjects` or `Query`.
 - Signatures: `(ctx, ids..., body/options, ...RequestOption) (*T, *Response, error)`, or `(*Response, error)` when Kibana returns no body.
 - Every method's doc comment ends with two lines that `tools/coverage` parses:
   ```go
@@ -74,8 +74,8 @@ The stack runs with security enabled and a trial license, on ports bound to 127.
 - Prefer one type for reads and writes, so read → modify → write works, and strip read-only fields in an unexported conversion: `Space.writable()`, `newRolePayload()`. Never mutate the caller's value.
 - Fields use plain values. Use `omitempty` only where Kibana rejects the empty value (e.g. `Space.Color`) or the field must not be sent; otherwise send it, so that `""` clears it: Kibana's PUT endpoints keep fields that are left out (see the Spaces quirks). Use pointers only when the zero value means something different from "not set". There are no `String()`/`Bool()` helpers; Go 1.26 has `new(expr)`.
 - Reject inputs that Kibana would silently widen, such as a role privilege without spaces.
-- Options structs (`ListSpacesOptions`, `CreateOrUpdateRoleOptions`) hold query parameters, are pointers, and may be nil. Request bodies that are not a domain object (such as `Space` or `Role`) use a `…Request` struct (e.g. the planned `CopySavedObjectsRequest`, #12).
-- Paginated endpoints get an iterator variant returning `iter.Seq2[*T, error]` (e.g. `QueryAll`) next to the single-page method.
+- Options structs (`ListSpacesOptions`, `CreateOrUpdateRoleOptions`) hold query parameters, are pointers, and may be nil. Request bodies that are not a domain object (such as `Space` or `Role`) use a `…Request` struct (e.g. `CopySavedObjectsRequest`).
+- Paginated endpoints get an iterator variant returning `iter.Seq2[*T, error]` (e.g. `RolesService.QueryAll`) next to the single-page method, built on the internal offset paginator `paginate` (`pagination.go`): lazy, restartable, yields an error once and stops, and stops on an empty page.
 - Deprecated endpoints (saved objects CRUD/bulk/find) get a `// Deprecated:` paragraph naming the replacement.
 
 **Kibana API quirks** (verified against 8.19.25 and 9.5.6):
@@ -107,6 +107,8 @@ The stack runs with security enabled and a trial license, on ports bound to 127.
   - `?createOnly=true` on an existing role is a 409.
   - A missing role's 404 has the unhelpful message `"[{}]: undefined"`, so match on the status, not the message.
   - Feature IDs are dynamic per version and license, hence `map[string][]string`.
+  - `POST /api/security/role/_query` (same shapes on 8.19.25 and 9.5.6; the 8.19 spec has no response schema): returns `{roles, count, total}` with roles shaped like `GET` role. It leaves out built-in roles unless `filters.showReservedRoles` is true. `size` defaults to 10, and `from + size` over 10,000 is a 400 from Elasticsearch. `query` is free text on the name and description.
+  - `POST /api/security/roles` (bulk) returns `{created, updated, noop, errors}`. An unchanged role is `noop`. An invalid Elasticsearch privilege fails only that role (`errors[name] = {type, reason}`), with 200 for the request. Unknown Kibana feature names are accepted without error. A privilege without `spaces` is created with `["*"]`.
 - The 8.19 and 9.5 specs disagree:
   - `_bulk_update` is POST in 8.19 and PUT in 9.5.
   - `DELETE /api/saved_objects/{type}/{id}` and `GET /api/features` are missing from the 8.19 spec, although 8.19 serves them.
@@ -117,7 +119,8 @@ The stack runs with security enabled and a trial license, on ports bound to 127.
   - Export is ndjson that ends with a summary line.
   - `_find` sends `has_reference` as JSON inside the query string, and `type` as a repeated parameter.
   - `_rotate_key` needs `xpack.encryptedSavedObjects.keyRotation.decryptionOnlyKeys`, otherwise 400, and returns 429 while a rotation runs.
-  - Session invalidation needs a superuser.
+
+- User sessions: `POST /api/security/session/_invalidate` needs a superuser (403 otherwise) and returns `{total}`. `match: "query"` requires `query.provider.type`, and `match: "all"` with a `query` is a 400. Sessions only exist for interactive logins, so API key or basic auth requests create none.
 
 **Tooling:** `tools/coverage/` is a separate module, so the library keeps one dependency.
 - It parses the pinned specs and the `// Kibana API:` annotations, then writes `COVERAGE.md`.

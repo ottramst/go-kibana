@@ -63,8 +63,9 @@ type Client struct {
 	common service
 
 	// Services used for talking to different parts of the Kibana API.
-	Roles  *RolesService
-	Spaces *SpacesService
+	Roles        *RolesService
+	Spaces       *SpacesService
+	UserSessions *UserSessionsService
 }
 
 type service struct {
@@ -171,6 +172,7 @@ func (c *Client) initServices() {
 	c.common.client = c
 	c.Roles = (*RolesService)(&c.common)
 	c.Spaces = (*SpacesService)(&c.common)
+	c.UserSessions = (*UserSessionsService)(&c.common)
 }
 
 // InSpace returns a copy of the client that is scoped to the given space.

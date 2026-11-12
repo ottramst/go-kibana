@@ -30,8 +30,8 @@ An idiomatic Go client for the [Kibana REST API](https://www.elastic.co/docs/api
 | API | Status |
 | --- | --- |
 | Spaces | CRUD ✅ · copy saved objects and resolve conflicts ✅ · share saved objects ✅ · disable legacy URL aliases ✅ |
-| Roles | CRUD ✅ · query and bulk planned ([v0.2.0](https://github.com/ottramst/go-kibana/milestone/2)) |
-| User sessions | planned ([v0.2.0](https://github.com/ottramst/go-kibana/milestone/2)) |
+| Roles | CRUD ✅ · query with an iterator ✅ · bulk create or update ✅ |
+| User sessions | invalidate ✅ |
 | Status, features, Task Manager health, short URLs, tags | planned ([v0.3.0](https://github.com/ottramst/go-kibana/milestone/3)) |
 | Saved objects, encrypted saved objects | planned ([v0.4.0](https://github.com/ottramst/go-kibana/milestone/4)) |
 | Data views | planned ([v0.5.0](https://github.com/ottramst/go-kibana/milestone/5)) |
