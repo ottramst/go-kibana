@@ -121,6 +121,11 @@ The stack runs with security enabled and a trial license, on ports bound to 127.
   - `_rotate_key` needs `xpack.encryptedSavedObjects.keyRotation.decryptionOnlyKeys`, otherwise 400, and returns 429 while a rotation runs.
 
 - User sessions: `POST /api/security/session/_invalidate` needs a superuser (403 otherwise) and returns `{total}`. `match: "query"` requires `query.provider.type`, and `match: "all"` with a `query` is a 400. Sessions only exist for interactive logins, so API key or basic auth requests create none.
+- Platform (verified on 8.19.25 and 9.5.6):
+  - `GET /api/status` answers 503 with the full status body only when a **core** service (Elasticsearch, saved objects) is unavailable or critical. A degraded Kibana, or one with unavailable plugins, answers 200. `Status.Get` returns the decoded status together with the 503 `*ErrorResponse`. A 503 without a status body (e.g. from a proxy) returns only the error.
+  - Unauthenticated callers, and since 9.5 callers without the `monitor` cluster privilege, get only `{"status":{"overall":{"level":...}}}` (no version). Plugin statuses add `reported`, which is not in the spec.
+  - `GET /api/features` has the same shape on both versions, but the IDs differ (`dashboard` on 8.19.25, `dashboard_v2` on 9.5.6; 50 and 64 features). Features with only reserved privileges (e.g. `monitoring`) have `privileges: null`. `?ignoreValidLicenses=true` is accepted but not in the spec.
+  - `GET /api/task_manager/_health` has a top-level `reason` when the status is not `OK`. Stats sections are `{status, timestamp, value}`, plus `reason` for `capacity_estimation`. The section values change between versions, so they stay `json.RawMessage`.
 - Short URLs (same on 8.19.25 and 9.5.6):
   - `accessDate` and `createDate` are epoch milliseconds on both versions, although the 8.19 spec says strings. Responses add `url: ""`.
   - Short URLs belong to a space: a get or resolve from another space is a 404.
@@ -154,7 +159,7 @@ The stack runs with security enabled and a trial license, on ports bound to 127.
   - Name objects with `randName(t, "acc")` and remove them in `cleanup(t, ...)`, which runs with a non-canceled context.
   - Changes to shared state, such as writing the default space, only run when `localStack()` (`KIBANA_URL` unset, i.e. the compose stack).
   - Each test runs a full lifecycle: create, conflict, get, read-modify-write update, list, delete, then get returning `ErrNotFound`.
-  - Gate version-specific endpoints on the `kibanaVersion(t, client)` result.
+  - Gate version-specific endpoints on `client.Status.Get` (`Version.Number`).
 - `example_test.go` holds compile-only `Example*` functions (no `// Output:`), shown on pkg.go.dev.
 
 ## CI

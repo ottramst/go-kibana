@@ -6,7 +6,7 @@ Endpoints of the official Kibana OpenAPI specs (v8.19.25, v9.5.6) and the go-kib
 
 Endpoint data comes from the [Kibana OpenAPI specification](https://github.com/elastic/kibana/tree/main/oas_docs) by Elastic, licensed under [CC BY-NC-ND 4.0](https://creativecommons.org/licenses/by-nc-nd/4.0/).
 
-**21 of 726 endpoints implemented.**
+**24 of 726 endpoints implemented.**
 
 | Area | Implemented |
 |---|---|
@@ -65,9 +65,9 @@ Endpoint data comes from the [Kibana OpenAPI specification](https://github.com/e
 | [spaces](#spaces) | 10 / 10 |
 | [streams](#streams) | 0 / 18 |
 | [synthetics](#synthetics) | 0 / 18 |
-| [system](#system) | 0 / 2 |
+| [system](#system) | 2 / 2 |
 | [Tags](#tags) | 0 / 5 |
-| [task manager](#task-manager) | 0 / 1 |
+| [task manager](#task-manager) | 1 / 1 |
 | [upgrade](#upgrade) | 0 / 6 |
 | [uptime](#uptime) | 0 / 2 |
 | [user session](#user-session) | 1 / 1 |
@@ -1027,8 +1027,8 @@ Endpoint data comes from the [Kibana OpenAPI specification](https://github.com/e
 
 | Method | Path | v8.19.25 | v9.5.6 | go-kibana | Notes |
 |---|---|:-:|:-:|---|---|
-| GET | `/api/features` | — | ✅ |  | Technical Preview |
-| GET | `/api/status` | ✅ | ✅ |  |  |
+| GET | `/api/features` | — | ✅ | `FeaturesService.List` | Technical Preview |
+| GET | `/api/status` | ✅ | ✅ | `StatusService.Get` |  |
 
 ## Tags
 
@@ -1044,7 +1044,7 @@ Endpoint data comes from the [Kibana OpenAPI specification](https://github.com/e
 
 | Method | Path | v8.19.25 | v9.5.6 | go-kibana | Notes |
 |---|---|:-:|:-:|---|---|
-| GET | `/api/task_manager/_health` | ✅ | ✅ |  |  |
+| GET | `/api/task_manager/_health` | ✅ | ✅ | `TaskManagerService.Health` |  |
 
 ## upgrade
 

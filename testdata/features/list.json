@@ -1,0 +1,299 @@
+[
+  {
+    "id": "dashboard_v2",
+    "order": 201,
+    "name": "Dashboard",
+    "management": {
+      "kibana": [
+        "search_sessions"
+      ],
+      "insightsAndAlerting": [
+        "reporting"
+      ]
+    },
+    "category": {
+      "id": "kibana",
+      "label": "Analytics",
+      "euiIconType": "logoKibana",
+      "order": 1000
+    },
+    "app": [
+      "dashboards",
+      "kibana"
+    ],
+    "catalogue": [
+      "dashboard"
+    ],
+    "privileges": {
+      "all": {
+        "app": [
+          "dashboards",
+          "kibana"
+        ],
+        "catalogue": [
+          "dashboard"
+        ],
+        "savedObject": {
+          "all": [
+            "dashboard",
+            "markdown",
+            "telemetry",
+            "user-storage",
+            "user-storage-global"
+          ],
+          "read": [
+            "index-pattern",
+            "search",
+            "visualization",
+            "canvas-workpad",
+            "event-annotation-group",
+            "lens",
+            "links",
+            "map",
+            "tag",
+            "config",
+            "config-global",
+            "url",
+            "cloud"
+          ]
+        },
+        "ui": [
+          "createNew",
+          "show",
+          "showWriteControls"
+        ],
+        "api": [
+          "bulkGetUserProfiles",
+          "dashboardUsageStats"
+        ]
+      },
+      "read": {
+        "app": [
+          "dashboards",
+          "kibana"
+        ],
+        "catalogue": [
+          "dashboard"
+        ],
+        "savedObject": {
+          "all": [
+            "user-storage",
+            "user-storage-global"
+          ],
+          "read": [
+            "index-pattern",
+            "search",
+            "visualization",
+            "canvas-workpad",
+            "event-annotation-group",
+            "lens",
+            "links",
+            "map",
+            "dashboard",
+            "tag",
+            "markdown",
+            "config",
+            "config-global",
+            "telemetry",
+            "url",
+            "cloud"
+          ]
+        },
+        "ui": [
+          "show"
+        ],
+        "api": [
+          "bulkGetUserProfiles",
+          "dashboardUsageStats"
+        ]
+      }
+    },
+    "subFeatures": [
+      {
+        "name": "Short URLs",
+        "privilegeGroups": [
+          {
+            "groupType": "independent",
+            "privileges": [
+              {
+                "id": "url_create",
+                "name": "Create Short URLs",
+                "includeIn": "all",
+                "savedObject": {
+                  "all": [
+                    "url"
+                  ],
+                  "read": []
+                },
+                "ui": [
+                  "createShortUrl"
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "Store Background search",
+        "privilegeGroups": [
+          {
+            "groupType": "independent",
+            "privileges": [
+              {
+                "id": "store_search_session",
+                "name": "Store Background search",
+                "includeIn": "all",
+                "savedObject": {
+                  "all": [
+                    "search-session"
+                  ],
+                  "read": []
+                },
+                "ui": [
+                  "storeSearchSession"
+                ],
+                "management": {
+                  "kibana": [
+                    "search_sessions"
+                  ]
+                },
+                "api": [
+                  "store_search_session"
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "Reporting",
+        "privilegeGroups": [
+          {
+            "groupType": "independent",
+            "privileges": [
+              {
+                "id": "generate_report",
+                "name": "Generate PDF or PNG reports",
+                "includeIn": "all",
+                "minimumLicense": "gold",
+                "savedObject": {
+                  "all": [
+                    "scheduled_report"
+                  ],
+                  "read": []
+                },
+                "management": {
+                  "insightsAndAlerting": [
+                    "reporting"
+                  ]
+                },
+                "api": [
+                  "generateReport"
+                ],
+                "ui": [
+                  "generateScreenshot"
+                ]
+              },
+              {
+                "id": "download_csv_report",
+                "name": "Generate CSV reports from Discover session panels",
+                "includeIn": "all",
+                "savedObject": {
+                  "all": [
+                    "scheduled_report"
+                  ],
+                  "read": []
+                },
+                "management": {
+                  "insightsAndAlerting": [
+                    "reporting"
+                  ]
+                },
+                "api": [
+                  "downloadCsv"
+                ],
+                "ui": [
+                  "downloadCsv"
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "monitoring",
+    "name": "Stack Monitoring",
+    "category": {
+      "id": "management",
+      "label": "Management",
+      "order": 5000,
+      "euiIconType": "managementApp"
+    },
+    "app": [
+      "monitoring",
+      "kibana"
+    ],
+    "catalogue": [
+      "monitoring"
+    ],
+    "privileges": null,
+    "alerting": [
+      {
+        "ruleTypeId": "monitoring_alert_license_expiration",
+        "consumers": [
+          "monitoring",
+          "alerts",
+          "observability"
+        ]
+      }
+    ],
+    "reserved": {
+      "description": "To grant users access, you should also assign the monitoring_user role.",
+      "privileges": [
+        {
+          "id": "monitoring",
+          "privilege": {
+            "app": [
+              "monitoring",
+              "kibana"
+            ],
+            "catalogue": [
+              "monitoring"
+            ],
+            "savedObject": {
+              "all": [
+                "telemetry",
+                "user-storage",
+                "user-storage-global"
+              ],
+              "read": [
+                "config",
+                "config-global",
+                "url",
+                "tag",
+                "cloud"
+              ]
+            },
+            "alerting": {
+              "rule": {
+                "all": [
+                  {
+                    "ruleTypeId": "monitoring_alert_license_expiration",
+                    "consumers": [
+                      "monitoring",
+                      "alerts",
+                      "observability"
+                    ]
+                  }
+                ]
+              }
+            },
+            "ui": []
+          }
+        }
+      ]
+    }
+  }
+]

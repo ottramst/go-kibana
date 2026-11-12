@@ -63,33 +63,6 @@ func randName(t *testing.T, prefix string) string {
 	return prefix + "-" + hex.EncodeToString(b)
 }
 
-// kibanaVersion returns the version of the acceptance test Kibana.
-func kibanaVersion(t *testing.T, client *kibana.Client) string {
-	t.Helper()
-	req, err := client.NewRequest(t.Context(), http.MethodGet, "/api/status", nil)
-	if err != nil {
-		t.Fatal(err)
-	}
-	var status struct {
-		Version struct {
-			Number string `json:"number"`
-		} `json:"version"`
-	}
-	if _, err := client.Do(req, &status); err != nil {
-		t.Fatalf("GET /api/status error = %v", err)
-	}
-	return status.Version.Number
-}
-
-func TestAccStatus(t *testing.T) {
-	client := accClient(t)
-	v := kibanaVersion(t, client)
-	if v == "" {
-		t.Fatal("GET /api/status returned no version")
-	}
-	t.Logf("Kibana %s", v)
-}
-
 // cleanup runs fn when the test ends, with a context that is not canceled.
 func cleanup(t *testing.T, fn func(ctx context.Context) error) {
 	t.Helper()
