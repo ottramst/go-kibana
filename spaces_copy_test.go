@@ -1,0 +1,205 @@
+package kibana_test
+
+import (
+	"context"
+	"encoding/json"
+	"errors"
+	"net/http"
+	"reflect"
+	"testing"
+
+	"github.com/ottramst/go-kibana"
+)
+
+func TestSpacesService_CopySavedObjects(t *testing.T) {
+	mux, client := setup(t)
+	mux.HandleFunc("POST /s/src/api/spaces/_copy_saved_objects", func(w http.ResponseWriter, r *http.Request) {
+		testHeader(t, r, "kbn-xsrf", "true")
+		testJSONBody(t, r, `{"spaces":["probe-dst"],"objects":[{"type":"index-pattern","id":"probe-ip1"}],"includeReferences":true,"createNewCopies":false}`)
+		writeJSON(t, w, http.StatusOK, fixture(t, "spaces/copy.json"))
+	})
+
+	got, _, err := client.InSpace("src").Spaces.CopySavedObjects(context.Background(), &kibana.CopySavedObjectsRequest{
+		Spaces:            []string{"probe-dst"},
+		Objects:           []kibana.SavedObjectRef{{Type: "index-pattern", ID: "probe-ip1"}},
+		IncludeReferences: true,
+		CreateNewCopies:   new(false),
+	})
+	if err != nil {
+		t.Fatalf("CopySavedObjects() error = %v", err)
+	}
+	want := map[string]*kibana.CopySavedObjectsResult{"probe-dst": {
+		Success:      true,
+		SuccessCount: 1,
+		SuccessResults: []kibana.CopySavedObjectsSuccess{{
+			Type:          "index-pattern",
+			ID:            "probe-ip1",
+			Meta:          kibana.SavedObjectMeta{Title: "logs-*", Icon: "indexPatternApp"},
+			DestinationID: "9b2ff723-07fa-4e02-a0e6-c1174fb61a76",
+		}},
+	}}
+	if !reflect.DeepEqual(got, want) {
+		t.Errorf("CopySavedObjects() = %+v, want %+v", got["probe-dst"], want["probe-dst"])
+	}
+}
+
+func TestSpacesService_CopySavedObjects_defaultCreateNewCopies(t *testing.T) {
+	mux, client := setup(t)
+	mux.HandleFunc("POST /api/spaces/_copy_saved_objects", func(w http.ResponseWriter, r *http.Request) {
+		// Left out, so that Kibana applies its default (true).
+		testJSONBody(t, r, `{"spaces":["b"],"objects":[{"type":"dashboard","id":"d"}]}`)
+		writeJSON(t, w, http.StatusOK, []byte(`{"b":{"success":true,"successCount":1}}`))
+	})
+	_, _, err := client.Spaces.CopySavedObjects(context.Background(), &kibana.CopySavedObjectsRequest{
+		Spaces:  []string{"b"},
+		Objects: []kibana.SavedObjectRef{{Type: "dashboard", ID: "d"}},
+	})
+	if err != nil {
+		t.Fatalf("CopySavedObjects() error = %v", err)
+	}
+}
+
+func TestSpacesService_CopySavedObjects_errors(t *testing.T) {
+	tests := []struct {
+		fixture string
+		want    kibana.CopySavedObjectsError
+	}{
+		{
+			fixture: "spaces/copy_conflict.json",
+			want: kibana.CopySavedObjectsError{
+				Type: "index-pattern", ID: "probe-ip1",
+				Meta:  kibana.SavedObjectMeta{Title: "logs-*", Icon: "indexPatternApp"},
+				Error: &kibana.CopyErrorDetail{Type: kibana.CopyErrorConflict, DestinationID: "9b2ff723-07fa-4e02-a0e6-c1174fb61a76"},
+			},
+		},
+		{
+			fixture: "spaces/copy_missing_references.json",
+			want: kibana.CopySavedObjectsError{
+				Type: "visualization", ID: "probe-vis1",
+				Meta: kibana.SavedObjectMeta{Title: "probe vis", Icon: "visualizeApp"},
+				Error: &kibana.CopyErrorDetail{
+					Type:       kibana.CopyErrorMissingReferences,
+					References: []kibana.SavedObjectRef{{Type: "index-pattern", ID: "probe-missing-ip"}},
+				},
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.fixture, func(t *testing.T) {
+			mux, client := setup(t)
+			mux.HandleFunc("POST /api/spaces/_copy_saved_objects", func(w http.ResponseWriter, _ *http.Request) {
+				writeJSON(t, w, http.StatusOK, fixture(t, tt.fixture))
+			})
+			got, _, err := client.Spaces.CopySavedObjects(context.Background(), &kibana.CopySavedObjectsRequest{
+				Spaces:  []string{"probe-dst"},
+				Objects: []kibana.SavedObjectRef{{Type: tt.want.Type, ID: tt.want.ID}},
+			})
+			if err != nil {
+				t.Fatalf("CopySavedObjects() error = %v", err)
+			}
+			res := got["probe-dst"]
+			if res == nil || res.Success || len(res.Errors) != 1 {
+				t.Fatalf("result = %+v, want one error", res)
+			}
+			if !reflect.DeepEqual(res.Errors[0], tt.want) {
+				t.Errorf("error = %+v (detail %+v), want %+v (detail %+v)", res.Errors[0], res.Errors[0].Error, tt.want, tt.want.Error)
+			}
+		})
+	}
+}
+
+func TestCopySavedObjectsError_spaceFailure(t *testing.T) {
+	// Kibana reports a failure of the whole copy into a space as a Boom
+	// error payload, whose "error" field is the HTTP status text.
+	var got kibana.CopySavedObjectsError
+	if err := json.Unmarshal([]byte(`{"statusCode":403,"error":"Forbidden","message":"Unable to bulk_create index-pattern"}`), &got); err != nil {
+		t.Fatalf("Unmarshal() error = %v", err)
+	}
+	want := kibana.CopySavedObjectsError{StatusCode: 403, StatusText: "Forbidden", Message: "Unable to bulk_create index-pattern"}
+	if !reflect.DeepEqual(got, want) {
+		t.Errorf("CopySavedObjectsError = %+v, want %+v", got, want)
+	}
+	if err := json.Unmarshal([]byte(`{"error":`), &got); err == nil {
+		t.Error("Unmarshal(invalid) error = nil, want error")
+	}
+}
+
+func TestSpacesService_CopySavedObjects_missingObject(t *testing.T) {
+	mux, client := setup(t)
+	mux.HandleFunc("POST /api/spaces/_copy_saved_objects", func(w http.ResponseWriter, _ *http.Request) {
+		writeJSON(t, w, http.StatusNotFound, fixture(t, "spaces/copy_missing_object.json"))
+	})
+	_, _, err := client.Spaces.CopySavedObjects(context.Background(), &kibana.CopySavedObjectsRequest{
+		Spaces:          []string{"probe-dst"},
+		Objects:         []kibana.SavedObjectRef{{Type: "index-pattern", ID: "probe-nope"}},
+		CreateNewCopies: new(false),
+	})
+	if !errors.Is(err, kibana.ErrNotFound) {
+		t.Fatalf("CopySavedObjects() error = %v, want ErrNotFound", err)
+	}
+	var errResp *kibana.ErrorResponse
+	if errors.As(err, &errResp) && len(errResp.Attributes) == 0 {
+		t.Error("ErrorResponse.Attributes is empty, want the missing objects")
+	}
+}
+
+func TestSpacesService_ResolveCopySavedObjectsErrors(t *testing.T) {
+	mux, client := setup(t)
+	mux.HandleFunc("POST /s/src/api/spaces/_resolve_copy_saved_objects_errors", func(w http.ResponseWriter, r *http.Request) {
+		testJSONBody(t, r, `{
+			"objects":[{"type":"index-pattern","id":"probe-ip1"}],
+			"retries":{"probe-dst":[{"type":"index-pattern","id":"probe-ip1","overwrite":true,"destinationId":"9b2ff723-07fa-4e02-a0e6-c1174fb61a76"}]},
+			"createNewCopies":false}`)
+		writeJSON(t, w, http.StatusOK, fixture(t, "spaces/resolve.json"))
+	})
+
+	got, _, err := client.InSpace("src").Spaces.ResolveCopySavedObjectsErrors(context.Background(), &kibana.ResolveCopySavedObjectsErrorsRequest{
+		Objects: []kibana.SavedObjectRef{{Type: "index-pattern", ID: "probe-ip1"}},
+		Retries: map[string][]kibana.CopyRetry{"probe-dst": {{
+			Type: "index-pattern", ID: "probe-ip1", Overwrite: true, DestinationID: "9b2ff723-07fa-4e02-a0e6-c1174fb61a76",
+		}}},
+		CreateNewCopies: new(false),
+	})
+	if err != nil {
+		t.Fatalf("ResolveCopySavedObjectsErrors() error = %v", err)
+	}
+	res := got["probe-dst"]
+	if res == nil || !res.Success || len(res.SuccessResults) != 1 || !res.SuccessResults[0].Overwrite {
+		t.Errorf("result = %+v, want one overwritten object", res)
+	}
+}
+
+func TestSpacesService_copyInvalidArguments(t *testing.T) {
+	_, client := setup(t)
+	ctx := context.Background()
+	obj := []kibana.SavedObjectRef{{Type: "dashboard", ID: "d"}}
+	copyCases := map[string]*kibana.CopySavedObjectsRequest{
+		"nil request":                           nil,
+		"no spaces":                             {Objects: obj},
+		"empty space ID":                        {Spaces: []string{""}, Objects: obj},
+		"no objects":                            {Spaces: []string{"b"}},
+		"object without ID":                     {Spaces: []string{"b"}, Objects: []kibana.SavedObjectRef{{Type: "dashboard"}}},
+		"overwrite with default new copies":     {Spaces: []string{"b"}, Objects: obj, Overwrite: true},
+		"overwrite with new copies":             {Spaces: []string{"b"}, Objects: obj, Overwrite: true, CreateNewCopies: new(true)},
+		"compatibility with default new copies": {Spaces: []string{"b"}, Objects: obj, CompatibilityMode: true},
+	}
+	for name, req := range copyCases {
+		if _, _, err := client.Spaces.CopySavedObjects(ctx, req); err == nil {
+			t.Errorf("CopySavedObjects(%s): error = nil, want error", name)
+		}
+	}
+	retry := map[string][]kibana.CopyRetry{"b": {{Type: "dashboard", ID: "d"}}}
+	resolveCases := map[string]*kibana.ResolveCopySavedObjectsErrorsRequest{
+		"nil request":                       nil,
+		"no objects":                        {Retries: retry},
+		"no retries":                        {Objects: obj},
+		"empty space ID":                    {Objects: obj, Retries: map[string][]kibana.CopyRetry{"": {{Type: "dashboard", ID: "d"}}}},
+		"retry without type":                {Objects: obj, Retries: map[string][]kibana.CopyRetry{"b": {{ID: "d"}}}},
+		"overwrite with default new copies": {Objects: obj, Retries: map[string][]kibana.CopyRetry{"b": {{Type: "dashboard", ID: "d", Overwrite: true}}}},
+	}
+	for name, req := range resolveCases {
+		if _, _, err := client.Spaces.ResolveCopySavedObjectsErrors(ctx, req); err == nil {
+			t.Errorf("ResolveCopySavedObjectsErrors(%s): error = nil, want error", name)
+		}
+	}
+}

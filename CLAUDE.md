@@ -88,6 +88,16 @@ The stack runs with security enabled and a trial license, on ports bound to 127.
   - PUT returns 200 with the space. Text fields left out keep their value, `disabledFeatures` left out becomes `[]`. DELETE returns 204 and deletes the space's saved objects.
   - Conflicts are 409.
   - The list's `authorizedPurposes` also contains `findSavedObjects`, which is not in the spec's purpose enum.
+- Spaces saved-object operations (copy, resolve, sharing; verified on 8.19.25 and 9.5.6, which return the same shapes; the specs have no response schemas, only examples):
+  - The source space is the request's space (`/s/{space}`), i.e. `client.InSpace(src)`.
+  - `createNewCopies` defaults to **true**. `overwrite: true` without `createNewCopies: false` is a 400 on copy ("cannot use [overwrite] with [createNewCopies]"), but on resolve Kibana silently ignores `overwrite` and creates a new copy. The client rejects both combinations.
+  - Copying into a space that does not exist **succeeds** and writes objects into it. Nothing checks target spaces.
+  - Copies of shareable types (e.g. `index-pattern`) get a new `destinationId` even with `createNewCopies: false`; copying again reports a `conflict` with that `destinationId`.
+  - Copy and resolve return 200 when objects fail: `{"<space>": {success, successCount, successResults[], errors[]}}`. An `errors[]` item is an object error (`{type, id, meta, error: {type, destinationId?, destinations?, references?}}`) or, for a failure of the whole space, a Boom payload whose `error` is a string. A missing source object fails the whole request with a 404 whose `attributes.objects` lists it.
+  - Resolve `retries` must list every object to copy into a space, including the ones copied before.
+  - `_disable_legacy_url_aliases` returns 204, also for aliases that don't exist; an empty `aliases` list is a 403.
+  - `_update_objects_spaces` rejects `null` lists (400) and both lists empty (400). Per-object failures are `objects[].error` (`{statusCode, error, message}`). Removing an object from all its spaces deletes it.
+  - `_get_shareable_references` adds `isMissing`, `spacesWithMatchingOrigins` and `spacesWithMatchingAliases` (not in the spec). Objects of types that can't be shared report `spaces: []`.
 - Roles:
   - `PUT /api/security/role/{name}` returns **204** with an empty body. The pre-redesign client failed on this.
   - The PUT body only accepts `description`, `metadata`, `elasticsearch` (required) and `kibana`.
@@ -103,7 +113,7 @@ The stack runs with security enabled and a trial license, on ports bound to 127.
   - Saved objects operationIds differ between the specs.
   - `/api/tags` only exists in 9.5+ (experimental). Data views v2 is 9.6+.
 - Planned endpoints (see the sub-issues):
-  - Saved objects import (multipart) and copy-to-space return 200 even when objects fail; check `success` and `errors[]`.
+  - Saved objects import (multipart) returns 200 even when objects fail; check `success` and `errors[]`.
   - Export is ndjson that ends with a summary line.
   - `_find` sends `has_reference` as JSON inside the query string, and `type` as a repeated parameter.
   - `_rotate_key` needs `xpack.encryptedSavedObjects.keyRotation.decryptionOnlyKeys`, otherwise 400, and returns 429 while a rotation runs.

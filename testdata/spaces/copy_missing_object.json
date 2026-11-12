@@ -1,0 +1,13 @@
+{
+  "statusCode": 404,
+  "error": "Not Found",
+  "message": "Saved objects not found",
+  "attributes": {
+    "objects": [
+      {
+        "id": "probe-nope",
+        "type": "index-pattern"
+      }
+    ]
+  }
+}

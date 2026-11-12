@@ -161,3 +161,28 @@ func ExampleClient_Do() {
 	}
 	fmt.Println("Kibana", status.Version.Number)
 }
+
+func ExampleSpacesService_CopySavedObjects() {
+	client, err := kibana.NewClient("http://localhost:5601", kibana.WithAPIKey(os.Getenv("KIBANA_API_KEY")))
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// Copy a dashboard and the objects it references from the marketing
+	// space into the sales space. CreateNewCopies is false so that existing
+	// copies are reported as conflicts instead of copied again.
+	results, _, err := client.InSpace("marketing").Spaces.CopySavedObjects(context.Background(), &kibana.CopySavedObjectsRequest{
+		Spaces:            []string{"sales"},
+		Objects:           []kibana.SavedObjectRef{{Type: "dashboard", ID: "7adfa750-4c81-11e8-b3d7-01146121b73d"}},
+		IncludeReferences: true,
+		CreateNewCopies:   new(false),
+	})
+	if err != nil {
+		log.Fatal(err)
+	}
+	for _, e := range results["sales"].Errors {
+		if e.Error != nil {
+			fmt.Printf("%s %s: %s\n", e.Type, e.ID, e.Error.Type)
+		}
+	}
+}

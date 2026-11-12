@@ -5,6 +5,7 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"net/http"
+	"net/url"
 	"os"
 	"testing"
 
@@ -97,4 +98,33 @@ func cleanup(t *testing.T, fn func(ctx context.Context) error) {
 			t.Logf("cleanup: %v", err)
 		}
 	})
+}
+
+// createIndexPattern creates an index pattern (data view) saved object in the
+// client's space. Objects in a space are deleted with the space.
+func createIndexPattern(t *testing.T, client *kibana.Client, id, title string) {
+	t.Helper()
+	body := map[string]any{"attributes": map[string]string{"title": title}}
+	req, err := client.NewRequest(t.Context(), http.MethodPost, "/api/saved_objects/index-pattern/"+url.PathEscape(id), body)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := client.Do(req, nil); err != nil {
+		t.Fatalf("creating index pattern %s: %v", id, err)
+	}
+}
+
+// createSpace creates a space and deletes it, with its objects, when the
+// test ends.
+func createSpace(t *testing.T, client *kibana.Client) string {
+	t.Helper()
+	id := randName(t, "acc")
+	if _, _, err := client.Spaces.Create(t.Context(), &kibana.Space{ID: id, Name: "Acceptance " + id}); err != nil {
+		t.Fatalf("creating space %s: %v", id, err)
+	}
+	cleanup(t, func(ctx context.Context) error {
+		_, err := client.Spaces.Delete(ctx, id)
+		return err
+	})
+	return id
 }
