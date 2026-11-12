@@ -121,6 +121,12 @@ The stack runs with security enabled and a trial license, on ports bound to 127.
   - `_rotate_key` needs `xpack.encryptedSavedObjects.keyRotation.decryptionOnlyKeys`, otherwise 400, and returns 429 while a rotation runs.
 
 - User sessions: `POST /api/security/session/_invalidate` needs a superuser (403 otherwise) and returns `{total}`. `match: "query"` requires `query.provider.type`, and `match: "all"` with a `query` is a 400. Sessions only exist for interactive logins, so API key or basic auth requests create none.
+- Short URLs (same on 8.19.25 and 9.5.6):
+  - `accessDate` and `createDate` are epoch milliseconds on both versions, although the 8.19 spec says strings. Responses add `url: ""`.
+  - Short URLs belong to a space: a get or resolve from another space is a 404.
+  - Get and resolve through the API leave `accessCount` at 0.
+  - A taken slug and an unknown `locatorId` are both 409. `humanReadableSlug: true` still generates a random 5-character slug.
+  - DELETE answers 200 with the body `null`.
 
 **Tooling:** `tools/coverage/` is a separate module, so the library keeps one dependency.
 - It parses the pinned specs and the `// Kibana API:` annotations, then writes `COVERAGE.md`.

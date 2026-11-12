@@ -6,7 +6,7 @@ Endpoints of the official Kibana OpenAPI specs (v8.19.25, v9.5.6) and the go-kib
 
 Endpoint data comes from the [Kibana OpenAPI specification](https://github.com/elastic/kibana/tree/main/oas_docs) by Elastic, licensed under [CC BY-NC-ND 4.0](https://creativecommons.org/licenses/by-nc-nd/4.0/).
 
-**17 of 726 endpoints implemented.**
+**21 of 726 endpoints implemented.**
 
 | Area | Implemented |
 |---|---|
@@ -59,7 +59,7 @@ Endpoint data comes from the [Kibana OpenAPI specification](https://github.com/e
 | [Security Osquery API](#security-osquery-api) | 0 / 21 |
 | [Security Solution Initialization API](#security-solution-initialization-api) | 0 / 1 |
 | [Security Timeline API](#security-timeline-api) | 0 / 18 |
-| [short url](#short-url) | 0 / 4 |
+| [short url](#short-url) | 4 / 4 |
 | [significant_events](#significant_events) | 0 / 5 |
 | [slo](#slo) | 0 / 13 |
 | [spaces](#spaces) | 10 / 10 |
@@ -929,10 +929,10 @@ Endpoint data comes from the [Kibana OpenAPI specification](https://github.com/e
 
 | Method | Path | v8.19.25 | v9.5.6 | go-kibana | Notes |
 |---|---|:-:|:-:|---|---|
-| POST | `/api/short_url` | ✅ | ✅ |  | Technical Preview |
-| GET | `/api/short_url/_slug/{slug}` | ✅ | ✅ |  | Technical Preview |
-| GET | `/api/short_url/{id}` | ✅ | ✅ |  | Technical Preview |
-| DELETE | `/api/short_url/{id}` | ✅ | ✅ |  | Technical Preview |
+| POST | `/api/short_url` | ✅ | ✅ | `ShortURLsService.Create` | Technical Preview |
+| GET | `/api/short_url/_slug/{slug}` | ✅ | ✅ | `ShortURLsService.Resolve` | Technical Preview |
+| GET | `/api/short_url/{id}` | ✅ | ✅ | `ShortURLsService.Get` | Technical Preview |
+| DELETE | `/api/short_url/{id}` | ✅ | ✅ | `ShortURLsService.Delete` | Technical Preview |
 
 ## significant_events
 

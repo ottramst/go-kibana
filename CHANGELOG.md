@@ -1,3 +1,9 @@
+## Unreleased
+
+FEATURES:
+
+* New `ShortURLs` service: `Create`, `Get`, `Resolve` (by slug) and `Delete` ([#24](https://github.com/ottramst/go-kibana/issues/24), [#25](https://github.com/ottramst/go-kibana/issues/25))
+
 ## v0.2.0
 
 FEATURES:
