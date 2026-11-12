@@ -55,7 +55,22 @@ func TestAccShortURLs(t *testing.T) {
 		t.Fatalf("Resolve() error = %v", err)
 	}
 	if resolved.ID != created.ID || resolved.AccessCount != 0 {
-		t.Errorf("Resolve() = %+v, want %s with no accesses", resolved, created.ID)
+		t.Errorf("Resolve() = %+v, want %s as it was before the access", resolved, created.ID)
+	}
+	// Resolve counts as an access, recorded in the background; Get does not.
+	deadline := time.Now().Add(10 * time.Second)
+	for {
+		got, _, err = client.ShortURLs.Get(ctx, created.ID)
+		if err != nil {
+			t.Fatalf("Get() error = %v", err)
+		}
+		if got.AccessCount == 1 || time.Now().After(deadline) {
+			break
+		}
+		time.Sleep(200 * time.Millisecond)
+	}
+	if got.AccessCount != 1 || !got.AccessDate.After(created.AccessDate) {
+		t.Errorf("after Resolve: AccessCount = %d, AccessDate = %v; want 1 and later than %v", got.AccessCount, got.AccessDate, created.AccessDate)
 	}
 
 	// Short URLs belong to a space.

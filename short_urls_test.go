@@ -1,7 +1,9 @@
 package kibana_test
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
 	"net/http"
 	"reflect"
@@ -63,10 +65,10 @@ func TestShortURLsService_Create_options(t *testing.T) {
 	mux, client := setup(t)
 	mux.HandleFunc("POST /s/x/api/short_url", func(w http.ResponseWriter, r *http.Request) {
 		// Params are required, so nil is sent as {}.
-		testJSONBody(t, r, `{"locatorId":"L","params":{},"slug":"probe-slug-1","humanReadableSlug":true}`)
+		testJSONBody(t, r, `{"locatorId":"L","params":{},"slug":"probe-slug-1"}`)
 		writeJSON(t, w, http.StatusOK, fixture(t, "shorturls/create_slug.json"))
 	})
-	req := &kibana.CreateShortURLRequest{LocatorID: "L", Slug: "probe-slug-1", HumanReadableSlug: true}
+	req := &kibana.CreateShortURLRequest{LocatorID: "L", Slug: "probe-slug-1"}
 	got, _, err := client.InSpace("x").ShortURLs.Create(context.Background(), req)
 	if err != nil {
 		t.Fatalf("Create() error = %v", err)
@@ -145,12 +147,13 @@ func TestShortURLsService_Delete(t *testing.T) {
 
 func TestShortURLsService_notFound(t *testing.T) {
 	mux, client := setup(t)
-	mux.HandleFunc("/api/short_url/", func(w http.ResponseWriter, r *http.Request) {
-		name := "shorturls/get_missing.json"
-		if r.URL.Path == "/api/short_url/_slug/nope" {
-			name = "shorturls/resolve_missing.json"
-		}
-		writeJSON(t, w, http.StatusNotFound, fixture(t, name))
+	missing := func(w http.ResponseWriter, _ *http.Request) {
+		writeJSON(t, w, http.StatusNotFound, fixture(t, "shorturls/get_missing.json"))
+	}
+	mux.HandleFunc("GET /api/short_url/{id}", missing)
+	mux.HandleFunc("DELETE /api/short_url/{id}", missing)
+	mux.HandleFunc("GET /api/short_url/_slug/{slug}", func(w http.ResponseWriter, _ *http.Request) {
+		writeJSON(t, w, http.StatusNotFound, fixture(t, "shorturls/resolve_missing.json"))
 	})
 	ctx := context.Background()
 	if _, _, err := client.ShortURLs.Get(ctx, "nope"); !errors.Is(err, kibana.ErrNotFound) {
@@ -196,5 +199,30 @@ func TestShortURL_UnmarshalJSON(t *testing.T) {
 	}
 	if err := got.UnmarshalJSON([]byte(`{"createDate":"2026-01-01"}`)); err == nil {
 		t.Error("UnmarshalJSON(string date) error = nil, want error")
+	}
+}
+
+func TestShortURL_roundTrip(t *testing.T) {
+	var u kibana.ShortURL
+	if err := json.Unmarshal(fixture(t, "shorturls/create.json"), &u); err != nil {
+		t.Fatalf("Unmarshal() error = %v", err)
+	}
+	data, err := json.Marshal(u)
+	if err != nil {
+		t.Fatalf("Marshal() error = %v", err)
+	}
+	var got kibana.ShortURL
+	if err := json.Unmarshal(data, &got); err != nil {
+		t.Fatalf("Unmarshal(Marshal()) error = %v", err)
+	}
+	if !reflect.DeepEqual(got, u) {
+		t.Errorf("round trip = %+v, want %+v", got, u)
+	}
+	if !bytes.Contains(data, []byte(`"createDate":1794501807335`)) {
+		t.Errorf("Marshal() = %s, want epoch milliseconds", data)
+	}
+	data, _ = json.Marshal(kibana.ShortURL{})
+	if !bytes.Contains(data, []byte(`"accessDate":0`)) {
+		t.Errorf("Marshal(zero) = %s, want a zero access date", data)
 	}
 }

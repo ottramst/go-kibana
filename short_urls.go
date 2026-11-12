@@ -30,8 +30,9 @@ type ShortURL struct {
 	// Locator is the Kibana location the short URL points to.
 	Locator ShortURLLocator
 
-	// AccessCount and AccessDate track the use of the short URL. Reading it
-	// through the API does not change them.
+	// AccessCount and AccessDate track the use of the short URL. Kibana
+	// updates them when the short URL is resolved, including by
+	// [ShortURLsService.Resolve], but not by [ShortURLsService.Get].
 	AccessCount int64
 	AccessDate  time.Time
 	CreateDate  time.Time
@@ -49,17 +50,32 @@ type ShortURLLocator struct {
 	State map[string]any `json:"state"`
 }
 
-// UnmarshalJSON decodes a short URL. Kibana sends the dates as milliseconds
-// since the epoch.
+// shortURLJSON is the JSON form of a [ShortURL]: Kibana sends the dates as
+// milliseconds since the epoch.
+type shortURLJSON struct {
+	ID          string          `json:"id"`
+	Slug        string          `json:"slug"`
+	Locator     ShortURLLocator `json:"locator"`
+	AccessCount int64           `json:"accessCount"`
+	AccessDate  int64           `json:"accessDate"`
+	CreateDate  int64           `json:"createDate"`
+}
+
+// MarshalJSON encodes a short URL in Kibana's format.
+func (u ShortURL) MarshalJSON() ([]byte, error) {
+	return json.Marshal(shortURLJSON{
+		ID:          u.ID,
+		Slug:        u.Slug,
+		Locator:     u.Locator,
+		AccessCount: u.AccessCount,
+		AccessDate:  toEpochMillis(u.AccessDate),
+		CreateDate:  toEpochMillis(u.CreateDate),
+	})
+}
+
+// UnmarshalJSON decodes a short URL in Kibana's format.
 func (u *ShortURL) UnmarshalJSON(data []byte) error {
-	var raw struct {
-		ID          string          `json:"id"`
-		Slug        string          `json:"slug"`
-		Locator     ShortURLLocator `json:"locator"`
-		AccessCount int64           `json:"accessCount"`
-		AccessDate  int64           `json:"accessDate"`
-		CreateDate  int64           `json:"createDate"`
-	}
+	var raw shortURLJSON
 	if err := json.Unmarshal(data, &raw); err != nil {
 		return err
 	}
@@ -83,6 +99,14 @@ func epochMillis(ms int64) time.Time {
 	return time.UnixMilli(ms).UTC()
 }
 
+// toEpochMillis is the inverse of epochMillis.
+func toEpochMillis(t time.Time) int64 {
+	if t.IsZero() {
+		return 0
+	}
+	return t.UnixMilli()
+}
+
 // CreateShortURLRequest is the request of [ShortURLsService.Create].
 type CreateShortURLRequest struct {
 	// LocatorID is the ID of the locator, such as LegacyShortURLLocator or
@@ -90,18 +114,16 @@ type CreateShortURLRequest struct {
 	// unknown locator.
 	LocatorID string `json:"locatorId"`
 
-	// Params are the locator parameters. Kibana does not validate them.
+	// Params are the locator parameters. Kibana does not validate them,
+	// except that the "url" of LegacyShortURLLocator must be a Kibana path:
+	// external URLs are a 400 Bad Request.
 	Params map[string]any `json:"params"`
 
-	// Slug is a custom slug of at least 3 letters, digits, "-", "." or "_".
-	// Kibana generates one if it is empty, and answers 409 Conflict if it is
-	// taken.
+	// Slug is a custom slug of letters, digits, "-", "." or "_". Kibana
+	// generates a random one if it is empty, and answers 409 Conflict if it
+	// is taken. Create accepts 3 to 255 characters, but Resolve only 4 to
+	// 128, so use a slug of that length.
 	Slug string `json:"slug,omitempty"`
-
-	// HumanReadableSlug asks Kibana to generate a human-readable slug when
-	// Slug is empty. Kibana 8.19.25 and 9.5.6 generate a random 5-character
-	// slug either way.
-	HumanReadableSlug bool `json:"humanReadableSlug,omitempty"`
 }
 
 // Create creates a short URL in the client's space.
@@ -128,7 +150,8 @@ func (s *ShortURLsService) Create(ctx context.Context, req *CreateShortURLReques
 	return u, resp, nil
 }
 
-// Get returns a short URL by its ID.
+// Get returns a short URL by its ID. Unlike [ShortURLsService.Resolve], it
+// does not change the access fields.
 //
 // Kibana API: GET /api/short_url/{id}
 // Kibana API docs: https://www.elastic.co/docs/api/doc/kibana/operation/operation-get-url
@@ -144,7 +167,12 @@ func (s *ShortURLsService) Get(ctx context.Context, id string, opts ...RequestOp
 	return u, resp, nil
 }
 
-// Resolve returns a short URL by its slug.
+// Resolve returns a short URL by its slug, which must have 4 to 128
+// characters.
+//
+// Kibana counts this as a use of the short URL: it increments AccessCount
+// and sets AccessDate in the background, after returning the short URL as it
+// was before.
 //
 // Kibana API: GET /api/short_url/_slug/{slug}
 // Kibana API docs: https://www.elastic.co/docs/api/doc/kibana/operation/operation-resolve-url

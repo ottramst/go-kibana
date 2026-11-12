@@ -124,8 +124,10 @@ The stack runs with security enabled and a trial license, on ports bound to 127.
 - Short URLs (same on 8.19.25 and 9.5.6):
   - `accessDate` and `createDate` are epoch milliseconds on both versions, although the 8.19 spec says strings. Responses add `url: ""`.
   - Short URLs belong to a space: a get or resolve from another space is a 404.
-  - Get and resolve through the API leave `accessCount` at 0.
-  - A taken slug and an unknown `locatorId` are both 409. `humanReadableSlug: true` still generates a random 5-character slug.
+  - Resolve by slug counts as an access: Kibana increments `accessCount` and sets `accessDate` in the background, and returns the record as it was before. Get by ID changes nothing.
+  - A taken slug and an unknown `locatorId` are both 409. A `LEGACY_SHORT_URL_LOCATOR` `url` that is not a Kibana path is a 400.
+  - Create accepts slugs of 3 to 255 characters, but get, resolve and delete validate `{id}`/`{slug}` as 4 to 128 characters (400 otherwise).
+  - `humanReadableSlug` is deprecated in Kibana and ignored (a random 5-character slug is generated), so the client does not send it.
   - DELETE answers 200 with the body `null`.
 
 **Tooling:** `tools/coverage/` is a separate module, so the library keeps one dependency.
