@@ -1,0 +1,25 @@
+{
+  "probe-dst": {
+    "success": false,
+    "successCount": 0,
+    "errors": [
+      {
+        "id": "probe-vis1",
+        "type": "visualization",
+        "meta": {
+          "title": "probe vis",
+          "icon": "visualizeApp"
+        },
+        "error": {
+          "type": "missing_references",
+          "references": [
+            {
+              "type": "index-pattern",
+              "id": "probe-missing-ip"
+            }
+          ]
+        }
+      }
+    ]
+  }
+}

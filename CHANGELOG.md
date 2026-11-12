@@ -1,3 +1,11 @@
+## Unreleased
+
+FEATURES:
+
+* spaces: `CopySavedObjects` and `ResolveCopySavedObjectsErrors` copy saved objects between spaces and resolve copy conflicts; per-object errors are reported in the result ([#12](https://github.com/ottramst/go-kibana/issues/12))
+* spaces: `DisableLegacyURLAliases` ([#13](https://github.com/ottramst/go-kibana/issues/13))
+* spaces: `GetShareableReferences` and `UpdateObjectsSpaces` share saved objects between spaces ([#14](https://github.com/ottramst/go-kibana/issues/14))
+
 ## v0.1.0
 
 BREAKING CHANGES:

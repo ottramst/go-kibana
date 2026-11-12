@@ -77,17 +77,26 @@ func (e *ErrorResponse) Error() string {
 // Is reports whether target is the sentinel error for the response's status
 // code, such as [ErrNotFound] for 404 Not Found.
 func (e *ErrorResponse) Is(target error) bool {
+	return e != nil && statusIs(e.StatusCode, target)
+}
+
+// statusIs reports whether target is the sentinel error for the HTTP status
+// code. It compares the target by identity, like errors.Is does, so that
+// targets of any type, including ones that cannot be hashed, are safe.
+//
+//nolint:errorlint // Is methods compare targets by identity.
+func statusIs(code int, target error) bool {
 	switch target {
 	case ErrBadRequest:
-		return e.StatusCode == http.StatusBadRequest
+		return code == http.StatusBadRequest
 	case ErrUnauthorized:
-		return e.StatusCode == http.StatusUnauthorized
+		return code == http.StatusUnauthorized
 	case ErrForbidden:
-		return e.StatusCode == http.StatusForbidden
+		return code == http.StatusForbidden
 	case ErrNotFound:
-		return e.StatusCode == http.StatusNotFound
+		return code == http.StatusNotFound
 	case ErrConflict:
-		return e.StatusCode == http.StatusConflict
+		return code == http.StatusConflict
 	}
 	return false
 }

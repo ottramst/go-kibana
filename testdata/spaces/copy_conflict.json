@@ -1,0 +1,20 @@
+{
+  "probe-dst": {
+    "success": false,
+    "successCount": 0,
+    "errors": [
+      {
+        "type": "index-pattern",
+        "id": "probe-ip1",
+        "meta": {
+          "title": "logs-*",
+          "icon": "indexPatternApp"
+        },
+        "error": {
+          "type": "conflict",
+          "destinationId": "9b2ff723-07fa-4e02-a0e6-c1174fb61a76"
+        }
+      }
+    ]
+  }
+}

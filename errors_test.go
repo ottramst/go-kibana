@@ -119,3 +119,27 @@ func TestErrorResponse_longTextBody(t *testing.T) {
 		t.Error("Body was truncated, want the full body")
 	}
 }
+
+// sliceErr is an error type that cannot be hashed or compared.
+type sliceErr []string
+
+func (e sliceErr) Error() string { return "slice error" }
+
+func TestErrorResponse_isUnhashableTarget(t *testing.T) {
+	err := error(&kibana.ErrorResponse{StatusCode: 404})
+	if errors.Is(err, sliceErr{"a"}) {
+		t.Error("errors.Is(err, sliceErr) = true, want false")
+	}
+	objErr := error(&kibana.ObjectError{StatusCode: 404})
+	if errors.Is(objErr, sliceErr{"a"}) || !errors.Is(objErr, kibana.ErrNotFound) {
+		t.Error("errors.Is(ObjectError) gives the wrong result")
+	}
+	var nilObjErr *kibana.ObjectError
+	if errors.Is(nilObjErr, kibana.ErrNotFound) {
+		t.Error("errors.Is(nil *ObjectError, ErrNotFound) = true, want false")
+	}
+	var nilErrResp *kibana.ErrorResponse
+	if errors.Is(nilErrResp, kibana.ErrNotFound) || errors.Is(nilErrResp, sliceErr{"a"}) {
+		t.Error("errors.Is(nil *ErrorResponse, ...) = true, want false")
+	}
+}

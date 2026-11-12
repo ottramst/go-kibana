@@ -1,0 +1,22 @@
+{
+  "objects": [
+    {
+      "id": "probe-ip2",
+      "type": "index-pattern",
+      "spaces": [
+        "probe-dst",
+        "probe-src"
+      ]
+    },
+    {
+      "id": "probe-nope",
+      "type": "index-pattern",
+      "spaces": [],
+      "error": {
+        "statusCode": 404,
+        "error": "Not Found",
+        "message": "Saved object [index-pattern/probe-nope] not found"
+      }
+    }
+  ]
+}
