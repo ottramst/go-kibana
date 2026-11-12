@@ -48,7 +48,7 @@ The stack runs with security enabled and a trial license, on ports bound to 127.
   - `path` is the literal API path from the spec (`/api/...`), with segments already escaped and an optional `?query`. Paths with a `#`, and paths or query strings with characters that must be escaped (spaces, control characters, non-ASCII), are rejected. Escaped characters of the base path (`%2F`) are kept.
   - The space prefix `/s/{space}` goes between the base path and `path`, unless the space is empty or `default`.
   - Header order: `Accept`, `kbn-xsrf: true` (always, even on GET), `Content-Type` (JSON bodies only), `User-Agent`, `Authorization`, then the caller's `RequestOption`s. So callers can override anything.
-  - Body: an `io.Reader` is sent raw, with no `Content-Type` (the caller sets it, e.g. for the planned multipart import); anything else is JSON-encoded.
+  - Body: an `io.Reader` is sent raw, with no `Content-Type` (the caller sets it, e.g. for the multipart import); anything else is JSON-encoded.
 - `Do(req, v)`:
   - Non-2xx returns `*ErrorResponse`, through `CheckResponse`.
   - `v == nil` drains the body; an `io.Writer` gets the raw body (for ndjson exports).

@@ -13,7 +13,7 @@ NOTES:
 
 * spaces: the copy result types are now type aliases of the new import result types, which have the same format, and are deprecated: `CopySavedObjectsResult` is `ImportSavedObjectsResult`, `CopySavedObjectsSuccess` is `ImportSuccess`, `CopySavedObjectsError` is `ImportError`, `CopyErrorDetail` is `ImportErrorDetail`, `CopyErrorDestination` is `ImportErrorDestination`, `CopyErrorType` is `ImportErrorType`, and the `CopyError*` constants are the `ImportError*` constants. Existing code keeps compiling. The result now also has `Warnings` ([#30](https://github.com/ottramst/go-kibana/issues/30))
 * The acceptance test stack configures a decryption-only encryption key, to test key rotation ([#32](https://github.com/ottramst/go-kibana/issues/32))
-* Tested against Kibana 8.19.25 and 9.5.6, which return the same shapes for all saved objects endpoints. Kibana deprecated the single-object, bulk, find and resolve endpoints in 8.7, so their methods are marked `Deprecated`; import and export are their replacement. `BulkUpdate` sends PUT, the only method both versions accept, although the Kibana 8.19 API specification documents POST
+* Tested against Kibana 8.19.25 and 9.5.6, which return the same shapes for all saved objects endpoints. Kibana deprecated the single-object, bulk, find and resolve endpoints in 8.7, so their methods are marked `Deprecated`. Their replacements are the APIs of the object types, such as data views, or import and export; `Resolve` and `BulkResolve` have no replacement. `BulkUpdate` sends PUT, the only method both versions accept, although the Kibana 8.19 API specification documents POST
 
 ## v0.3.0
 
