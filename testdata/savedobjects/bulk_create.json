@@ -1,0 +1,33 @@
+{
+  "saved_objects": [
+    {
+      "type": "index-pattern",
+      "id": "probe-b1",
+      "namespaces": [
+        "default"
+      ],
+      "attributes": {
+        "title": "b1-*"
+      },
+      "references": [],
+      "managed": false,
+      "migrationVersion": {
+        "index-pattern": "8.0.0"
+      },
+      "coreMigrationVersion": "8.8.0",
+      "typeMigrationVersion": "8.0.0",
+      "updated_at": "2026-11-12T18:10:03.541Z",
+      "created_at": "2026-11-12T18:10:03.541Z",
+      "version": "WzEzLDFd"
+    },
+    {
+      "id": "probe-ip",
+      "type": "index-pattern",
+      "error": {
+        "statusCode": 409,
+        "error": "Conflict",
+        "message": "Saved object [index-pattern/probe-ip] conflict"
+      }
+    }
+  ]
+}

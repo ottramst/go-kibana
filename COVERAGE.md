@@ -6,7 +6,7 @@ Endpoints of the official Kibana OpenAPI specs (v8.19.25, v9.5.6) and the go-kib
 
 Endpoint data comes from the [Kibana OpenAPI specification](https://github.com/elastic/kibana/tree/main/oas_docs) by Elastic, licensed under [CC BY-NC-ND 4.0](https://creativecommons.org/licenses/by-nc-nd/4.0/).
 
-**33 of 726 endpoints implemented.**
+**43 of 726 endpoints implemented.**
 
 | Area | Implemented |
 |---|---|
@@ -46,7 +46,7 @@ Endpoint data comes from the [Kibana OpenAPI specification](https://github.com/e
 | [ml](#ml) | 0 / 3 |
 | [observability_ai_assistant](#observability_ai_assistant) | 0 / 1 |
 | [roles](#roles) | 6 / 6 |
-| [saved objects](#saved-objects) | 4 / 17 |
+| [saved objects](#saved-objects) | 14 / 17 |
 | [Security AI Assistant API](#security-ai-assistant-api) | 0 / 21 |
 | [Security Attack discovery API](#security-attack-discovery-api) | 0 / 16 |
 | [Security Detections API](#security-detections-api) | 0 / 35 |
@@ -604,22 +604,22 @@ Endpoint data comes from the [Kibana OpenAPI specification](https://github.com/e
 | Method | Path | v8.19.25 | v9.5.6 | go-kibana | Notes |
 |---|---|:-:|:-:|---|---|
 | POST | `/api/encrypted_saved_objects/_rotate_key` | ✅ | ✅ | `EncryptedSavedObjectsService.RotateKey` |  |
-| POST | `/api/saved_objects/_bulk_create` | ✅ | ✅ |  | deprecated |
-| POST | `/api/saved_objects/_bulk_delete` | ✅ | ✅ |  | deprecated |
-| POST | `/api/saved_objects/_bulk_get` | ✅ | ✅ |  | deprecated |
-| POST | `/api/saved_objects/_bulk_resolve` | ✅ | ✅ |  | deprecated |
+| POST | `/api/saved_objects/_bulk_create` | ✅ | ✅ | `SavedObjectsService.BulkCreate` | deprecated |
+| POST | `/api/saved_objects/_bulk_delete` | ✅ | ✅ | `SavedObjectsService.BulkDelete` | deprecated |
+| POST | `/api/saved_objects/_bulk_get` | ✅ | ✅ | `SavedObjectsService.BulkGet` | deprecated |
+| POST | `/api/saved_objects/_bulk_resolve` | ✅ | ✅ | `SavedObjectsService.BulkResolve` | deprecated |
 | POST | `/api/saved_objects/_bulk_update` | ✅ | — |  | deprecated |
-| PUT | `/api/saved_objects/_bulk_update` | — | ✅ |  | deprecated |
+| PUT | `/api/saved_objects/_bulk_update` | — | ✅ | `SavedObjectsService.BulkUpdate` | deprecated |
 | POST | `/api/saved_objects/_export` | ✅ | ✅ | `SavedObjectsService.Export` |  |
 | GET | `/api/saved_objects/_find` | ✅ | ✅ |  | deprecated |
 | POST | `/api/saved_objects/_import` | ✅ | ✅ | `SavedObjectsService.Import` |  |
 | POST | `/api/saved_objects/_resolve_import_errors` | ✅ | ✅ | `SavedObjectsService.ResolveImportErrors` |  |
 | GET | `/api/saved_objects/resolve/{type}/{id}` | ✅ | ✅ |  | deprecated |
-| POST | `/api/saved_objects/{type}` | ✅ | ✅ |  | deprecated |
-| GET | `/api/saved_objects/{type}/{id}` | ✅ | ✅ |  | deprecated |
-| POST | `/api/saved_objects/{type}/{id}` | ✅ | ✅ |  | deprecated |
-| PUT | `/api/saved_objects/{type}/{id}` | ✅ | ✅ |  | deprecated |
-| DELETE | `/api/saved_objects/{type}/{id}` | — | ✅ |  | deprecated |
+| POST | `/api/saved_objects/{type}` | ✅ | ✅ | `SavedObjectsService.Create` | deprecated |
+| GET | `/api/saved_objects/{type}/{id}` | ✅ | ✅ | `SavedObjectsService.Get` | deprecated |
+| POST | `/api/saved_objects/{type}/{id}` | ✅ | ✅ | `SavedObjectsService.Create` | deprecated |
+| PUT | `/api/saved_objects/{type}/{id}` | ✅ | ✅ | `SavedObjectsService.Update` | deprecated |
+| DELETE | `/api/saved_objects/{type}/{id}` | — | ✅ | `SavedObjectsService.Delete` | deprecated |
 
 ## Security AI Assistant API
 

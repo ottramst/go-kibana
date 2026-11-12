@@ -1,0 +1,53 @@
+{
+  "saved_objects": [
+    {
+      "id": "probe-b1",
+      "type": "index-pattern",
+      "namespaces": [
+        "default"
+      ],
+      "migrationVersion": {
+        "index-pattern": "8.0.0"
+      },
+      "updated_at": "2026-11-12T18:10:03.541Z",
+      "created_at": "2026-11-12T18:10:03.541Z",
+      "version": "WzEzLDFd",
+      "attributes": {
+        "title": "b1-*"
+      },
+      "references": [],
+      "managed": false,
+      "coreMigrationVersion": "8.8.0",
+      "typeMigrationVersion": "8.0.0"
+    },
+    {
+      "id": "probe-nope",
+      "type": "index-pattern",
+      "error": {
+        "statusCode": 404,
+        "error": "Not Found",
+        "message": "Saved object [index-pattern/probe-nope] not found"
+      }
+    },
+    {
+      "id": "probe-ip",
+      "type": "index-pattern",
+      "namespaces": [
+        "default"
+      ],
+      "migrationVersion": {
+        "index-pattern": "8.0.0"
+      },
+      "updated_at": "2026-11-12T18:10:01.215Z",
+      "created_at": "2026-11-12T18:09:56.558Z",
+      "version": "WzExLDFd",
+      "attributes": {
+        "title": "probe2-*"
+      },
+      "references": [],
+      "managed": false,
+      "coreMigrationVersion": "8.8.0",
+      "typeMigrationVersion": "8.0.0"
+    }
+  ]
+}

@@ -1,0 +1,13 @@
+{
+  "id": "probe-upsert",
+  "type": "index-pattern",
+  "created_at": "2026-11-12T18:10:02.197Z",
+  "updated_at": "2026-11-12T18:10:02.197Z",
+  "version": "WzEyLDFd",
+  "namespaces": [
+    "default"
+  ],
+  "attributes": {
+    "title": "u-*"
+  }
+}

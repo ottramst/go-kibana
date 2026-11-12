@@ -1,0 +1,5 @@
+{
+  "statusCode": 409,
+  "error": "Conflict",
+  "message": "[index-pattern:probe-ip]: version conflict, required seqNo [6], primary term [1]. current document has seqNo [11] and primary term [1]: version_conflict_engine_exception\n\tRoot causes:\n\t\tversion_conflict_engine_exception: [index-pattern:probe-ip]: version conflict, required seqNo [6], primary term [1]. current document has seqNo [11] and primary term [1]"
+}

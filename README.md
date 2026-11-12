@@ -35,7 +35,7 @@ An idiomatic Go client for the [Kibana REST API](https://www.elastic.co/docs/api
 | Status, features, Task Manager health | get status ✅ · list features ✅ · Task Manager health ✅ |
 | Short URLs | create, get, resolve and delete ✅ |
 | Tags (Kibana 9.5+) | CRUD with an iterator ✅ |
-| Saved objects | import, export and resolve import errors ✅ · CRUD, bulk and find planned ([v0.4.0](https://github.com/ottramst/go-kibana/milestone/4)) |
+| Saved objects | import, export and resolve import errors ✅ · CRUD and bulk (deprecated by Kibana) ✅ · find planned ([v0.4.0](https://github.com/ottramst/go-kibana/milestone/4)) |
 | Encrypted saved objects | rotate the encryption key ✅ |
 | Data views | planned ([v0.5.0](https://github.com/ottramst/go-kibana/milestone/5)) |
 
