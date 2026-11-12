@@ -1,4 +1,4 @@
-## Unreleased
+## v0.2.0
 
 FEATURES:
 
@@ -8,6 +8,10 @@ FEATURES:
 * roles: `Query` returns a page of roles, and `QueryAll` iterates over all matching roles (`iter.Seq2`) ([#16](https://github.com/ottramst/go-kibana/issues/16))
 * roles: `BulkCreateOrUpdate` creates or updates several roles in one request; per-role errors are reported in the result ([#17](https://github.com/ottramst/go-kibana/issues/17))
 * New `UserSessions` service: `Invalidate` invalidates user sessions ([#18](https://github.com/ottramst/go-kibana/issues/18))
+
+NOTES:
+
+* Tested against Kibana 8.19.25 and 9.5.6. Copy, sharing, role query and bulk responses have no schema in the 8.19 OpenAPI spec; the client was verified against both versions
 
 ## v0.1.0
 
