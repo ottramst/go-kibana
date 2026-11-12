@@ -1,3 +1,11 @@
+## Unreleased
+
+FEATURES:
+
+* New `Status` service: `Get` returns the Kibana version and the status of its services. When Kibana answers 503, it returns the decoded status together with the error ([#20](https://github.com/ottramst/go-kibana/issues/20))
+* New `Features` service: `List` returns the Kibana features and their privileges, for building role feature privileges ([#21](https://github.com/ottramst/go-kibana/issues/21))
+* New `TaskManager` service: `Health` returns the Task Manager health; the statistics sections are kept as raw JSON ([#22](https://github.com/ottramst/go-kibana/issues/22))
+
 ## v0.2.0
 
 FEATURES:
