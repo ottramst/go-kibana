@@ -60,3 +60,17 @@ func TestTaskManagerService_Health_spaceAndErrors(t *testing.T) {
 		t.Errorf("Health() = %v, %v; want nil, ErrUnauthorized", got, err)
 	}
 }
+
+func TestTaskManagerService_Health_reason(t *testing.T) {
+	mux, client := setup(t)
+	mux.HandleFunc("GET /api/task_manager/_health", func(w http.ResponseWriter, _ *http.Request) {
+		writeJSON(t, w, http.StatusOK, []byte(`{"id":"k","timestamp":"2026-11-12T16:43:27.296Z","status":"error","reason":"setting [workload] is error","last_update":"2026-11-12T16:43:25.224Z","stats":{}}`))
+	})
+	got, _, err := client.TaskManager.Health(context.Background())
+	if err != nil {
+		t.Fatalf("Health() error = %v", err)
+	}
+	if got.Status != kibana.TaskManagerHealthError || got.Reason != "setting [workload] is error" {
+		t.Errorf("Health() = %s (%q), want error with the reason", got.Status, got.Reason)
+	}
+}

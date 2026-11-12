@@ -3,8 +3,6 @@ package kibana_test
 import (
 	"slices"
 	"testing"
-
-	"github.com/ottramst/go-kibana"
 )
 
 func TestAccStatus(t *testing.T) {
@@ -16,8 +14,9 @@ func TestAccStatus(t *testing.T) {
 	if status.Version.Number == "" {
 		t.Fatal("Get() returned no version")
 	}
-	if status.Status.Overall.Level != kibana.StatusAvailable {
-		t.Errorf("Overall.Level = %q, want %q", status.Status.Overall.Level, kibana.StatusAvailable)
+	// Kibana answers 200 when it is degraded too.
+	if status.Status.Overall.Level == "" {
+		t.Error("Overall.Level is empty")
 	}
 	if _, ok := status.Status.Core["elasticsearch"]; !ok {
 		t.Error("Core has no elasticsearch status")
@@ -25,15 +24,12 @@ func TestAccStatus(t *testing.T) {
 	if len(status.Status.Plugins) == 0 {
 		t.Error("Plugins is empty")
 	}
-	t.Logf("Kibana %s", status.Version.Number)
-
-	// The test Kibana is never older than the oldest supported version.
-	skipBelow(t, client, "8.19.0")
+	t.Logf("Kibana %s, %s", status.Version.Number, status.Status.Overall.Level)
 }
 
 func TestAccFeatures(t *testing.T) {
 	client := accClient(t)
-	features, _, err := client.Features.List(t.Context())
+	features, _, err := client.Features.List(t.Context(), nil)
 	if err != nil {
 		t.Fatalf("List() error = %v", err)
 	}
@@ -41,14 +37,14 @@ func TestAccFeatures(t *testing.T) {
 	for _, f := range features {
 		ids = append(ids, f.ID)
 	}
-	// dashboard_v2 replaced dashboard in 8.18, and both supported versions
-	// have it.
-	i := slices.Index(ids, "dashboard_v2")
+	// Most feature IDs differ between the versions (dashboard and
+	// dashboard_v2); advancedSettings is in both.
+	i := slices.Index(ids, "advancedSettings")
 	if i < 0 {
-		t.Fatalf("List() = %v, want dashboard_v2", ids)
+		t.Fatalf("List() = %v, want advancedSettings", ids)
 	}
 	if f := features[i]; f.Privileges["all"] == nil || f.Privileges["read"] == nil {
-		t.Errorf("dashboard_v2 privileges = %v, want all and read", f.Privileges)
+		t.Errorf("advancedSettings privileges = %v, want all and read", f.Privileges)
 	}
 }
 

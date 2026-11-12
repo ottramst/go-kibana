@@ -85,8 +85,9 @@ func TestStatusService_Get_redacted(t *testing.T) {
 func TestStatusService_Get_unavailable(t *testing.T) {
 	mux, client := setup(t)
 	mux.HandleFunc("GET /s/x/api/status", func(w http.ResponseWriter, _ *http.Request) {
-		// Kibana answers 503 with the full status when it is not available.
-		writeJSON(t, w, http.StatusServiceUnavailable, []byte(`{"name":"k","version":{"number":"9.5.6"},"status":{"overall":{"level":"degraded","summary":"1 service is degraded"},"core":{"elasticsearch":{"level":"degraded","summary":"slow"}}}}`))
+		// Kibana answers 503 with the full status when a core service is
+		// unavailable.
+		writeJSON(t, w, http.StatusServiceUnavailable, []byte(`{"name":"k","version":{"number":"9.5.6"},"status":{"overall":{"level":"unavailable","summary":"1 service is unavailable"},"core":{"elasticsearch":{"level":"unavailable","summary":"down"}}}}`))
 	})
 	got, resp, err := client.InSpace("x").Status.Get(context.Background())
 	var errResp *kibana.ErrorResponse
@@ -99,8 +100,8 @@ func TestStatusService_Get_unavailable(t *testing.T) {
 	if got == nil {
 		t.Fatal("Get() status = nil, want the decoded status")
 	}
-	if got.Status.Overall.Level != kibana.StatusDegraded || got.Status.Core["elasticsearch"].Summary != "slow" {
-		t.Errorf("Get() status = %+v, want degraded with the core status", got.Status)
+	if got.Status.Overall.Level != kibana.StatusUnavailable || got.Status.Core["elasticsearch"].Summary != "down" {
+		t.Errorf("Get() status = %+v, want unavailable with the core status", got.Status)
 	}
 }
 

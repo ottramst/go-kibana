@@ -17,7 +17,7 @@ func TestFeaturesService_List(t *testing.T) {
 		writeJSON(t, w, http.StatusOK, fixture(t, "features/list.json"))
 	})
 
-	got, _, err := client.Features.List(context.Background())
+	got, _, err := client.Features.List(context.Background(), nil)
 	if err != nil {
 		t.Fatalf("List() error = %v", err)
 	}
@@ -62,8 +62,20 @@ func TestFeaturesService_List_spaceAndErrors(t *testing.T) {
 	mux.HandleFunc("GET /s/x/api/features", func(w http.ResponseWriter, _ *http.Request) {
 		writeJSON(t, w, http.StatusForbidden, []byte(`{"statusCode":403,"error":"Forbidden","message":"Forbidden"}`))
 	})
-	got, _, err := client.InSpace("x").Features.List(context.Background())
+	got, _, err := client.InSpace("x").Features.List(context.Background(), nil)
 	if !errors.Is(err, kibana.ErrForbidden) || got != nil {
 		t.Errorf("List() = %v, %v; want nil, ErrForbidden", got, err)
+	}
+}
+
+func TestFeaturesService_List_options(t *testing.T) {
+	mux, client := setup(t)
+	mux.HandleFunc("GET /api/features", func(w http.ResponseWriter, r *http.Request) {
+		testQuery(t, r, "ignoreValidLicenses=true")
+		writeJSON(t, w, http.StatusOK, []byte(`[]`))
+	})
+	got, _, err := client.Features.List(context.Background(), &kibana.ListFeaturesOptions{IgnoreValidLicenses: true})
+	if err != nil || len(got) != 0 {
+		t.Errorf("List() = %v, %v; want no features", got, err)
 	}
 }

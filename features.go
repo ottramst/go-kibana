@@ -14,6 +14,8 @@ type FeaturesService service
 
 // Feature is a Kibana feature, such as "dashboard_v2" or "discover_v2". Its
 // ID and privilege names are what [KibanaPrivilege.Feature] grants.
+//
+// The alerting and cases fields of a feature are not decoded.
 type Feature struct {
 	ID          string           `json:"id"`
 	Name        string           `json:"name"`
@@ -120,17 +122,29 @@ type SubFeaturePrivilege struct {
 	Management     map[string][]string          `json:"management,omitempty"`
 }
 
+// ListFeaturesOptions are the options of [FeaturesService.List].
+type ListFeaturesOptions struct {
+	// IgnoreValidLicenses also returns the features that the current
+	// license does not allow.
+	IgnoreValidLicenses bool `url:"ignoreValidLicenses,omitempty"`
+}
+
 // List returns the Kibana features. The list depends on the Kibana version,
-// its configuration and the license.
+// its configuration and the license. Feature IDs differ between versions:
+// e.g. Kibana 8.19 has "dashboard" where 9.x has "dashboard_v2".
 //
 // The endpoint is in technical preview. It is not in the Kibana 8.19 API
 // specification, but Kibana 8.19 serves it with the same shape.
 //
 // Kibana API: GET /api/features
 // Kibana API docs: https://www.elastic.co/docs/api/doc/kibana/operation/operation-get-features
-func (s *FeaturesService) List(ctx context.Context, opts ...RequestOption) ([]*Feature, *Response, error) {
+func (s *FeaturesService) List(ctx context.Context, opt *ListFeaturesOptions, opts ...RequestOption) ([]*Feature, *Response, error) {
+	path, err := addQuery("/api/features", opt)
+	if err != nil {
+		return nil, nil, err
+	}
 	var features []*Feature
-	resp, err := s.client.do(ctx, http.MethodGet, "/api/features", nil, &features, opts)
+	resp, err := s.client.do(ctx, http.MethodGet, path, nil, &features, opts)
 	if err != nil {
 		return nil, resp, err
 	}

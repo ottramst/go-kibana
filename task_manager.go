@@ -19,9 +19,10 @@ type TaskManagerHealthStatus string
 
 // Task Manager health statuses.
 const (
-	TaskManagerHealthOK      TaskManagerHealthStatus = "OK"
-	TaskManagerHealthWarning TaskManagerHealthStatus = "warn"
-	TaskManagerHealthError   TaskManagerHealthStatus = "error"
+	TaskManagerHealthOK            TaskManagerHealthStatus = "OK"
+	TaskManagerHealthWarning       TaskManagerHealthStatus = "warn"
+	TaskManagerHealthError         TaskManagerHealthStatus = "error"
+	TaskManagerHealthUninitialized TaskManagerHealthStatus = "uninitialized"
 )
 
 // TaskManagerHealth is the health of the Kibana Task Manager.
@@ -31,6 +32,9 @@ type TaskManagerHealth struct {
 	Status     TaskManagerHealthStatus `json:"status"`
 	Timestamp  time.Time               `json:"timestamp"`
 	LastUpdate time.Time               `json:"last_update"`
+
+	// Reason explains a status other than TaskManagerHealthOK.
+	Reason string `json:"reason,omitempty"`
 
 	// Stats maps statistics sections, such as "configuration", "runtime",
 	// "workload" and "capacity_estimation", to their health.
