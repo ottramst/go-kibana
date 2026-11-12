@@ -1,0 +1,120 @@
+{
+  "id": "bbd371be-a630-404f-9152-945ef42c7c65",
+  "timestamp": "2026-11-12T16:43:27.296Z",
+  "status": "OK",
+  "last_update": "2026-11-12T16:43:25.224Z",
+  "stats": {
+    "configuration": {
+      "timestamp": "2026-11-12T16:43:03.433Z",
+      "value": {
+        "request_capacity": 1000,
+        "monitored_aggregated_stats_refresh_rate": 60000,
+        "monitored_stats_running_average_window": 50,
+        "monitored_task_execution_thresholds": {
+          "custom": {},
+          "default": {
+            "error_threshold": 90,
+            "warn_threshold": 80
+          }
+        },
+        "claim_strategy": "mget",
+        "poll_interval": 500,
+        "capacity": {
+          "config": 10,
+          "as_workers": 10,
+          "as_cost": 20
+        }
+      },
+      "status": "OK"
+    },
+    "runtime": {
+      "timestamp": "2026-11-12T16:43:25.224Z",
+      "value": {
+        "drift": {
+          "p50": 3413,
+          "p90": 4925.5,
+          "p95": 4926,
+          "p99": 5948
+        },
+        "polling": {
+          "last_successful_poll": "2026-11-12T16:43:25.224Z",
+          "last_polling_delay": "2026-11-12T16:43:03.432Z",
+          "claim_duration": {
+            "p50": 19,
+            "p90": 175.6000000000006,
+            "p95": 561.9999999999999,
+            "p99": 590
+          },
+          "duration": {
+            "p50": 25.5,
+            "p90": 209.40000000000055,
+            "p95": 568.4999999999999,
+            "p99": 600
+          },
+          "claim_conflicts": {
+            "p50": 0,
+            "p90": 0,
+            "p95": 0,
+            "p99": 0
+          },
+          "claim_mismatches": {
+            "p50": 0,
+            "p90": 0,
+            "p95": 0,
+            "p99": 0
+          },
+          "claim_stale_tasks": {
+            "p50": 0,
+            "p90": 9,
+            "p95": 9.299999999999997,
+            "p99": 10
+          },
+          "result_frequency_percent_as_number": {
+            "Failed": 0,
+            "NoAvailableWorkers": 0,
+            "NoTasksClaimed": 38,
+            "RanOutOfCapacity": 0,
+            "RunningAtCapacity": 29,
+            "PoolFilled": 33
+          },
+          "persistence": {
+            "recurring": 82,
+            "non_recurring": 18
+          }
+        }
+      },
+      "status": "OK"
+    },
+    "workload": {
+      "timestamp": "2026-11-12T16:43:05.916Z",
+      "value": {
+        "count": 3,
+        "overdue": 3
+      },
+      "status": "OK"
+    },
+    "capacity_estimation": {
+      "status": "OK",
+      "reason": "Task Manager is healthy, the assumedRequiredThroughputPerMinutePerKibana (216.20138888888889) < capacityPerMinutePerKibana (1200)",
+      "timestamp": "2026-11-12T16:43:27.296Z",
+      "value": {
+        "observed": {
+          "observed_kibana_instances": 1,
+          "max_throughput_per_minute_per_kibana": 1200,
+          "max_throughput_per_minute": 1200,
+          "minutes_to_drain_overdue": 3,
+          "avg_recurring_required_throughput_per_minute": 1,
+          "avg_recurring_required_throughput_per_minute_per_kibana": 1,
+          "avg_required_throughput_per_minute": 217,
+          "avg_required_throughput_per_minute_per_kibana": 217
+        },
+        "proposed": {
+          "provisioned_kibana": 2,
+          "min_required_kibana": 1,
+          "avg_recurring_required_throughput_per_minute_per_kibana": 1,
+          "avg_required_throughput_per_minute_per_kibana": 109
+        }
+      }
+    }
+  }
+}

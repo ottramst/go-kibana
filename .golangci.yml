@@ -21,6 +21,9 @@ linters:
   settings:
     misspell:
       locale: US
+      # Kibana's own name for its feature catalogue.
+      ignore-rules:
+        - catalogue
   exclusions:
     generated: lax
     presets:

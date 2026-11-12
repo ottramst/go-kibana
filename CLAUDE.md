@@ -121,6 +121,10 @@ The stack runs with security enabled and a trial license, on ports bound to 127.
   - `_rotate_key` needs `xpack.encryptedSavedObjects.keyRotation.decryptionOnlyKeys`, otherwise 400, and returns 429 while a rotation runs.
 
 - User sessions: `POST /api/security/session/_invalidate` needs a superuser (403 otherwise) and returns `{total}`. `match: "query"` requires `query.provider.type`, and `match: "all"` with a `query` is a 400. Sessions only exist for interactive logins, so API key or basic auth requests create none.
+- Platform (same shapes on 8.19.25 and 9.5.6):
+  - `GET /api/status` answers 503 with the full status body when the overall level is not `available`; `Status.Get` returns the decoded status and the `*ErrorResponse`. A 503 without a status body (e.g. from a proxy, or before Kibana is ready) returns only the error. Unauthenticated requests get 200 with only `{"status":{"overall":{"level":...}}}`. Plugin statuses add `reported`, which is not in the spec.
+  - `GET /api/features` returns the same shape on both versions (64 features on 9.5.6, 50 on 8.19.25). Features with only reserved privileges (e.g. `monitoring`) have `privileges: null`.
+  - `GET /api/task_manager/_health` stats sections are `{status, timestamp, value}`, plus `reason` for `capacity_estimation`. The section values change between versions, so they stay `json.RawMessage`.
 
 **Tooling:** `tools/coverage/` is a separate module, so the library keeps one dependency.
 - It parses the pinned specs and the `// Kibana API:` annotations, then writes `COVERAGE.md`.
@@ -146,7 +150,7 @@ The stack runs with security enabled and a trial license, on ports bound to 127.
   - Name objects with `randName(t, "acc")` and remove them in `cleanup(t, ...)`, which runs with a non-canceled context.
   - Changes to shared state, such as writing the default space, only run when `localStack()` (`KIBANA_URL` unset, i.e. the compose stack).
   - Each test runs a full lifecycle: create, conflict, get, read-modify-write update, list, delete, then get returning `ErrNotFound`.
-  - Gate version-specific endpoints on the `kibanaVersion(t, client)` result.
+  - Gate version-specific endpoints with `skipBelow(t, client, "9.5.0")` (built on `Status.Get`).
 - `example_test.go` holds compile-only `Example*` functions (no `// Output:`), shown on pkg.go.dev.
 
 ## CI

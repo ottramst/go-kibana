@@ -1,12 +1,15 @@
 package kibana_test
 
 import (
+	"cmp"
 	"context"
 	"crypto/rand"
 	"encoding/hex"
 	"net/http"
 	"net/url"
 	"os"
+	"strconv"
+	"strings"
 	"testing"
 
 	"github.com/ottramst/go-kibana"
@@ -63,31 +66,65 @@ func randName(t *testing.T, prefix string) string {
 	return prefix + "-" + hex.EncodeToString(b)
 }
 
-// kibanaVersion returns the version of the acceptance test Kibana.
-func kibanaVersion(t *testing.T, client *kibana.Client) string {
+// skipBelow skips the test if the acceptance test Kibana is older than
+// version minVersion, such as "9.5.0".
+func skipBelow(t *testing.T, client *kibana.Client, minVersion string) {
 	t.Helper()
-	req, err := client.NewRequest(t.Context(), http.MethodGet, "/api/status", nil)
+	status, _, err := client.Status.Get(t.Context())
 	if err != nil {
-		t.Fatal(err)
+		t.Fatalf("Status.Get() error = %v", err)
 	}
-	var status struct {
-		Version struct {
-			Number string `json:"number"`
-		} `json:"version"`
+	if compareVersions(status.Version.Number, minVersion) < 0 {
+		t.Skipf("needs Kibana %s or later, got %s", minVersion, status.Version.Number)
 	}
-	if _, err := client.Do(req, &status); err != nil {
-		t.Fatalf("GET /api/status error = %v", err)
-	}
-	return status.Version.Number
 }
 
-func TestAccStatus(t *testing.T) {
-	client := accClient(t)
-	v := kibanaVersion(t, client)
-	if v == "" {
-		t.Fatal("GET /api/status returned no version")
+// compareVersions compares two dotted versions such as "9.5.6", ignoring
+// suffixes such as "-SNAPSHOT". Missing parts count as 0.
+func compareVersions(a, b string) int {
+	parse := func(v string) []int {
+		v, _, _ = strings.Cut(v, "-")
+		var parts []int
+		for p := range strings.SplitSeq(v, ".") {
+			n, _ := strconv.Atoi(p)
+			parts = append(parts, n)
+		}
+		return parts
 	}
-	t.Logf("Kibana %s", v)
+	pa, pb := parse(a), parse(b)
+	for i := range max(len(pa), len(pb)) {
+		var x, y int
+		if i < len(pa) {
+			x = pa[i]
+		}
+		if i < len(pb) {
+			y = pb[i]
+		}
+		if c := cmp.Compare(x, y); c != 0 {
+			return c
+		}
+	}
+	return 0
+}
+
+func TestCompareVersions(t *testing.T) {
+	tests := []struct {
+		a, b string
+		want int
+	}{
+		{"9.5.6", "9.5.0", 1},
+		{"8.19.25", "9.5.0", -1},
+		{"9.5.0", "9.5.0", 0},
+		{"9.5", "9.5.0", 0},
+		{"9.10.0", "9.5.0", 1},
+		{"9.5.0-SNAPSHOT", "9.5.0", 0},
+		{"", "9.5.0", -1},
+	}
+	for _, tt := range tests {
+		if got := compareVersions(tt.a, tt.b); got != tt.want {
+			t.Errorf("compareVersions(%q, %q) = %d, want %d", tt.a, tt.b, got, tt.want)
+		}
+	}
 }
 
 // cleanup runs fn when the test ends, with a context that is not canceled.

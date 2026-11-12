@@ -1,0 +1,56 @@
+{
+  "name": "83ea1c561896",
+  "uuid": "5351da7f-0f5b-490c-8f4d-e1c782bd43da",
+  "version": {
+    "number": "8.19.25",
+    "build_hash": "3544eac4694b201b2dfb2ece54b8d28c08389679",
+    "build_number": 88695,
+    "build_snapshot": false,
+    "build_flavor": "traditional",
+    "build_date": "2026-11-05T11:06:46.658Z"
+  },
+  "status": {
+    "overall": {
+      "level": "available",
+      "summary": "All services and plugins are available"
+    },
+    "core": {
+      "elasticsearch": {
+        "level": "available",
+        "summary": "Elasticsearch is available",
+        "meta": {
+          "warningNodes": [],
+          "incompatibleNodes": []
+        }
+      },
+      "savedObjects": {
+        "level": "available",
+        "summary": "SavedObjects service has completed migrations and is available",
+        "meta": {
+          "migratedIndices": {
+            "migrated": 0,
+            "skipped": 0,
+            "patched": 7
+          }
+        }
+      }
+    },
+    "plugins": {
+      "alerting": {
+        "level": "available",
+        "summary": "Alerting is (probably) ready",
+        "reported": true
+      },
+      "taskManager": {
+        "level": "available",
+        "summary": "Task Manager is healthy",
+        "reported": true
+      }
+    }
+  },
+  "metrics": {
+    "last_updated": "2026-11-12T16:45:10.554Z",
+    "collection_interval_in_millis": 5000,
+    "concurrent_connections": 0
+  }
+}

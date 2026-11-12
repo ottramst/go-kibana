@@ -219,3 +219,23 @@ func ExampleUserSessionsService_Invalidate() {
 	}
 	fmt.Println("invalidated sessions:", result.Total)
 }
+
+func ExampleStatusService_Get() {
+	client, err := kibana.NewClient("http://localhost:5601", kibana.WithAPIKey(os.Getenv("KIBANA_API_KEY")))
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// Kibana answers 503 when it is not available. Get then returns the
+	// status too, to see which services are affected.
+	status, _, err := client.Status.Get(context.Background())
+	if status == nil {
+		log.Fatal(err)
+	}
+	fmt.Println("Kibana", status.Version.Number, status.Status.Overall.Level)
+	for name, s := range status.Status.Core {
+		if s.Level != kibana.StatusAvailable {
+			fmt.Println(name, s.Level, s.Summary)
+		}
+	}
+}
