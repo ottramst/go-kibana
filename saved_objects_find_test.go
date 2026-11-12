@@ -101,7 +101,7 @@ func TestSavedObjectsService_FindAll(t *testing.T) {
 	findPages(t, mux, 5, &requests)
 
 	var ids []string
-	opt := &kibana.FindSavedObjectsOptions{Types: []string{"index-pattern"}, PerPage: 2}
+	opt := &kibana.FindSavedObjectsOptions{Types: []string{"index-pattern"}, PerPage: 2, Aggs: "{}"}
 	for obj, err := range client.SavedObjects.FindAll(context.Background(), opt) {
 		if err != nil {
 			t.Fatalf("FindAll() error = %v", err)

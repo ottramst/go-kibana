@@ -57,12 +57,15 @@ type FindSavedObjectsOptions struct {
 	// Page is the page to return, starting at 1 (the default).
 	Page int `url:"page,omitempty"`
 
-	// PerPage is the number of objects per page. Kibana's default is 20;
-	// FindAll's is 100.
+	// PerPage is the number of objects per page. Kibana's default is 20,
+	// which 0 also selects; FindAll's is 100. Set it to 1 for queries that
+	// only need Total or Aggregations.
 	PerPage int `url:"per_page,omitempty"`
 
 	// Aggs are Elasticsearch aggregations on the object fields, as JSON,
-	// such as {"types": {"terms": {"field": "dashboard.attributes.title"}}}.
+	// such as {"by_x": {"terms": {"field": "<type>.attributes.<field>"}}}.
+	// Aggregations on text fields, such as titles, fail with
+	// [ErrBadRequest]: use keyword fields. FindAll does not send them.
 	Aggs string `url:"aggs,omitempty"`
 
 	// Namespaces searches these spaces instead of the client's space.
@@ -141,8 +144,9 @@ func (s *SavedObjectsService) Find(ctx context.Context, opt *FindSavedObjectsOpt
 //
 // Ranging over the iterator again starts over. On an error, the iterator
 // yields it once and stops. Kibana only returns the first 10,000 matches:
-// the iterator fails with [ErrBadRequest] after them, so narrow the query,
-// or use [SavedObjectsService.Export]. Objects created or deleted while
+// the iterator fails with [ErrBadRequest] at the first page that ends
+// beyond them (use a PerPage that divides 10,000 to get all of them), so
+// narrow the query, or use [SavedObjectsService.Export]. Objects created or deleted while
 // iterating can be skipped or returned twice; set opt.SortField for a
 // stable order.
 //
@@ -154,6 +158,8 @@ func (s *SavedObjectsService) FindAll(ctx context.Context, opt *FindSavedObjects
 	if opt != nil {
 		base = *opt
 	}
+	// The iterator has no use for aggregations.
+	base.Aggs = ""
 	return paginatePages(ctx, base.Page, base.PerPage, func(ctx context.Context, page, perPage int) ([]*SavedObject, int, error) {
 		req := base
 		req.Page, req.PerPage = page, perPage
