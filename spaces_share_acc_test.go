@@ -30,7 +30,7 @@ func TestAccSpacesSavedObjects(t *testing.T) {
 		t.Fatalf("CopySavedObjects(again) error = %v", err)
 	}
 	r := results[dst]
-	if r == nil || r.Success || len(r.Errors) != 1 || r.Errors[0].Error == nil || r.Errors[0].Error.Type != kibana.CopyErrorConflict {
+	if r == nil || r.Success || len(r.Errors) != 1 || r.Errors[0].Error == nil || r.Errors[0].Error.Type != kibana.ImportErrorConflict {
 		t.Fatalf("CopySavedObjects(again) = %+v, want a conflict", r)
 	}
 	destID := r.Errors[0].Error.DestinationID

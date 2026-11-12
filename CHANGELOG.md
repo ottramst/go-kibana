@@ -2,8 +2,16 @@
 
 FEATURES:
 
+* New `SavedObjects` service: `Export` streams an ndjson export to an `io.Writer`, `Import` imports one from an `io.Reader` (streamed as `multipart/form-data`), and `ResolveImportErrors` retries the objects that failed ([#29](https://github.com/ottramst/go-kibana/issues/29), [#30](https://github.com/ottramst/go-kibana/issues/30), [#31](https://github.com/ottramst/go-kibana/issues/31))
+* New `EncryptedSavedObjects` service: `RotateKey` rotates the encryption key of encrypted saved objects ([#32](https://github.com/ottramst/go-kibana/issues/32))
+* `ErrTooManyRequests` matches 429 Too Many Requests responses ([#32](https://github.com/ottramst/go-kibana/issues/32))
 * saved objects: the deprecated single-object API, `Create`, `Get`, `Update` and `Delete`, with the `SavedObject` type, whose `Attributes` are raw JSON ([#33](https://github.com/ottramst/go-kibana/issues/33))
 * saved objects: the deprecated bulk API, `BulkCreate`, `BulkGet`, `BulkUpdate`, `BulkDelete` and `BulkResolve`; per-object errors are reported in the result ([#34](https://github.com/ottramst/go-kibana/issues/34))
+
+NOTES:
+
+* spaces: the copy result types are now type aliases of the new import result types, which have the same format, and are deprecated: `CopySavedObjectsResult` is `ImportSavedObjectsResult`, `CopySavedObjectsSuccess` is `ImportSuccess`, `CopySavedObjectsError` is `ImportError`, `CopyErrorDetail` is `ImportErrorDetail`, `CopyErrorDestination` is `ImportErrorDestination`, `CopyErrorType` is `ImportErrorType`, and the `CopyError*` constants are the `ImportError*` constants. Existing code keeps compiling. The result now also has `Warnings` ([#30](https://github.com/ottramst/go-kibana/issues/30))
+* The acceptance test stack configures a decryption-only encryption key, to test key rotation ([#32](https://github.com/ottramst/go-kibana/issues/32))
 
 ## v0.3.0
 

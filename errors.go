@@ -22,6 +22,10 @@ var (
 	ErrForbidden    = errors.New("kibana: forbidden")
 	ErrNotFound     = errors.New("kibana: not found")
 	ErrConflict     = errors.New("kibana: conflict")
+
+	// ErrTooManyRequests is returned for 429 Too Many Requests, e.g. while
+	// an encryption key rotation is already running.
+	ErrTooManyRequests = errors.New("kibana: too many requests")
 )
 
 const (
@@ -97,6 +101,8 @@ func statusIs(code int, target error) bool {
 		return code == http.StatusNotFound
 	case ErrConflict:
 		return code == http.StatusConflict
+	case ErrTooManyRequests:
+		return code == http.StatusTooManyRequests
 	}
 	return false
 }

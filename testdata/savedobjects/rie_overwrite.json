@@ -1,0 +1,40 @@
+{
+  "successCount": 3,
+  "success": true,
+  "warnings": [],
+  "successResults": [
+    {
+      "type": "index-pattern",
+      "id": "probe-ip",
+      "meta": {
+        "title": "probe2-*",
+        "icon": "indexPatternApp"
+      },
+      "overwrite": true,
+      "destinationId": "e9fa6a65-eab7-499b-b2cb-4b9fcbcb7688",
+      "managed": false
+    },
+    {
+      "type": "visualization",
+      "id": "probe-vis",
+      "meta": {
+        "title": "probe vis",
+        "icon": "visualizeApp"
+      },
+      "overwrite": true,
+      "destinationId": "4577e77a-8008-4bc1-bc01-092e8b412afb",
+      "managed": false
+    },
+    {
+      "type": "dashboard",
+      "id": "probe-dash",
+      "meta": {
+        "title": "probe dash",
+        "icon": "dashboardApp"
+      },
+      "overwrite": true,
+      "destinationId": "20c11a7f-4b5b-4226-8e33-ea9873bd18e3",
+      "managed": false
+    }
+  ]
+}
