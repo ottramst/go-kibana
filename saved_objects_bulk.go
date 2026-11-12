@@ -17,7 +17,8 @@ type BulkCreateSavedObjectsOptions struct {
 }
 
 // BulkCreate creates saved objects in the client's space. Kibana generates
-// the IDs that are empty.
+// the IDs that are empty. To create objects in other spaces, use
+// [Client.InSpace] or [SavedObjectsService.Create].
 //
 // The result has an object for each of objs, in the same order. Objects
 // that could not be created, for example because of a conflict, have
@@ -216,7 +217,8 @@ type ResolvedSavedObject struct {
 // The result has an object for each of refs, in the same order. Missing
 // objects have SavedObject.Error set; the call itself still succeeds.
 //
-// Deprecated: Kibana deprecated the saved objects bulk API in 8.7.
+// Deprecated: Kibana deprecated the saved objects bulk API in 8.7. There is
+// no replacement.
 //
 // Kibana API: POST /api/saved_objects/_bulk_resolve
 // Kibana API docs: https://www.elastic.co/docs/api/doc/kibana/operation/operation-post-saved-objects-bulk-resolve

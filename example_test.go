@@ -340,7 +340,10 @@ func ExampleSavedObjectsService_Get() {
 
 	// Update the title. The version makes the update fail with ErrConflict
 	// if the dashboard changed since it was read.
-	obj.Attributes = json.RawMessage(`{"title":"` + attrs.Title + ` (archived)"}`)
+	attrs.Title += " (archived)"
+	if obj.Attributes, err = json.Marshal(attrs); err != nil {
+		log.Fatal(err)
+	}
 	if _, _, err := client.SavedObjects.Update(ctx, obj, nil); err != nil {
 		log.Fatal(err)
 	}
