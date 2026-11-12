@@ -3,6 +3,7 @@ package kibana_test
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
 	"io"
 	"mime"
@@ -11,6 +12,7 @@ import (
 	"reflect"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/ottramst/go-kibana"
 )
@@ -136,6 +138,43 @@ func TestSavedObjectsService_Import_canceled(t *testing.T) {
 	}
 }
 
+func TestSavedObjectsService_Import_blockedReaderCanceled(t *testing.T) {
+	mux, client := setup(t)
+	mux.HandleFunc("POST /api/saved_objects/_import", func(w http.ResponseWriter, _ *http.Request) {
+		writeJSON(t, w, http.StatusUnauthorized, []byte(`{"statusCode":401,"error":"Unauthorized","message":"Unauthorized"}`))
+	})
+	// A reader that blocks until the test ends.
+	pr, pw := io.Pipe()
+	t.Cleanup(func() { _ = pw.Close() })
+	ctx, cancel := context.WithTimeout(context.Background(), 200*time.Millisecond)
+	defer cancel()
+	done := make(chan error, 1)
+	go func() {
+		_, _, err := client.SavedObjects.Import(ctx, pr, nil)
+		done <- err
+	}()
+	select {
+	case err := <-done:
+		if err == nil {
+			t.Error("Import() error = nil, want an error")
+		}
+	case <-time.After(5 * time.Second):
+		t.Fatal("Import() did not return after the context was done")
+	}
+}
+
+func TestExportDetails(t *testing.T) {
+	lines := bytes.Split(bytes.TrimSpace(fixture(t, "savedobjects/export.ndjson")), []byte("\n"))
+	var got kibana.ExportDetails
+	if err := json.Unmarshal(lines[len(lines)-1], &got); err != nil {
+		t.Fatalf("Unmarshal() error = %v", err)
+	}
+	want := kibana.ExportDetails{ExportedCount: 3, MissingReferences: []kibana.SavedObjectRef{}, ExcludedObjects: []kibana.ExportExcludedObject{}}
+	if !reflect.DeepEqual(got, want) {
+		t.Errorf("ExportDetails = %+v, want %+v", got, want)
+	}
+}
+
 func TestSavedObjectsService_ResolveImportErrors(t *testing.T) {
 	export := fixture(t, "savedobjects/export.ndjson")
 	mux, client := setup(t)
@@ -186,9 +225,10 @@ func TestSavedObjectsService_importInvalidArguments(t *testing.T) {
 		t.Error("ResolveImportErrors(nil reader) error = nil, want error")
 	}
 	for name, req := range map[string]*kibana.ResolveImportErrorsRequest{
-		"nil request":   nil,
-		"no retries":    {},
-		"retry without": {Retries: []kibana.ImportRetry{{Type: "dashboard"}}},
+		"nil request":                  nil,
+		"no retries":                   {},
+		"retry without":                {Retries: []kibana.ImportRetry{{Type: "dashboard"}}},
+		"new copies and compatibility": {Retries: retry, CreateNewCopies: true, CompatibilityMode: true},
 	} {
 		if _, _, err := client.SavedObjects.ResolveImportErrors(ctx, file, req); err == nil {
 			t.Errorf("ResolveImportErrors(%s) error = nil, want error", name)

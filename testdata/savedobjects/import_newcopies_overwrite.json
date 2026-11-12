@@ -1,5 +1,0 @@
-{
-  "statusCode": 400,
-  "error": "Bad Request",
-  "message": "[request query]: cannot use [overwrite] with [createNewCopies]"
-}

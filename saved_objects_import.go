@@ -168,6 +168,11 @@ type ImportSavedObjectsOptions struct {
 // export such as the output of [SavedObjectsService.Export]. The export
 // details line is ignored.
 //
+// r is streamed to Kibana with chunked transfer encoding, without a
+// Content-Length. Import does not read r after it returns: it waits for a
+// pending Read of r, unless ctx is done first, in which case that Read
+// can complete after Import returned.
+//
 // Objects that could not be imported, for example because of conflicts,
 // are reported in [ImportSavedObjectsResult.Errors]; the call itself still
 // succeeds. Retry them with [SavedObjectsService.ResolveImportErrors].
@@ -242,7 +247,7 @@ type ResolveImportErrorsRequest struct {
 // ResolveImportErrors imports saved objects from r into the client's space
 // again, resolving the errors of a previous [SavedObjectsService.Import],
 // for example by overwriting conflicting objects. r must be the same ndjson
-// export.
+// export. It is streamed like the file of Import.
 //
 // Kibana API: POST /api/saved_objects/_resolve_import_errors
 // Kibana API docs: https://www.elastic.co/docs/api/doc/kibana/operation/operation-post-saved-objects-resolve-import-errors
@@ -255,6 +260,9 @@ func (s *SavedObjectsService) ResolveImportErrors(ctx context.Context, r io.Read
 	}
 	if len(req.Retries) == 0 {
 		return nil, nil, errors.New("kibana: Retries must not be empty")
+	}
+	if req.CreateNewCopies && req.CompatibilityMode {
+		return nil, nil, errors.New("kibana: CreateNewCopies cannot be combined with CompatibilityMode")
 	}
 	for i, retry := range req.Retries {
 		if retry.Type == "" || retry.ID == "" {
@@ -295,12 +303,20 @@ func (s *SavedObjectsService) uploadNDJSON(ctx context.Context, path string, r i
 		defer close(done)
 		pw.CloseWithError(writeNDJSONForm(mw, r, fields))
 	}()
+	// The transport waits for its body read to end before returning, also
+	// when ctx is done; a blocked Read of r would block it.
+	stop := context.AfterFunc(ctx, func() { _ = pr.CloseWithError(ctx.Err()) })
+	defer stop()
 	resp, err := s.client.Do(req, v)
 	// Kibana can answer before it read the whole form, e.g. with a 400.
 	// Stop the writer, and wait for it, so that r is not read after
-	// returning.
+	// returning, unless ctx is done: a blocked Read of r cannot be
+	// interrupted.
 	_ = pr.Close()
-	<-done
+	select {
+	case <-done:
+	case <-ctx.Done():
+	}
 	return resp, err
 }
 

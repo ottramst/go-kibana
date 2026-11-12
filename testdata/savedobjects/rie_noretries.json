@@ -1,5 +1,0 @@
-{
-  "statusCode": 400,
-  "error": "Bad Request",
-  "message": "[request body.retries]: expected value of type [array] but got [undefined]"
-}
