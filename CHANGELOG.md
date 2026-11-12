@@ -7,6 +7,7 @@ FEATURES:
 * `ErrTooManyRequests` matches 429 Too Many Requests responses ([#32](https://github.com/ottramst/go-kibana/issues/32))
 * saved objects: the deprecated single-object API, `Create`, `Get`, `Update` and `Delete`, with the `SavedObject` type, whose `Attributes` are raw JSON ([#33](https://github.com/ottramst/go-kibana/issues/33))
 * saved objects: the deprecated bulk API, `BulkCreate`, `BulkGet`, `BulkUpdate`, `BulkDelete` and `BulkResolve`; per-object errors are reported in the result ([#34](https://github.com/ottramst/go-kibana/issues/34))
+* saved objects: the deprecated `Find`, with `FindAll` iterating over all matches (`iter.Seq2`), and `Resolve` ([#35](https://github.com/ottramst/go-kibana/issues/35))
 
 NOTES:
 

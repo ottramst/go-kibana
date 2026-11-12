@@ -124,8 +124,10 @@ The stack runs with security enabled and a trial license, on ports bound to 127.
   - PUT merges top-level attributes, keeps the references when `references` is left out, and replaces them when it is sent (also `[]`). Its response only has `id, type, updated_at, version, namespaces, attributes` (plus `created_at` for an upsert). PUT on a missing object is a 404, unless `upsert` holds the attributes to create it with. The 9.5 PUT body rejects the migration versions.
   - Create with an existing ID is a 409, unless `?overwrite=true`. An unknown type is a 400. DELETE answers 200 with `{}`; it works on 8.19, although the 8.19 spec does not list it.
   - Bulk endpoints answer 200 with per-item errors (`{id, type, error: {statusCode, error, message}}`): `_bulk_create`, `_bulk_get` and `_bulk_update` return `{saved_objects}`, `_bulk_delete` `{statuses: [{id, type, success, error?}]}`, `_bulk_resolve` `{resolved_objects: [{saved_object, outcome}]}`, where a missing object is a `saved_object` with an `error` and the outcome `exactMatch`.
-- Planned endpoints (see the sub-issues):
-  - `_find` sends `has_reference` as JSON inside the query string, and `type` as a repeated parameter.
+- Saved objects find and resolve (deprecated since 8.7; same on 8.19.25 and 9.5.6):
+  - `_find` requires `type` (400 otherwise), repeated for several types; an unknown type returns no objects, not an error. `has_reference` and `has_no_reference` are JSON in the query string, either an object or an array (repeating the parameter also works); the client always sends an array. `namespaces` works on 8.19 too. Items add `score` and `sort`.
+  - `page × per_page` over 10,000 is a 400 from Elasticsearch ("Result window is too large"). `per_page` defaults to 20. `aggs` on a `text` field such as `index-pattern.attributes.title` is a 400.
+  - `resolve/{type}/{id}` returns `{saved_object, outcome}`; `alias_target_id` and `alias_purpose` only come with legacy URL aliases, which cannot be created through the public API, so `aliasMatch`/`conflict` are untested live.
 
 - User sessions: `POST /api/security/session/_invalidate` needs a superuser (403 otherwise) and returns `{total}`. `match: "query"` requires `query.provider.type`, and `match: "all"` with a `query` is a 400. Sessions only exist for interactive logins, so API key or basic auth requests create none.
 - Platform (verified on 8.19.25 and 9.5.6):

@@ -50,3 +50,27 @@ func paginate[T any](ctx context.Context, from, size int, fetch pageFunc[T]) ite
 		}
 	}
 }
+
+// pageNumberFunc fetches page number page, starting at 1, of perPage items,
+// and returns the items and the total number of items.
+type pageNumberFunc[T any] func(ctx context.Context, page, perPage int) (items []T, total int, err error)
+
+// paginatePages is paginate for endpoints that take page numbers instead of
+// offsets, starting at page number page (1 if zero). A page shorter than
+// perPage before the last one, because items were deleted while iterating,
+// ends the iteration: the next offset would not start a page.
+func paginatePages[T any](ctx context.Context, page, perPage int, fetch pageNumberFunc[T]) iter.Seq2[T, error] {
+	if perPage <= 0 {
+		perPage = defaultPageSize
+	}
+	from := 0
+	if page > 1 {
+		from = (page - 1) * perPage
+	}
+	return paginate(ctx, from, perPage, func(ctx context.Context, from, size int) ([]T, int, error) {
+		if from%size != 0 {
+			return nil, 0, nil
+		}
+		return fetch(ctx, from/size+1, size)
+	})
+}
