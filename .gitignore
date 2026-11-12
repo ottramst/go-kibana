@@ -19,5 +19,6 @@ coverage.txt
 *~
 .*.swp
 
-# Local Claude Code settings
-.claude/
+# Local Claude Code settings; project subagents in .claude/agents/ are shared
+.claude/*
+!.claude/agents/
