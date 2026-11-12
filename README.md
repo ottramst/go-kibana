@@ -33,8 +33,8 @@ An idiomatic Go client for the [Kibana REST API](https://www.elastic.co/docs/api
 | Roles | CRUD ✅ · query with an iterator ✅ · bulk create or update ✅ |
 | User sessions | invalidate ✅ |
 | Status, features, Task Manager health | get status ✅ · list features ✅ · Task Manager health ✅ |
+| Short URLs | create, get, resolve and delete ✅ |
 | Tags (Kibana 9.5+) | CRUD with an iterator ✅ |
-| Short URLs | planned ([v0.3.0](https://github.com/ottramst/go-kibana/milestone/3)) |
 | Saved objects, encrypted saved objects | planned ([v0.4.0](https://github.com/ottramst/go-kibana/milestone/4)) |
 | Data views | planned ([v0.5.0](https://github.com/ottramst/go-kibana/milestone/5)) |
 

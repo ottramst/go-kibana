@@ -120,17 +120,25 @@ The stack runs with security enabled and a trial license, on ports bound to 127.
   - `_find` sends `has_reference` as JSON inside the query string, and `type` as a repeated parameter.
   - `_rotate_key` needs `xpack.encryptedSavedObjects.keyRotation.decryptionOnlyKeys`, otherwise 400, and returns 429 while a rotation runs.
 
+- User sessions: `POST /api/security/session/_invalidate` needs a superuser (403 otherwise) and returns `{total}`. `match: "query"` requires `query.provider.type`, and `match: "all"` with a `query` is a 400. Sessions only exist for interactive logins, so API key or basic auth requests create none.
+- Platform (verified on 8.19.25 and 9.5.6):
+  - `GET /api/status` answers 503 with the full status body only when a **core** service (Elasticsearch, saved objects) is unavailable or critical. A degraded Kibana, or one with unavailable plugins, answers 200. `Status.Get` returns the decoded status together with the 503 `*ErrorResponse`. A 503 without a status body (e.g. from a proxy) returns only the error.
+  - Unauthenticated callers, and since 9.5 callers without the `monitor` cluster privilege, get only `{"status":{"overall":{"level":...}}}` (no version). Plugin statuses add `reported`, which is not in the spec.
+  - `GET /api/features` has the same shape on both versions, but the IDs differ (`dashboard` on 8.19.25, `dashboard_v2` on 9.5.6; 50 and 64 features). Features with only reserved privileges (e.g. `monitoring`) have `privileges: null`. `?ignoreValidLicenses=true` is accepted but not in the spec.
+  - `GET /api/task_manager/_health` has a top-level `reason` when the status is not `OK`. Stats sections are `{status, timestamp, value}`, plus `reason` for `capacity_estimation`. The section values change between versions, so they stay `json.RawMessage`.
+- Short URLs (same on 8.19.25 and 9.5.6):
+  - `accessDate` and `createDate` are epoch milliseconds on both versions, although the 8.19 spec says strings. Responses add `url: ""`.
+  - Short URLs belong to a space: a get or resolve from another space is a 404.
+  - Resolve by slug counts as an access: Kibana increments `accessCount` and sets `accessDate` in the background, and returns the record as it was before. Get by ID changes nothing.
+  - A taken slug and an unknown `locatorId` are both 409. A `LEGACY_SHORT_URL_LOCATOR` `url` that is not a Kibana path is a 400.
+  - Create accepts slugs of 3 to 255 characters, but get, resolve and delete validate `{id}`/`{slug}` as 4 to 128 characters (400 otherwise).
+  - `humanReadableSlug` is deprecated in Kibana and ignored (a random 5-character slug is generated), so the client does not send it.
+  - DELETE answers 200 with the body `null`.
 - Tags (`/api/tags`, 9.5.6; 8.19.25 answers 404 on every tag route):
   - Responses are `{id, data: {name, description?, color}, meta: {created_at, updated_at, managed, version}}`; `Tag` flattens `data`. Lists are `{data, meta: {page, per_page, total}}`; `per_page` defaults to 20, at most 1000.
   - Create and update bodies only accept `name`, `description` and `color` (`additionalProperties: false`). `color: ""` is a 400; a missing color gets a **random** color, also on PUT, so `Color` is `omitempty` and updates must send it.
   - PUT replaces every field (a missing `description` clears it) and is an upsert: 200 when it updated, 201 when it created the tag with that ID. Its response leaves out `created_at`. There is no optimistic concurrency: `meta.version` cannot be sent.
   - POST answers 201. Duplicate names in a space are 409. DELETE answers 204. Tags belong to a space (404 from another one).
-- User sessions: `POST /api/security/session/_invalidate` needs a superuser (403 otherwise) and returns `{total}`. `match: "query"` requires `query.provider.type`, and `match: "all"` with a `query` is a 400. Sessions only exist for interactive logins, so API key or basic auth requests create none.
-- Platform (same shapes on 8.19.25 and 9.5.6):
-  - `GET /api/status` answers 503 with the full status body only when a **core** service (Elasticsearch, saved objects) is unavailable or critical. A degraded Kibana, or one with unavailable plugins, answers 200. `Status.Get` returns the decoded status together with the 503 `*ErrorResponse`. A 503 without a status body (e.g. from a proxy) returns only the error.
-  - Unauthenticated callers, and since 9.5 callers without the `monitor` cluster privilege, get only `{"status":{"overall":{"level":...}}}` (no version). Plugin statuses add `reported`, which is not in the spec.
-  - `GET /api/features` has the same shape on both versions, but the IDs differ (`dashboard` on 8.19.25, `dashboard_v2` on 9.5.6; 50 and 64 features). Features with only reserved privileges (e.g. `monitoring`) have `privileges: null`. `?ignoreValidLicenses=true` is accepted but not in the spec.
-  - `GET /api/task_manager/_health` has a top-level `reason` when the status is not `OK`. Stats sections are `{status, timestamp, value}`, plus `reason` for `capacity_estimation`. The section values change between versions, so they stay `json.RawMessage`.
 
 **Tooling:** `tools/coverage/` is a separate module, so the library keeps one dependency.
 - It parses the pinned specs and the `// Kibana API:` annotations, then writes `COVERAGE.md`.
