@@ -11,7 +11,7 @@ FEATURES:
 
 NOTES:
 
-* Tested against Kibana 8.19.25 and 9.5.6. Copy, sharing, role query and bulk responses have no schema in the 8.19 OpenAPI spec; the client was verified against both versions
+* Tested against Kibana 8.19.25 and 9.5.6. The OpenAPI specs have no response schemas for copy and sharing (in either version) or for role query and bulk (in 8.19), so the response types were verified against both versions
 
 ## v0.1.0
 
