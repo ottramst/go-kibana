@@ -34,6 +34,10 @@ type BulkRoleError struct {
 	Reason string `json:"reason"`
 }
 
+func (e BulkRoleError) Error() string {
+	return "kibana: " + e.Type + ": " + e.Reason
+}
+
 // BulkCreateOrUpdate creates or replaces several roles in one request. roles
 // maps role names to their definitions. The read-only fields of the roles are
 // ignored, and every Kibana privilege must list at least one space.

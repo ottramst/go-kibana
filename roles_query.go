@@ -81,6 +81,8 @@ func (s *RolesService) Query(ctx context.Context, req *QueryRolesRequest, opts .
 // starting at req.From and fetching req.Size roles per page (100 if zero).
 // Roles are sorted by name unless req.Sort is set, so that pages don't
 // overlap. If a page fails, the iterator yields the error and stops.
+// Elasticsearch limits the iteration to the first 10,000 roles; beyond them,
+// the iterator yields a [ErrBadRequest] error.
 //
 //	for role, err := range client.Roles.QueryAll(ctx, nil) {
 //		if err != nil {
@@ -89,12 +91,21 @@ func (s *RolesService) Query(ctx context.Context, req *QueryRolesRequest, opts .
 //		fmt.Println(role.Name)
 //	}
 func (s *RolesService) QueryAll(ctx context.Context, req *QueryRolesRequest, opts ...RequestOption) iter.Seq2[*Role, error] {
+	// Copy the request, including what it points to, so that changes by
+	// the caller don't affect later pages.
 	base := QueryRolesRequest{}
 	if req != nil {
 		base = *req
 	}
 	if base.Sort == nil {
 		base.Sort = &RoleSort{Field: "name", Direction: SortAsc}
+	} else {
+		sort := *base.Sort
+		base.Sort = &sort
+	}
+	if base.Filters != nil {
+		filters := *base.Filters
+		base.Filters = &filters
 	}
 	return paginate(ctx, base.From, base.Size, func(ctx context.Context, from, size int) ([]*Role, int, error) {
 		page := base

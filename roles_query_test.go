@@ -104,6 +104,28 @@ func TestRolesService_QueryAll(t *testing.T) {
 	}
 }
 
+func TestRolesService_QueryAll_copiesRequest(t *testing.T) {
+	mux, client := setup(t)
+	requests := roleQueryServer(t, mux, []string{"a", "b", "c"}, -1)
+
+	sort := &kibana.RoleSort{Field: "name", Direction: kibana.SortAsc}
+	filters := &kibana.QueryRolesFilters{}
+	for _, err := range client.Roles.QueryAll(context.Background(), &kibana.QueryRolesRequest{Size: 1, Sort: sort, Filters: filters}, kibana.WithHeader("X-Test", "yes")) {
+		if err != nil {
+			t.Fatalf("QueryAll() error = %v", err)
+		}
+		// Changing the caller's values while iterating must not affect
+		// later pages.
+		sort.Direction = kibana.SortDesc
+		filters.ShowReservedRoles = true
+	}
+	for i, r := range *requests {
+		if r.Sort.Direction != kibana.SortAsc || r.Filters == nil || r.Filters.ShowReservedRoles {
+			t.Errorf("request %d = sort %+v, filters %+v; want the original values", i, r.Sort, r.Filters)
+		}
+	}
+}
+
 func TestRolesService_QueryAll_error(t *testing.T) {
 	mux, client := setup(t)
 	roleQueryServer(t, mux, []string{"a", "b", "c"}, 2)

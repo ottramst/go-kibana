@@ -63,7 +63,7 @@ The stack runs with security enabled and a trial license, on ports bound to 127.
 - `ErrorResponse{StatusCode, StatusText (the "error" field), Message, Attributes, Body}`. `Is()` maps 400/401/403/404/409 to `ErrBadRequest`/`ErrUnauthorized`/`ErrForbidden`/`ErrNotFound`/`ErrConflict`. Fields of unexpected types are skipped. Bodies that are not a JSON object, such as proxy pages, become `Message`, cut to 512 bytes; `Body` keeps the whole body (up to 1 MiB).
 
 **Service conventions** (`spaces.go` is the template):
-- Method names: `List`, `Get`, `Create`, `Update`, `Delete`. Other operations will be named after the endpoint; the planned ones include `CopySavedObjects` (#12) and `Query`/`QueryAll` (#16).
+- Method names: `List`, `Get`, `Create`, `Update`, `Delete`. Other operations are named after the endpoint, e.g. `Query`.
 - Signatures: `(ctx, ids..., body/options, ...RequestOption) (*T, *Response, error)`, or `(*Response, error)` when Kibana returns no body.
 - Every method's doc comment ends with two lines that `tools/coverage` parses:
   ```go
@@ -75,7 +75,7 @@ The stack runs with security enabled and a trial license, on ports bound to 127.
 - Fields use plain values. Use `omitempty` only where Kibana rejects the empty value (e.g. `Space.Color`) or the field must not be sent; otherwise send it, so that `""` clears it: Kibana's PUT endpoints keep fields that are left out (see the Spaces quirks). Use pointers only when the zero value means something different from "not set". There are no `String()`/`Bool()` helpers; Go 1.26 has `new(expr)`.
 - Reject inputs that Kibana would silently widen, such as a role privilege without spaces.
 - Options structs (`ListSpacesOptions`, `CreateOrUpdateRoleOptions`) hold query parameters, are pointers, and may be nil.
-- Paginated endpoints get an iterator variant returning `iter.Seq2[*T, error]` (e.g. `QueryAll`) next to the single-page method.
+- Paginated endpoints get an iterator variant returning `iter.Seq2[*T, error]` (e.g. `RolesService.QueryAll`) next to the single-page method, built on the internal offset paginator `paginate` (`pagination.go`): lazy, restartable, yields an error once and stops, and stops on an empty page.
 - Deprecated endpoints (saved objects CRUD/bulk/find) get a `// Deprecated:` paragraph naming the replacement.
 
 **Kibana API quirks** (verified against 8.19.25 and 9.5.6):

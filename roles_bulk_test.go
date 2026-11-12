@@ -14,23 +14,23 @@ func TestRolesService_BulkCreateOrUpdate(t *testing.T) {
 	mux, client := setup(t)
 	mux.HandleFunc("POST /api/security/roles", func(w http.ResponseWriter, r *http.Request) {
 		testHeader(t, r, "kbn-xsrf", "true")
-		// Read-only fields are not sent, and base is [] for feature privileges.
+		// The request that produced the captured response.
 		testJSONBody(t, r, `{"roles":{
 			"probe-b-1":{"elasticsearch":{"cluster":["monitor"]}},
-			"probe-q-2":{"description":"d","elasticsearch":{},"kibana":[{"base":[],"feature":{"discover":["read"]},"spaces":["default"]}]}
+			"probe-q-1":{"elasticsearch":{"cluster":["monitor"]},"kibana":[{"base":["read"],"spaces":["default"]}]},
+			"probe-q-2":{"elasticsearch":{"cluster":["manage"]}},
+			"probe-b-bad":{"elasticsearch":{"cluster":["not_a_privilege"]}}
 		}}`)
 		writeJSON(t, w, http.StatusOK, fixture(t, "roles/bulk.json"))
 	})
 
-	roles := map[string]*kibana.Role{
-		"probe-b-1": {Name: "ignored", Elasticsearch: kibana.RoleElasticsearch{Cluster: []string{"monitor"}}},
-		"probe-q-2": {
-			Description:       "d",
-			TransientMetadata: map[string]any{"enabled": true},
-			Kibana:            []kibana.KibanaPrivilege{{Feature: map[string][]string{"discover": {"read"}}, Spaces: []string{"default"}, Reserved: []string{"x"}}},
-		},
-	}
-	got, _, err := client.Roles.BulkCreateOrUpdate(context.Background(), roles)
+	cluster := func(c string) kibana.RoleElasticsearch { return kibana.RoleElasticsearch{Cluster: []string{c}} }
+	got, _, err := client.Roles.BulkCreateOrUpdate(context.Background(), map[string]*kibana.Role{
+		"probe-b-1":   {Elasticsearch: cluster("monitor")},
+		"probe-q-1":   {Elasticsearch: cluster("monitor"), Kibana: []kibana.KibanaPrivilege{{Base: []string{"read"}, Spaces: []string{"default"}}}},
+		"probe-q-2":   {Elasticsearch: cluster("manage")},
+		"probe-b-bad": {Elasticsearch: cluster("not_a_privilege")},
+	})
 	if err != nil {
 		t.Fatalf("BulkCreateOrUpdate() error = %v", err)
 	}
@@ -41,7 +41,28 @@ func TestRolesService_BulkCreateOrUpdate(t *testing.T) {
 	if !ok || bad.Type != "action_request_validation_exception" || !strings.Contains(bad.Reason, "unknown cluster privilege [not_a_privilege]") {
 		t.Errorf("Errors = %+v", got.Errors)
 	}
-	if roles["probe-q-2"].Kibana[0].Base != nil || roles["probe-q-2"].Kibana[0].Reserved == nil {
+	if !strings.HasPrefix(bad.Error(), "kibana: action_request_validation_exception: ") {
+		t.Errorf("Error() = %q", bad.Error())
+	}
+}
+
+func TestRolesService_BulkCreateOrUpdate_readOnlyFields(t *testing.T) {
+	mux, client := setup(t)
+	mux.HandleFunc("POST /api/security/roles", func(w http.ResponseWriter, r *http.Request) {
+		// Read-only fields are not sent, and base is [] for feature privileges.
+		testJSONBody(t, r, `{"roles":{"r":{"description":"d","elasticsearch":{},"kibana":[{"base":[],"feature":{"discover":["read"]},"spaces":["default"]}]}}}`)
+		writeJSON(t, w, http.StatusOK, []byte(`{"created":["r"]}`))
+	})
+	roles := map[string]*kibana.Role{"r": {
+		Name:              "ignored",
+		Description:       "d",
+		TransientMetadata: map[string]any{"enabled": true},
+		Kibana:            []kibana.KibanaPrivilege{{Feature: map[string][]string{"discover": {"read"}}, Spaces: []string{"default"}, Reserved: []string{"x"}}},
+	}}
+	if _, _, err := client.Roles.BulkCreateOrUpdate(context.Background(), roles); err != nil {
+		t.Fatalf("BulkCreateOrUpdate() error = %v", err)
+	}
+	if roles["r"].Kibana[0].Base != nil || roles["r"].Kibana[0].Reserved == nil {
 		t.Error("BulkCreateOrUpdate() modified the caller's roles")
 	}
 }
