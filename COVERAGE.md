@@ -6,7 +6,7 @@ Endpoints of the official Kibana OpenAPI specs (v8.19.25, v9.5.6) and the go-kib
 
 Endpoint data comes from the [Kibana OpenAPI specification](https://github.com/elastic/kibana/tree/main/oas_docs) by Elastic, licensed under [CC BY-NC-ND 4.0](https://creativecommons.org/licenses/by-nc-nd/4.0/).
 
-**24 of 726 endpoints implemented.**
+**29 of 726 endpoints implemented.**
 
 | Area | Implemented |
 |---|---|
@@ -66,7 +66,7 @@ Endpoint data comes from the [Kibana OpenAPI specification](https://github.com/e
 | [streams](#streams) | 0 / 18 |
 | [synthetics](#synthetics) | 0 / 18 |
 | [system](#system) | 2 / 2 |
-| [Tags](#tags) | 0 / 5 |
+| [Tags](#tags) | 5 / 5 |
 | [task manager](#task-manager) | 1 / 1 |
 | [upgrade](#upgrade) | 0 / 6 |
 | [uptime](#uptime) | 0 / 2 |
@@ -1034,11 +1034,11 @@ Endpoint data comes from the [Kibana OpenAPI specification](https://github.com/e
 
 | Method | Path | v8.19.25 | v9.5.6 | go-kibana | Notes |
 |---|---|:-:|:-:|---|---|
-| GET | `/api/tags` | — | ✅ |  | Experimental; added in 9.5.0 |
-| POST | `/api/tags` | — | ✅ |  | Experimental; added in 9.5.0 |
-| GET | `/api/tags/{id}` | — | ✅ |  | Experimental; added in 9.5.0 |
-| PUT | `/api/tags/{id}` | — | ✅ |  | Experimental; added in 9.5.0 |
-| DELETE | `/api/tags/{id}` | — | ✅ |  | Experimental; added in 9.5.0 |
+| GET | `/api/tags` | — | ✅ | `TagsService.List` | Experimental; added in 9.5.0 |
+| POST | `/api/tags` | — | ✅ | `TagsService.Create` | Experimental; added in 9.5.0 |
+| GET | `/api/tags/{id}` | — | ✅ | `TagsService.Get` | Experimental; added in 9.5.0 |
+| PUT | `/api/tags/{id}` | — | ✅ | `TagsService.Update` | Experimental; added in 9.5.0 |
+| DELETE | `/api/tags/{id}` | — | ✅ | `TagsService.Delete` | Experimental; added in 9.5.0 |
 
 ## task manager
 

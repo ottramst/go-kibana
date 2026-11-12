@@ -1,0 +1,22 @@
+{
+  "data": [
+    {
+      "id": "cce96b7f-9508-4cbd-a8c3-c272f5497862",
+      "data": {
+        "name": "probe-tag-2",
+        "color": "#ff09e2"
+      },
+      "meta": {
+        "created_at": "2026-11-12T16:43:36.904Z",
+        "managed": false,
+        "updated_at": "2026-11-12T16:43:36.904Z",
+        "version": "WzE1LDFd"
+      }
+    }
+  ],
+  "meta": {
+    "page": 2,
+    "per_page": 1,
+    "total": 2
+  }
+}

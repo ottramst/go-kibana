@@ -68,6 +68,7 @@ type Client struct {
 	ShortURLs    *ShortURLsService
 	Spaces       *SpacesService
 	Status       *StatusService
+	Tags         *TagsService
 	TaskManager  *TaskManagerService
 	UserSessions *UserSessionsService
 }
@@ -179,6 +180,7 @@ func (c *Client) initServices() {
 	c.ShortURLs = (*ShortURLsService)(&c.common)
 	c.Spaces = (*SpacesService)(&c.common)
 	c.Status = (*StatusService)(&c.common)
+	c.Tags = (*TagsService)(&c.common)
 	c.TaskManager = (*TaskManagerService)(&c.common)
 	c.UserSessions = (*UserSessionsService)(&c.common)
 }

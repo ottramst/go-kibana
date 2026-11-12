@@ -134,6 +134,11 @@ The stack runs with security enabled and a trial license, on ports bound to 127.
   - Create accepts slugs of 3 to 255 characters, but get, resolve and delete validate `{id}`/`{slug}` as 4 to 128 characters (400 otherwise).
   - `humanReadableSlug` is deprecated in Kibana and ignored (a random 5-character slug is generated), so the client does not send it.
   - DELETE answers 200 with the body `null`.
+- Tags (`/api/tags`, 9.5.6; 8.19.25 answers 404 on every tag route):
+  - Responses are `{id, data: {name, description?, color}, meta: {created_at, updated_at, managed, version}}`; `Tag` flattens `data`. Lists are `{data, meta: {page, per_page, total}}`; `per_page` defaults to 20, at most 1000.
+  - Create and update bodies only accept `name`, `description` and `color` (`additionalProperties: false`). `color: ""` is a 400; a missing color gets a **random** color, also on PUT, so `Color` is `omitempty` and updates must send it.
+  - PUT replaces every field (a missing `description` clears it) and is an upsert: 200 when it updated, 201 when it created the tag with that ID. Its response leaves out `created_at`. There is no optimistic concurrency: `meta.version` cannot be sent.
+  - POST answers 201. Duplicate names in a space are 409. DELETE answers 204. Tags belong to a space (404 from another one).
 
 **Tooling:** `tools/coverage/` is a separate module, so the library keeps one dependency.
 - It parses the pinned specs and the `// Kibana API:` annotations, then writes `COVERAGE.md`.
@@ -159,7 +164,7 @@ The stack runs with security enabled and a trial license, on ports bound to 127.
   - Name objects with `randName(t, "acc")` and remove them in `cleanup(t, ...)`, which runs with a non-canceled context.
   - Changes to shared state, such as writing the default space, only run when `localStack()` (`KIBANA_URL` unset, i.e. the compose stack).
   - Each test runs a full lifecycle: create, conflict, get, read-modify-write update, list, delete, then get returning `ErrNotFound`.
-  - Gate version-specific endpoints on `client.Status.Get` (`Version.Number`).
+  - Gate version-specific endpoints with `skipBelow(t, client, "9.5.0")`, or compare `kibanaVersion(t, client)` with `compareVersions`. Both use `Status.Get` and fail when the version is hidden (no `monitor` privilege) instead of skipping.
 - `example_test.go` holds compile-only `Example*` functions (no `// Output:`), shown on pkg.go.dev.
 
 ## CI

@@ -6,6 +6,7 @@ FEATURES:
 * New `Features` service: `List` returns the Kibana features and their privileges, for building role feature privileges ([#21](https://github.com/ottramst/go-kibana/issues/21))
 * New `TaskManager` service: `Health` returns the Task Manager health; the statistics sections are kept as raw JSON ([#22](https://github.com/ottramst/go-kibana/issues/22))
 * New `ShortURLs` service: `Create`, `Get`, `Resolve` (by slug) and `Delete` ([#24](https://github.com/ottramst/go-kibana/issues/24), [#25](https://github.com/ottramst/go-kibana/issues/25))
+* New `Tags` service (Kibana 9.5+, experimental): `List`, `ListAll` (`iter.Seq2`), `Get`, `Create`, `Update` (creates missing tags) and `Delete` ([#27](https://github.com/ottramst/go-kibana/issues/27))
 
 ## v0.2.0
 

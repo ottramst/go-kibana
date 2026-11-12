@@ -257,3 +257,18 @@ func ExampleShortURLsService_Create() {
 	}
 	fmt.Println("http://localhost:5601/goto/" + u.Slug)
 }
+
+func ExampleTagsService_ListAll() {
+	client, err := kibana.NewClient("http://localhost:5601", kibana.WithAPIKey(os.Getenv("KIBANA_API_KEY")))
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// Tags need Kibana 9.5 or later.
+	for tag, err := range client.InSpace("marketing").Tags.ListAll(context.Background(), &kibana.ListTagsOptions{Query: "campaign"}) {
+		if err != nil {
+			log.Fatal(err)
+		}
+		fmt.Println(tag.ID, tag.Name, tag.Color)
+	}
+}
