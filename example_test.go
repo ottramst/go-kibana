@@ -348,3 +348,23 @@ func ExampleSavedObjectsService_Get() {
 		log.Fatal(err)
 	}
 }
+
+func ExampleSavedObjectsService_FindAll() {
+	client, err := kibana.NewClient("http://localhost:5601", kibana.WithAPIKey(os.Getenv("KIBANA_API_KEY")))
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// Find the visualizations that use a data view.
+	opt := &kibana.FindSavedObjectsOptions{
+		Types:        []string{"visualization", "lens"},
+		HasReference: []kibana.SavedObjectRef{{Type: "index-pattern", ID: "logs-data-view"}},
+		Fields:       []string{"title"},
+	}
+	for obj, err := range client.SavedObjects.FindAll(context.Background(), opt) {
+		if err != nil {
+			log.Fatal(err)
+		}
+		fmt.Println(obj.Type, obj.ID)
+	}
+}

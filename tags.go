@@ -171,23 +171,10 @@ func (s *TagsService) ListAll(ctx context.Context, opt *ListTagsOptions, opts ..
 	if opt != nil {
 		base = *opt
 	}
-	size := base.PerPage
-	if size <= 0 {
-		size = defaultPageSize
-	}
-	from := 0
-	if base.Page > 1 {
-		from = (base.Page - 1) * size
-	}
-	return paginate(ctx, from, size, func(ctx context.Context, from, size int) ([]*Tag, int, error) {
-		if from%size != 0 {
-			// A short page: the tags changed while iterating, and the next
-			// offset is not on a page boundary.
-			return nil, 0, nil
-		}
-		page := base
-		page.Page, page.PerPage = from/size+1, size
-		result, _, err := s.List(ctx, &page, opts...)
+	return paginatePages(ctx, base.Page, base.PerPage, func(ctx context.Context, page, perPage int) ([]*Tag, int, error) {
+		req := base
+		req.Page, req.PerPage = page, perPage
+		result, _, err := s.List(ctx, &req, opts...)
 		if err != nil {
 			return nil, 0, err
 		}

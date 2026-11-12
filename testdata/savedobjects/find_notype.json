@@ -1,0 +1,5 @@
+{
+  "statusCode": 400,
+  "error": "Bad Request",
+  "message": "[request query.type]: expected at least one defined value but got [undefined]"
+}
