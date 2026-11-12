@@ -58,6 +58,8 @@ services:
       ELASTICSEARCH_PASSWORD: changeme
       # Needed by alerting, connectors and encrypted saved objects.
       XPACK_ENCRYPTEDSAVEDOBJECTS_ENCRYPTIONKEY: go-kibana-acceptance-tests-encryption-key-1
+      # An old key, so that the encryption key rotation API can be tested.
+      XPACK_ENCRYPTEDSAVEDOBJECTS_KEYROTATION_DECRYPTIONONLYKEYS: '["go-kibana-acceptance-tests-old-key-000000001"]'
       XPACK_SECURITY_ENCRYPTIONKEY: go-kibana-acceptance-tests-security-key-00001
       XPACK_REPORTING_ENCRYPTIONKEY: go-kibana-acceptance-tests-reporting-key-0001
       TELEMETRY_OPTIN: "false"

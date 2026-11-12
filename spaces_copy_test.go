@@ -28,10 +28,10 @@ func TestSpacesService_CopySavedObjects(t *testing.T) {
 	if err != nil {
 		t.Fatalf("CopySavedObjects() error = %v", err)
 	}
-	want := map[string]*kibana.CopySavedObjectsResult{"probe-dst": {
+	want := map[string]*kibana.ImportSavedObjectsResult{"probe-dst": {
 		Success:      true,
 		SuccessCount: 1,
-		SuccessResults: []kibana.CopySavedObjectsSuccess{{
+		SuccessResults: []kibana.ImportSuccess{{
 			Type:          "index-pattern",
 			ID:            "probe-ip1",
 			Meta:          kibana.SavedObjectMeta{Title: "logs-*", Icon: "indexPatternApp"},
@@ -62,23 +62,23 @@ func TestSpacesService_CopySavedObjects_defaultCreateNewCopies(t *testing.T) {
 func TestSpacesService_CopySavedObjects_errors(t *testing.T) {
 	tests := []struct {
 		fixture string
-		want    kibana.CopySavedObjectsError
+		want    kibana.ImportError
 	}{
 		{
 			fixture: "spaces/copy_conflict.json",
-			want: kibana.CopySavedObjectsError{
+			want: kibana.ImportError{
 				Type: "index-pattern", ID: "probe-ip1",
 				Meta:  kibana.SavedObjectMeta{Title: "logs-*", Icon: "indexPatternApp"},
-				Error: &kibana.CopyErrorDetail{Type: kibana.CopyErrorConflict, DestinationID: "9b2ff723-07fa-4e02-a0e6-c1174fb61a76"},
+				Error: &kibana.ImportErrorDetail{Type: kibana.ImportErrorConflict, DestinationID: "9b2ff723-07fa-4e02-a0e6-c1174fb61a76"},
 			},
 		},
 		{
 			fixture: "spaces/copy_missing_references.json",
-			want: kibana.CopySavedObjectsError{
+			want: kibana.ImportError{
 				Type: "visualization", ID: "probe-vis1",
 				Meta: kibana.SavedObjectMeta{Title: "probe vis", Icon: "visualizeApp"},
-				Error: &kibana.CopyErrorDetail{
-					Type:       kibana.CopyErrorMissingReferences,
+				Error: &kibana.ImportErrorDetail{
+					Type:       kibana.ImportErrorMissingReferences,
 					References: []kibana.SavedObjectRef{{Type: "index-pattern", ID: "probe-missing-ip"}},
 				},
 			},
@@ -108,36 +108,36 @@ func TestSpacesService_CopySavedObjects_errors(t *testing.T) {
 	}
 }
 
-func TestCopySavedObjectsError_spaceFailure(t *testing.T) {
+func TestImportError_spaceFailure(t *testing.T) {
 	// Kibana reports a failure of the whole copy into a space as a Boom
 	// error payload, whose "error" field is the HTTP status text.
-	var got kibana.CopySavedObjectsError
+	var got kibana.ImportError
 	if err := json.Unmarshal([]byte(`{"statusCode":403,"error":"Forbidden","message":"Unable to bulk_create index-pattern"}`), &got); err != nil {
 		t.Fatalf("Unmarshal() error = %v", err)
 	}
-	want := kibana.CopySavedObjectsError{StatusCode: 403, StatusText: "Forbidden", Message: "Unable to bulk_create index-pattern"}
+	want := kibana.ImportError{StatusCode: 403, StatusText: "Forbidden", Message: "Unable to bulk_create index-pattern"}
 	if !reflect.DeepEqual(got, want) {
-		t.Errorf("CopySavedObjectsError = %+v, want %+v", got, want)
+		t.Errorf("ImportError = %+v, want %+v", got, want)
 	}
 	if err := json.Unmarshal([]byte(`{"error":`), &got); err == nil {
 		t.Error("Unmarshal(invalid) error = nil, want error")
 	}
 }
 
-func TestCopySavedObjectsError_unknownError(t *testing.T) {
+func TestImportError_unknownError(t *testing.T) {
 	// An object error of type "unknown", in the shape of Kibana's
 	// SavedObjectsImportUnknownError (not reproducible on demand).
-	var got kibana.CopySavedObjectsError
+	var got kibana.ImportError
 	data := `{"type":"dashboard","id":"d","meta":{"title":"D"},"overwrite":true,"error":{"type":"unknown","statusCode":500,"message":"boom"}}`
 	if err := json.Unmarshal([]byte(data), &got); err != nil {
 		t.Fatalf("Unmarshal() error = %v", err)
 	}
-	want := kibana.CopySavedObjectsError{
+	want := kibana.ImportError{
 		Type: "dashboard", ID: "d", Meta: kibana.SavedObjectMeta{Title: "D"}, Overwrite: true,
-		Error: &kibana.CopyErrorDetail{Type: kibana.CopyErrorUnknown, StatusCode: 500, Message: "boom"},
+		Error: &kibana.ImportErrorDetail{Type: kibana.ImportErrorUnknown, StatusCode: 500, Message: "boom"},
 	}
 	if !reflect.DeepEqual(got, want) {
-		t.Errorf("CopySavedObjectsError = %+v (detail %+v), want %+v (detail %+v)", got, got.Error, want, want.Error)
+		t.Errorf("ImportError = %+v (detail %+v), want %+v (detail %+v)", got, got.Error, want, want.Error)
 	}
 }
 

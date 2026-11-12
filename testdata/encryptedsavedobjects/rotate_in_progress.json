@@ -1,0 +1,5 @@
+{
+  "statusCode": 429,
+  "error": "Too Many Requests",
+  "message": "Encryption key rotation is in progress already. Please wait until it is completed and try again."
+}

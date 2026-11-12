@@ -60,7 +60,7 @@ The stack runs with security enabled and a trial license, on ports bound to 127.
   - `addQuery(path, opt)` encodes `url:"..."` struct tags with go-querystring, for any HTTP method.
   - `WithQueryParam` appends to the existing query string without re-encoding it.
   - `requireID(name, v)` rejects empty, `.` and `..` path parameters before sending.
-- `ErrorResponse{StatusCode, StatusText (the "error" field), Message, Attributes, Body}`. `Is()` maps 400/401/403/404/409 to `ErrBadRequest`/`ErrUnauthorized`/`ErrForbidden`/`ErrNotFound`/`ErrConflict`. Fields of unexpected types are skipped. Bodies that are not a JSON object, such as proxy pages, become `Message`, cut to 512 bytes; `Body` keeps the whole body (up to 1 MiB).
+- `ErrorResponse{StatusCode, StatusText (the "error" field), Message, Attributes, Body}`. `Is()` maps 400/401/403/404/409/429 to `ErrBadRequest`/`ErrUnauthorized`/`ErrForbidden`/`ErrNotFound`/`ErrConflict`/`ErrTooManyRequests`. Fields of unexpected types are skipped. Bodies that are not a JSON object, such as proxy pages, become `Message`, cut to 512 bytes; `Body` keeps the whole body (up to 1 MiB).
 
 **Service conventions** (`spaces.go` is the template):
 - Method names: `List`, `Get`, `Create`, `Update`, `Delete`. Other operations are named after the endpoint, e.g. `CopySavedObjects` or `Query`.
@@ -114,11 +114,13 @@ The stack runs with security enabled and a trial license, on ports bound to 127.
   - `DELETE /api/saved_objects/{type}/{id}` and `GET /api/features` are missing from the 8.19 spec, although 8.19 serves them.
   - Saved objects operationIds differ between the specs.
   - `/api/tags` only exists in 9.5+ (experimental). Data views v2 is 9.6+.
+- Saved objects import and export (same on 8.19.25 and 9.5.6):
+  - Export returns `application/ndjson`: one object per line, then a details line `{exportedCount, missingRefCount, missingReferences, excludedObjectsCount, excludedObjects}` unless `excludeExportDetails`. `type` and `objects` together are a 400, as is neither. A missing object is a 400 whose `attributes.objects` lists it. `search` and `hasReference` work on 8.19 too, although only the 9.5 spec has them.
+  - Import is `multipart/form-data` with a `file` part whose filename must end in `.ndjson` (400 otherwise); the details line is ignored. Chunked uploads work, so the client streams the form through `io.Pipe`. It returns 200 when objects fail, with `success: false` and `errors[]` in the same format as copy-to-space (hence the shared `Import*` types, and the deprecated `Copy*` aliases), plus `warnings`. `createNewCopies` with `overwrite` is a 400.
+  - `_resolve_import_errors` takes the same file plus a `retries` form field holding a JSON array; without it, 400. Index patterns imported into another space get a new `destinationId`, as with copy.
+  - `_rotate_key` needs `xpack.encryptedSavedObjects.keyRotation.decryptionOnlyKeys` (400 otherwise; the compose stack sets one), returns `{total, successful, failed}`, and 429 while another rotation runs. `batch_size` over 10000 is a 400.
 - Planned endpoints (see the sub-issues):
-  - Saved objects import (multipart) returns 200 even when objects fail; check `success` and `errors[]`.
-  - Export is ndjson that ends with a summary line.
   - `_find` sends `has_reference` as JSON inside the query string, and `type` as a repeated parameter.
-  - `_rotate_key` needs `xpack.encryptedSavedObjects.keyRotation.decryptionOnlyKeys`, otherwise 400, and returns 429 while a rotation runs.
 
 - User sessions: `POST /api/security/session/_invalidate` needs a superuser (403 otherwise) and returns `{total}`. `match: "query"` requires `query.provider.type`, and `match: "all"` with a `query` is a 400. Sessions only exist for interactive logins, so API key or basic auth requests create none.
 - Platform (verified on 8.19.25 and 9.5.6):
