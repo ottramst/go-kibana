@@ -74,7 +74,7 @@ The stack runs with security enabled and a trial license, on ports bound to 127.
 - Prefer one type for reads and writes, so read → modify → write works, and strip read-only fields in an unexported conversion: `Space.writable()`, `newRolePayload()`. Never mutate the caller's value.
 - Fields use plain values. Use `omitempty` only where Kibana rejects the empty value (e.g. `Space.Color`) or the field must not be sent; otherwise send it, so that `""` clears it: Kibana's PUT endpoints keep fields that are left out (see the Spaces quirks). Use pointers only when the zero value means something different from "not set". There are no `String()`/`Bool()` helpers; Go 1.26 has `new(expr)`.
 - Reject inputs that Kibana would silently widen, such as a role privilege without spaces.
-- Options structs (`ListSpacesOptions`, `CreateOrUpdateRoleOptions`) hold query parameters, are pointers, and may be nil. Request bodies that are not a domain object (such as `Space` or `Role`) use a `…Request` struct (e.g. `CopySavedObjectsRequest`).
+- Options structs (`ListSpacesOptions`, `CreateOrUpdateRoleOptions`) hold query parameters, are pointers, and may be nil. Request bodies that are not a domain object (such as `Space` or `Role`) use a `…Request` struct (e.g. the planned `CopySavedObjectsRequest`, #12).
 - Paginated endpoints get an iterator variant returning `iter.Seq2[*T, error]` (e.g. `QueryAll`) next to the single-page method.
 - Deprecated endpoints (saved objects CRUD/bulk/find) get a `// Deprecated:` paragraph naming the replacement.
 
