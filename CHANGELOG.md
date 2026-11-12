@@ -1,4 +1,4 @@
-## Unreleased
+## v0.3.0
 
 FEATURES:
 
@@ -7,6 +7,10 @@ FEATURES:
 * New `TaskManager` service: `Health` returns the Task Manager health; the statistics sections are kept as raw JSON ([#22](https://github.com/ottramst/go-kibana/issues/22))
 * New `ShortURLs` service: `Create`, `Get`, `Resolve` (by slug) and `Delete` ([#24](https://github.com/ottramst/go-kibana/issues/24), [#25](https://github.com/ottramst/go-kibana/issues/25))
 * New `Tags` service (Kibana 9.5+, experimental): `List`, `ListAll` (`iter.Seq2`), `Get`, `Create`, `Update` (creates missing tags) and `Delete` ([#27](https://github.com/ottramst/go-kibana/issues/27))
+
+NOTES:
+
+* Tested against Kibana 8.19.25 and 9.5.6. Features, short URLs and tags are technical preview or experimental in Kibana. The tags API only exists in Kibana 9.5+, and Kibana 8.19 answers `ErrNotFound`. The response types were verified against both versions where the specs are untyped or wrong: the 8.19 spec has short URL dates as strings, but both versions send epoch milliseconds
 
 ## v0.2.0
 
