@@ -86,8 +86,11 @@ func TestAccSavedObjectsCRUD(t *testing.T) {
 	if _, _, err := client.SavedObjects.Update(ctx, after, nil); err != nil {
 		t.Fatalf("Update(no references) error = %v", err)
 	}
-	if after, _, err = client.SavedObjects.Get(ctx, "visualization", vis.ID); err != nil || len(after.References) != 0 {
-		t.Errorf("references after Update(empty references) = %+v, %v; want none", after.References, err)
+	if after, _, err = client.SavedObjects.Get(ctx, "visualization", vis.ID); err != nil {
+		t.Fatalf("Get(updated) error = %v", err)
+	}
+	if len(after.References) != 0 {
+		t.Errorf("references after Update(empty references) = %+v, want none", after.References)
 	}
 
 	// Upsert creates a missing object.
