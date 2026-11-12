@@ -240,3 +240,20 @@ func ExampleStatusService_Get() {
 		}
 	}
 }
+
+func ExampleShortURLsService_Create() {
+	client, err := kibana.NewClient("http://localhost:5601", kibana.WithAPIKey(os.Getenv("KIBANA_API_KEY")))
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	u, _, err := client.ShortURLs.Create(context.Background(), &kibana.CreateShortURLRequest{
+		LocatorID: kibana.LegacyShortURLLocator,
+		Params:    map[string]any{"url": "/app/dashboards#/view/my-dashboard"},
+		Slug:      "my-dashboard",
+	})
+	if err != nil {
+		log.Fatal(err)
+	}
+	fmt.Println("http://localhost:5601/goto/" + u.Slug)
+}

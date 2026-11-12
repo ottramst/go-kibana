@@ -1,0 +1,15 @@
+{
+  "id": "cf12a2a5-8ac4-4fc0-b07f-64faa450f4de",
+  "locator": {
+    "id": "LEGACY_SHORT_URL_LOCATOR",
+    "version": "9.5.6",
+    "state": {
+      "url": "/app/dashboards#/"
+    }
+  },
+  "accessCount": 0,
+  "accessDate": 1794501807635,
+  "createDate": 1794501807635,
+  "slug": "probe-slug-1",
+  "url": ""
+}

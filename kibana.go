@@ -65,6 +65,7 @@ type Client struct {
 	// Services used for talking to different parts of the Kibana API.
 	Features     *FeaturesService
 	Roles        *RolesService
+	ShortURLs    *ShortURLsService
 	Spaces       *SpacesService
 	Status       *StatusService
 	TaskManager  *TaskManagerService
@@ -175,6 +176,7 @@ func (c *Client) initServices() {
 	c.common.client = c
 	c.Features = (*FeaturesService)(&c.common)
 	c.Roles = (*RolesService)(&c.common)
+	c.ShortURLs = (*ShortURLsService)(&c.common)
 	c.Spaces = (*SpacesService)(&c.common)
 	c.Status = (*StatusService)(&c.common)
 	c.TaskManager = (*TaskManagerService)(&c.common)
