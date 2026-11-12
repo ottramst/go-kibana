@@ -2,6 +2,7 @@ package kibana_test
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"log"
@@ -270,5 +271,32 @@ func ExampleTagsService_ListAll() {
 			log.Fatal(err)
 		}
 		fmt.Println(tag.ID, tag.Name, tag.Color)
+	}
+}
+
+func ExampleSavedObjectsService_Get() {
+	client, err := kibana.NewClient("http://localhost:5601", kibana.WithAPIKey(os.Getenv("KIBANA_API_KEY")))
+	if err != nil {
+		log.Fatal(err)
+	}
+	ctx := context.Background()
+
+	obj, _, err := client.SavedObjects.Get(ctx, "dashboard", "my-dashboard")
+	if err != nil {
+		log.Fatal(err)
+	}
+	// Decode the attributes into a struct of your own.
+	var attrs struct {
+		Title string `json:"title"`
+	}
+	if err := json.Unmarshal(obj.Attributes, &attrs); err != nil {
+		log.Fatal(err)
+	}
+
+	// Update the title. The version makes the update fail with ErrConflict
+	// if the dashboard changed since it was read.
+	obj.Attributes = json.RawMessage(`{"title":"` + attrs.Title + ` (archived)"}`)
+	if _, _, err := client.SavedObjects.Update(ctx, obj, nil); err != nil {
+		log.Fatal(err)
 	}
 }

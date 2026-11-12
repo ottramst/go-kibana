@@ -1,0 +1,19 @@
+{
+  "statuses": [
+    {
+      "success": true,
+      "id": "probe-b1",
+      "type": "index-pattern"
+    },
+    {
+      "id": "probe-nope",
+      "type": "index-pattern",
+      "error": {
+        "statusCode": 404,
+        "error": "Not Found",
+        "message": "Saved object [index-pattern/probe-nope] not found"
+      },
+      "success": false
+    }
+  ]
+}

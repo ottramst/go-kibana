@@ -1,0 +1,25 @@
+{
+  "saved_objects": [
+    {
+      "id": "probe-b1",
+      "type": "index-pattern",
+      "namespaces": [
+        "default"
+      ],
+      "updated_at": "2026-11-12T18:10:04.153Z",
+      "version": "WzE0LDFd",
+      "attributes": {
+        "title": "b1u-*"
+      }
+    },
+    {
+      "id": "probe-nope",
+      "type": "index-pattern",
+      "error": {
+        "statusCode": 404,
+        "error": "Not Found",
+        "message": "Saved object [index-pattern/probe-nope] not found"
+      }
+    }
+  ]
+}

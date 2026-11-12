@@ -1,0 +1,12 @@
+{
+  "id": "probe-ip",
+  "type": "index-pattern",
+  "updated_at": "2026-11-12T18:10:01.215Z",
+  "version": "WzExLDFd",
+  "namespaces": [
+    "default"
+  ],
+  "attributes": {
+    "title": "probe2-*"
+  }
+}

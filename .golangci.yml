@@ -31,6 +31,12 @@ linters:
       - common-false-positives
       - legacy
       - std-error-handling
+    rules:
+      # Tests exercise the deprecated saved objects API.
+      - path: _test\.go
+        linters:
+          - staticcheck
+        text: SA1019
 issues:
   max-issues-per-linter: 0
   max-same-issues: 0

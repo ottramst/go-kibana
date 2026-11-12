@@ -1,0 +1,27 @@
+{
+  "id": "probe-dash",
+  "type": "dashboard",
+  "namespaces": [
+    "default"
+  ],
+  "migrationVersion": {
+    "dashboard": "10.3.0"
+  },
+  "updated_at": "2026-11-12T18:09:59.085Z",
+  "created_at": "2026-11-12T18:09:59.085Z",
+  "version": "WzksMV0=",
+  "attributes": {
+    "title": "probe dash",
+    "panelsJSON": "[]"
+  },
+  "references": [
+    {
+      "name": "panel_0",
+      "type": "visualization",
+      "id": "probe-vis"
+    }
+  ],
+  "managed": false,
+  "coreMigrationVersion": "8.8.0",
+  "typeMigrationVersion": "10.3.0"
+}

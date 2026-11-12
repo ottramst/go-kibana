@@ -5,8 +5,7 @@ import (
 	"context"
 	"crypto/rand"
 	"encoding/hex"
-	"net/http"
-	"net/url"
+	"encoding/json"
 	"os"
 	"strconv"
 	"strings"
@@ -153,12 +152,12 @@ func cleanup(t *testing.T, fn func(ctx context.Context) error) {
 // client's space. Objects in a space are deleted with the space.
 func createIndexPattern(t *testing.T, client *kibana.Client, id, title string) {
 	t.Helper()
-	body := map[string]any{"attributes": map[string]string{"title": title}}
-	req, err := client.NewRequest(t.Context(), http.MethodPost, "/api/saved_objects/index-pattern/"+url.PathEscape(id), body)
+	attrs, err := json.Marshal(map[string]string{"title": title})
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, err := client.Do(req, nil); err != nil {
+	obj := &kibana.SavedObject{Type: "index-pattern", ID: id, Attributes: attrs}
+	if _, _, err := client.SavedObjects.Create(t.Context(), obj, nil); err != nil {
 		t.Fatalf("creating index pattern %s: %v", id, err)
 	}
 }
