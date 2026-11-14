@@ -48,6 +48,8 @@ const (
 //
 //	{"statusCode": 404, "error": "Not Found", "message": "Saved object [space/foo] not found"}
 type ErrorResponse struct {
+	_ [0]func()
+
 	// Method and URL identify the request. The URL has no credentials.
 	Method string `json:"-"`
 	URL    string `json:"-"`

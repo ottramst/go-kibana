@@ -336,6 +336,8 @@ func (c *Client) NewRequest(ctx context.Context, method, path string, body any, 
 // been read: it is decoded into the method's result, or reported in an
 // [*ErrorResponse].
 type Response struct {
+	_ [0]func()
+
 	// StatusCode is the HTTP status code, such as 200.
 	StatusCode int
 

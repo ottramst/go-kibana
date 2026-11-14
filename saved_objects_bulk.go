@@ -47,6 +47,8 @@ func (s *SavedObjectsService) BulkCreate(ctx context.Context, objs []*SavedObjec
 // BulkGetSavedObjectsItem is an object to get with
 // [SavedObjectsService.BulkGet].
 type BulkGetSavedObjectsItem struct {
+	_ [0]func()
+
 	Type string `json:"type"`
 	ID   string `json:"id"`
 
@@ -168,6 +170,8 @@ type BulkDeleteSavedObjectsOptions struct {
 // BulkDeleteStatus is the result of deleting one object with
 // [SavedObjectsService.BulkDelete].
 type BulkDeleteStatus struct {
+	_ [0]func()
+
 	SavedObjectRef
 	Success bool         `json:"success"`
 	Error   *ObjectError `json:"error,omitempty"`
@@ -224,6 +228,8 @@ const (
 // ResolvedSavedObject is a saved object found by its current ID or by a
 // legacy URL alias.
 type ResolvedSavedObject struct {
+	_ [0]func()
+
 	SavedObject *SavedObject   `json:"saved_object"`
 	Outcome     ResolveOutcome `json:"outcome"`
 

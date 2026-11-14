@@ -74,6 +74,8 @@ type FindSavedObjectsOptions struct {
 
 // FindSavedObjectsResult is a page of saved objects.
 type FindSavedObjectsResult struct {
+	_ [0]func()
+
 	Page    int `json:"page"`
 	PerPage int `json:"per_page"`
 

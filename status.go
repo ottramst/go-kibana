@@ -31,6 +31,8 @@ const (
 // callers without the "monitor" cluster privilege: only Health.Overall.Level
 // is set, and the other fields are empty, including Version.Number.
 type Status struct {
+	_ [0]func()
+
 	// Name is the Kibana server name.
 	Name string `json:"name"`
 
@@ -48,6 +50,8 @@ type Status struct {
 
 // StatusVersion is the version and build of a Kibana instance.
 type StatusVersion struct {
+	_ [0]func()
+
 	// Number is the Kibana version, such as "9.5.6".
 	Number        string    `json:"number"`
 	BuildHash     string    `json:"build_hash"`
@@ -60,6 +64,8 @@ type StatusVersion struct {
 // StatusHealth is the overall status of a Kibana instance and the status of
 // its services.
 type StatusHealth struct {
+	_ [0]func()
+
 	Overall ServiceStatus `json:"overall"`
 
 	// Core maps core services, such as "elasticsearch" and "savedObjects",
@@ -72,6 +78,8 @@ type StatusHealth struct {
 
 // ServiceStatus is the status of Kibana or one of its services.
 type ServiceStatus struct {
+	_ [0]func()
+
 	Level   StatusLevel `json:"level"`
 	Summary string      `json:"summary,omitempty"`
 	Detail  string      `json:"detail,omitempty"`

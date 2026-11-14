@@ -22,6 +22,8 @@ type TagsService service
 // Tag is a saved object tag. The same type is used for reads and writes: ID
 // and Meta are ignored when writing.
 type Tag struct {
+	_ [0]func()
+
 	ID          string
 	Name        string
 	Description string
@@ -36,6 +38,8 @@ type Tag struct {
 
 // TagMeta holds the metadata of a [Tag].
 type TagMeta struct {
+	_ [0]func()
+
 	// CreatedAt is zero in the result of [TagsService.CreateOrUpdate] when the tag
 	// already existed.
 	CreatedAt time.Time `json:"created_at,omitzero"`
@@ -129,6 +133,8 @@ type ListTagsOptions struct {
 
 // ListTagsResult is a page of tags.
 type ListTagsResult struct {
+	_ [0]func()
+
 	Tags    []Tag
 	Page    int
 	PerPage int

@@ -33,8 +33,10 @@ The new options types are named `<Method><Noun>Options`, e.g. `GetSpaceOptions`,
 `DeleteRoleOptions`, `ListDataViewsOptions` or `PreviewSwapReferencesOptions`. Iterators share the options
 of their single-page method (`QueryRolesOptions` for `Query` and `QueryAll`).
 
-Options and `…Request` structs now have an unexported field. Literals of them must name their fields
-(`&kibana.ListSpacesOptions{Purpose: kibana.SpacePurposeAny}`), and they can't be compared with `==`.
+Every exported struct except `Client` now has an unexported field. Literals must name their fields
+(`&kibana.ListSpacesOptions{Purpose: kibana.SpacePurposeAny}`, `kibana.SavedObjectRef{Type: "dashboard", ID: id}`),
+and structs can't be compared with `==` or used as map keys: compare them with `reflect.DeepEqual`, or
+compare their fields. In return, adding fields in later v1 releases never breaks your code.
 
 ## Renamed and removed identifiers
 

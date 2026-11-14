@@ -39,12 +39,16 @@ type QueryRolesRequest struct {
 
 // RoleSort sorts roles by a field, such as "name".
 type RoleSort struct {
+	_ [0]func()
+
 	Field     string        `json:"field"`
 	Direction SortDirection `json:"direction"`
 }
 
 // QueryRolesFilters filters the roles of a query.
 type QueryRolesFilters struct {
+	_ [0]func()
+
 	// ShowReservedRoles includes the built-in roles, such as "superuser" or
 	// "viewer", which a query leaves out by default.
 	ShowReservedRoles bool `json:"showReservedRoles,omitempty"`
@@ -52,6 +56,8 @@ type QueryRolesFilters struct {
 
 // QueryRolesResult is a page of roles.
 type QueryRolesResult struct {
+	_ [0]func()
+
 	Roles []Role `json:"roles"`
 
 	// Count is the number of roles in this page.

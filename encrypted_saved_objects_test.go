@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"net/http"
+	"reflect"
 	"testing"
 
 	"github.com/ottramst/go-kibana"
@@ -20,7 +21,7 @@ func TestEncryptedSavedObjectsService_RotateKey(t *testing.T) {
 	if err != nil {
 		t.Fatalf("RotateKey() error = %v", err)
 	}
-	if want := (kibana.RotateKeyResult{Total: 75, Successful: 74}); *got != want {
+	if want := (kibana.RotateKeyResult{Total: 75, Successful: 74}); !reflect.DeepEqual(*got, want) {
 		t.Errorf("RotateKey() = %+v, want %+v", *got, want)
 	}
 }

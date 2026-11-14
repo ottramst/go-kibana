@@ -12,6 +12,8 @@ import (
 
 // BulkCreateOrUpdateRolesResult is the result of [RolesService.BulkCreateOrUpdate].
 type BulkCreateOrUpdateRolesResult struct {
+	_ [0]func()
+
 	// Created lists the names of the roles that were created.
 	Created []string `json:"created,omitempty"`
 
@@ -28,6 +30,8 @@ type BulkCreateOrUpdateRolesResult struct {
 
 // BulkRoleError is the error of a role in [BulkCreateOrUpdateRolesResult].
 type BulkRoleError struct {
+	_ [0]func()
+
 	// Type is the Elasticsearch error type, such as
 	// "action_request_validation_exception".
 	Type   string `json:"type"`

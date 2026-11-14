@@ -42,6 +42,8 @@ type ExportSavedObjectsRequest struct {
 // ExportDetails is the last line of an export, unless
 // ExportSavedObjectsRequest.ExcludeExportDetails is set.
 type ExportDetails struct {
+	_ [0]func()
+
 	ExportedCount int `json:"exportedCount"`
 
 	// MissingReferences lists the referenced objects that were not
@@ -57,6 +59,8 @@ type ExportDetails struct {
 
 // ExportExcludedObject is an object that was left out of an export.
 type ExportExcludedObject struct {
+	_ [0]func()
+
 	SavedObjectRef
 	Reason string `json:"reason,omitempty"`
 }

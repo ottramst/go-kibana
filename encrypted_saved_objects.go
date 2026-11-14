@@ -26,6 +26,8 @@ type RotateKeyOptions struct {
 
 // RotateKeyResult is the result of [EncryptedSavedObjectsService.RotateKey].
 type RotateKeyResult struct {
+	_ [0]func()
+
 	// Total is the number of encrypted objects that were found. It can be
 	// larger than Successful + Failed: Kibana skips the objects that are
 	// already encrypted with the current key or that no key can decrypt.

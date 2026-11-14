@@ -78,7 +78,7 @@ The stack runs with security enabled and a trial license, on ports bound to 127.
   - Every method has a nil-able `opt`, even if the options struct is still empty, so that query parameters can be added later without breaking callers.
   - Options hold query parameters (`url:"..."`), and flags that Kibana takes in the body next to the domain object (`url:"-"`, e.g. `CreateDataViewOptions.Override`). `…Request` structs hold only body fields.
   - A JSON object body is passed as a domain object (`*Space`, `*Role`) or a `…Request` struct, never as a bare slice or map. JSON-array bodies (the saved objects bulk endpoints) take slices.
-  - Every Options and `…Request` struct has an unexported `_ [0]func()` as its first field (first, because a trailing zero-size field adds padding). It makes the struct non-comparable, so that adding a slice or map field later is not a breaking change, and requires keyed literals.
+  - Every exported struct except `Client` (which holds a func already) has an unexported `_ [0]func()` as its first field (first, because a trailing zero-size field adds padding). It makes the struct non-comparable and requires keyed literals, so that adding any field later, including a slice or map, is not a breaking change and gorelease doesn't report it. New exported structs need it too. Tests compare structs with `reflect.DeepEqual`.
 - **Results:** envelopes around a resource or collection are unwrapped (`{"data_view": {...}}` returns `*DataView`). Scalar results and results with metadata are a `*<Verb><Noun>Result`. Returned collections are `[]*T` (or a `map[string]*T` keyed by Kibana); collections inside structs hold values. Exception: `BulkRoleError` has a value receiver, so the values of `map[string]BulkRoleError` are errors.
 - **Annotations:** every method's doc comment ends with lines that `tools/coverage` parses, as separate paragraphs, so that pkg.go.dev doesn't join them:
   ```go
@@ -92,7 +92,7 @@ The stack runs with security enabled and a trial license, on ports bound to 127.
   - Fields use plain values. Use `omitempty` only where Kibana rejects the empty value (e.g. `Space.Color`) or the field must not be sent; otherwise send it, so that `""` clears it: Kibana's PUT endpoints keep fields that are left out (see the Spaces quirks). Use pointers only when the zero value means something different from "not set". There are no `String()`/`Bool()` helpers; Go 1.26 has `new(expr)`.
   - Free-form JSON is `json.RawMessage` when it round-trips or callers decode it into their own types (`SavedObject.Attributes`, `DataViewFieldFormat.Params`), and `map[string]any` only for small values that are only written (`CreateShortURLRequest.Params`).
   - Enum-like strings have a named string type with constants. The constants are not exhaustive: Kibana may send other values, which still decode.
-  - `SavedObjectRef{Type, ID}` is embedded in result types that identify an object (e.g. `ImportSuccess`), not in input types. It must not gain fields or methods, which would change every type that embeds it.
+  - `SavedObjectRef{Type, ID}` is embedded in result types that identify an object (e.g. `ImportSuccess`), not in input types. It must not gain exported fields or methods, which would change every type that embeds it (its blank `_` field is not promoted).
 - Reject inputs that Kibana would silently widen, such as a role privilege without spaces.
 - Deprecated endpoints (saved objects CRUD/bulk/find) get a `// Deprecated:` paragraph naming the replacement, or saying that there is none.
 

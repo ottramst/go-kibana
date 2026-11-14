@@ -31,6 +31,8 @@ const (
 // clears them. Color cannot be cleared: Kibana requires a hex color when it
 // is sent, so an empty Color is left out.
 type Space struct {
+	_ [0]func()
+
 	// ID is part of the Kibana URL inside the space. It is limited to
 	// lowercase alphanumeric, underscore and hyphen characters, and cannot be
 	// changed once the space is created.
