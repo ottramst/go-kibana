@@ -35,14 +35,47 @@ jobs:
             echo "CHANGELOG.md has no '## $TAG' section."
             exit 1
           fi
+          # Re-runs keep the existing release, and any edits made to it.
+          if draft=$(gh release view "$TAG" --repo "$GITHUB_REPOSITORY" --json isDraft --jq .isDraft 2> /dev/null); then
+            echo "::notice::The $TAG release already exists; not changing it."
+            if [ "$draft" = true ]; then
+              echo "::warning::The $TAG release is a draft; publish it on GitHub."
+            fi
+            exit 0
+          fi
           case "$TAG" in
             *-*) prerelease=true ;;
             *) prerelease=false ;;
           esac
           gh release create "$TAG" --repo "$GITHUB_REPOSITORY" --verify-tag --title "$TAG" \
             --notes-file notes.md --prerelease="$prerelease"
+
+  # pkg.go.dev picks up the version from proxy.golang.org. The proxy caches a
+  # miss for up to about 30 minutes, so the first request waits for the tag to
+  # be visible, and later ones retry for longer than that. The release is
+  # already published here, so a miss is only a warning.
+  warm-proxy:
+    needs: release
+    runs-on: ubuntu-latest
+    # 38.5 minutes of waiting, plus up to 20 s for each request.
+    timeout-minutes: 55
+    permissions: {}
+    steps:
       - name: Warm the Go module proxy
         env:
           TAG: ${{ github.ref_name }}
-        # pkg.go.dev picks up the version from proxy.golang.org.
-        run: curl -fsS --retry 5 --retry-all-errors "https://proxy.golang.org/github.com/${GITHUB_REPOSITORY,,}/@v/${TAG}.info"
+        run: |
+          url="https://proxy.golang.org/github.com/${GITHUB_REPOSITORY,,}/@v/${TAG}.info"
+          # About 40 minutes in total, within the job timeout.
+          sleep 90
+          for attempt in $(seq 1 38); do
+            if curl -sS --max-time 20 --fail-with-body "$url"; then
+              exit 0
+            fi
+            echo
+            echo "Attempt $attempt: $TAG is not on the proxy yet."
+            if [ "$attempt" -lt 38 ]; then
+              sleep 60
+            fi
+          done
+          echo "::warning::proxy.golang.org does not serve $TAG yet; it will fetch it on first use."
