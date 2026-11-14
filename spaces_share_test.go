@@ -17,10 +17,10 @@ func TestSpacesService_GetShareableReferences(t *testing.T) {
 		writeJSON(t, w, http.StatusOK, fixture(t, "spaces/shareable_references.json"))
 	})
 
-	got, _, err := client.InSpace("probe-src").Spaces.GetShareableReferences(context.Background(), []kibana.SavedObjectRef{
+	got, _, err := client.InSpace("probe-src").Spaces.GetShareableReferences(context.Background(), &kibana.GetShareableReferencesRequest{Objects: []kibana.SavedObjectRef{
 		{Type: "index-pattern", ID: "probe-ip1"},
 		{Type: "index-pattern", ID: "probe-nope"},
-	}, nil)
+	}}, nil)
 	if err != nil {
 		t.Fatalf("GetShareableReferences() error = %v", err)
 	}
@@ -28,7 +28,7 @@ func TestSpacesService_GetShareableReferences(t *testing.T) {
 		t.Fatalf("len = %d, want 3", len(got))
 	}
 	want := &kibana.ShareableReference{
-		Type: "index-pattern", ID: "probe-ip1",
+		SavedObjectRef:            kibana.SavedObjectRef{Type: "index-pattern", ID: "probe-ip1"},
 		Spaces:                    []string{"probe-src"},
 		InboundReferences:         []kibana.SavedObjectReference{},
 		SpacesWithMatchingOrigins: []string{"probe-dst", "probe-nope"},
@@ -64,8 +64,8 @@ func TestSpacesService_UpdateObjectsSpaces(t *testing.T) {
 		t.Fatalf("UpdateObjectsSpaces() returned %d objects, want 2", len(got))
 	}
 	want := []*kibana.ObjectSpaces{
-		{Type: "index-pattern", ID: "probe-ip2", Spaces: []string{"probe-dst", "probe-src"}},
-		{Type: "index-pattern", ID: "probe-nope", Spaces: []string{}, Error: &kibana.ObjectError{
+		{SavedObjectRef: kibana.SavedObjectRef{Type: "index-pattern", ID: "probe-ip2"}, Spaces: []string{"probe-dst", "probe-src"}},
+		{SavedObjectRef: kibana.SavedObjectRef{Type: "index-pattern", ID: "probe-nope"}, Spaces: []string{}, Error: &kibana.ObjectError{
 			StatusCode: 404, StatusText: "Not Found", Message: "Saved object [index-pattern/probe-nope] not found",
 		}},
 	}
@@ -87,7 +87,7 @@ func TestSpacesService_shareInvalidArguments(t *testing.T) {
 	if _, _, err := client.Spaces.GetShareableReferences(ctx, nil, nil); err == nil {
 		t.Error("GetShareableReferences(nil): error = nil, want error")
 	}
-	if _, _, err := client.Spaces.GetShareableReferences(ctx, []kibana.SavedObjectRef{{ID: "d"}}, nil); err == nil {
+	if _, _, err := client.Spaces.GetShareableReferences(ctx, &kibana.GetShareableReferencesRequest{Objects: []kibana.SavedObjectRef{{ID: "d"}}}, nil); err == nil {
 		t.Error("GetShareableReferences(no type): error = nil, want error")
 	}
 	cases := map[string]*kibana.UpdateObjectsSpacesRequest{
@@ -109,9 +109,9 @@ func TestSpacesService_DisableLegacyURLAliases(t *testing.T) {
 		testJSONBody(t, r, `{"aliases":[{"targetSpace":"marketing","targetType":"dashboard","sourceId":"123"}]}`)
 		w.WriteHeader(http.StatusNoContent)
 	})
-	resp, err := client.Spaces.DisableLegacyURLAliases(context.Background(), []kibana.LegacyURLAlias{
+	resp, err := client.Spaces.DisableLegacyURLAliases(context.Background(), &kibana.DisableLegacyURLAliasesRequest{Aliases: []kibana.LegacyURLAlias{
 		{TargetSpace: "marketing", TargetType: "dashboard", SourceID: "123"},
-	}, nil)
+	}}, nil)
 	if err != nil {
 		t.Fatalf("DisableLegacyURLAliases() error = %v", err)
 	}
@@ -119,11 +119,14 @@ func TestSpacesService_DisableLegacyURLAliases(t *testing.T) {
 		t.Errorf("status = %d, want 204", resp.StatusCode)
 	}
 
+	if _, err := client.Spaces.DisableLegacyURLAliases(context.Background(), nil, nil); err == nil {
+		t.Error("DisableLegacyURLAliases(nil request): error = nil, want error")
+	}
 	for name, aliases := range map[string][]kibana.LegacyURLAlias{
 		"nil":            nil,
 		"missing source": {{TargetSpace: "marketing", TargetType: "dashboard"}},
 	} {
-		if _, err := client.Spaces.DisableLegacyURLAliases(context.Background(), aliases, nil); err == nil {
+		if _, err := client.Spaces.DisableLegacyURLAliases(context.Background(), &kibana.DisableLegacyURLAliasesRequest{Aliases: aliases}, nil); err == nil {
 			t.Errorf("DisableLegacyURLAliases(%s): error = nil, want error", name)
 		}
 	}

@@ -15,6 +15,15 @@ BREAKING CHANGES:
 * Task Manager: the health constants are `TaskManagerHealthStatus*` ([#43](https://github.com/ottramst/go-kibana/issues/43))
 * short URLs: `LegacyShortURLLocator` is `LegacyShortURLLocatorID` ([#43](https://github.com/ottramst/go-kibana/issues/43))
 * `RuntimeField.Type`, `ImportWarning.Type`, `SubFeaturePrivilegeGroup.GroupType` and `ResolvedSavedObject.AliasPurpose` have named string types (`RuntimeFieldType`, `ImportWarningType`, `SubFeaturePrivilegeGroupType`, `ResolveAliasPurpose`) with constants ([#43](https://github.com/ottramst/go-kibana/issues/43))
+* Methods whose body is a JSON object take a `…Request` struct instead of a bare slice or map: `Spaces.GetShareableReferences` (`GetShareableReferencesRequest`), `Spaces.DisableLegacyURLAliases` (`DisableLegacyURLAliasesRequest`), `Roles.BulkCreateOrUpdate` (`BulkCreateOrUpdateRolesRequest`) and `DataViews.UpdateFieldsMetadata` (`UpdateFieldsMetadataRequest`) ([#43](https://github.com/ottramst/go-kibana/issues/43))
+* saved objects: `Export` takes the writer before the request, and returns the export details line decoded as `*ExportDetails` (nil with `ExcludeExportDetails`). It fails if the last line is not the details line ([#43](https://github.com/ottramst/go-kibana/issues/43))
+* saved objects: `ResolveImportErrors` takes the retries as a slice; `CreateNewCopies` and `CompatibilityMode` moved to `ResolveImportErrorsOptions`, and `ResolveImportErrorsRequest` is removed ([#43](https://github.com/ottramst/go-kibana/issues/43))
+* saved objects: `Update` takes the type and ID as arguments, like `Spaces.Update`, and ignores `obj.Type` and `obj.ID` ([#43](https://github.com/ottramst/go-kibana/issues/43))
+* saved objects: `Find` and `FindAll` take the types as an argument, so that their options can be nil; `FindSavedObjectsOptions.Types` is removed, and `Aggs` is a `json.RawMessage` ([#43](https://github.com/ottramst/go-kibana/issues/43))
+* saved objects: `ImportError.Error` is now `ImportError.Detail`, and `*ImportError` implements `error` ([#43](https://github.com/ottramst/go-kibana/issues/43))
+* `ImportSuccess`, `ImportError`, `ShareableReference`, `ObjectSpaces`, `BulkDeleteStatus` and `ExportExcludedObject` embed `SavedObjectRef` instead of having `Type` and `ID` fields. Reading `r.Type` still works; literals name `SavedObjectRef` ([#43](https://github.com/ottramst/go-kibana/issues/43))
+* Collections inside result structs hold values instead of pointers: `Feature.Privileges`, `Feature.SubFeatures`, `SubFeature.PrivilegeGroups`, `SubFeaturePrivilegeGroup.Privileges`, `QueryRolesResult.Roles`, `ListTagsResult.Tags`, `FindSavedObjectsResult.SavedObjects`, `DataView.Fields` and `RuntimeFieldResult.Fields` ([#43](https://github.com/ottramst/go-kibana/issues/43))
+* data views: `GetDefault` returns a `*GetDefaultDataViewResult` instead of a string ([#43](https://github.com/ottramst/go-kibana/issues/43))
 
 FEATURES:
 

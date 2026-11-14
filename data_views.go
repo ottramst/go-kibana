@@ -57,7 +57,7 @@ type DataView struct {
 
 	// Fields maps the field names to their specification, including the
 	// runtime fields. Set by Kibana.
-	Fields map[string]*DataViewField `json:"fields,omitempty"`
+	Fields map[string]DataViewField `json:"fields,omitempty"`
 
 	// AllowHidden includes hidden and system indices, such as .alerts-*.
 	// It is only written by Create.
@@ -414,22 +414,25 @@ type GetDefaultDataViewOptions struct {
 	_ [0]func()
 }
 
-// GetDefault returns the ID of the default data view of the client's space,
-// or "" if it has none. It returns the ID rather than the data view
-// because the ID may belong to a data view that was deleted.
+// GetDefaultDataViewResult is the result of [DataViewsService.GetDefault].
+type GetDefaultDataViewResult struct {
+	// ID is the ID of the default data view, or "" if there is none. It
+	// may belong to a data view that was deleted.
+	ID string `json:"data_view_id"`
+}
+
+// GetDefault returns the default data view of the client's space.
 //
 // Kibana API: GET /api/data_views/default
 //
 // Kibana API docs: https://www.elastic.co/docs/api/doc/kibana/operation/operation-getdefaultdataviewdefault
-func (s *DataViewsService) GetDefault(ctx context.Context, opt *GetDefaultDataViewOptions, opts ...RequestOption) (string, *Response, error) {
-	var result struct {
-		DataViewID string `json:"data_view_id"`
-	}
-	resp, err := s.client.do(ctx, http.MethodGet, "/api/data_views/default", nil, &result, opt, opts)
+func (s *DataViewsService) GetDefault(ctx context.Context, opt *GetDefaultDataViewOptions, opts ...RequestOption) (*GetDefaultDataViewResult, *Response, error) {
+	result := new(GetDefaultDataViewResult)
+	resp, err := s.client.do(ctx, http.MethodGet, "/api/data_views/default", nil, result, opt, opts)
 	if err != nil {
-		return "", resp, err
+		return nil, resp, err
 	}
-	return result.DataViewID, resp, nil
+	return result, resp, nil
 }
 
 // SetDefaultDataViewOptions are the options of [DataViewsService.SetDefault].

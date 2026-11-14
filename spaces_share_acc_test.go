@@ -30,10 +30,10 @@ func TestAccSpacesSavedObjects(t *testing.T) {
 		t.Fatalf("CopySavedObjects(again) error = %v", err)
 	}
 	r := results[dst]
-	if r == nil || r.Success || len(r.Errors) != 1 || r.Errors[0].Error == nil || r.Errors[0].Error.Type != kibana.ImportErrorTypeConflict {
+	if r == nil || r.Success || len(r.Errors) != 1 || r.Errors[0].Detail == nil || r.Errors[0].Detail.Type != kibana.ImportErrorTypeConflict {
 		t.Fatalf("CopySavedObjects(again) = %+v, want a conflict", r)
 	}
-	destID := r.Errors[0].Error.DestinationID
+	destID := r.Errors[0].Detail.DestinationID
 	results, _, err = srcClient.Spaces.ResolveCopySavedObjectsErrors(ctx, &kibana.ResolveCopySavedObjectsErrorsRequest{
 		Objects:         []kibana.SavedObjectRef{ip},
 		Retries:         map[string][]kibana.CopySavedObjectsRetry{dst: {{Type: ip.Type, ID: ip.ID, Overwrite: true, DestinationID: destID}}},
@@ -73,7 +73,7 @@ func TestAccSpacesSavedObjects(t *testing.T) {
 	if updated[1].Error == nil || !errors.Is(updated[1].Error, kibana.ErrNotFound) {
 		t.Errorf("UpdateObjectsSpaces(add)[1].Error = %v, want ErrNotFound", updated[1].Error)
 	}
-	refs, _, err := srcClient.Spaces.GetShareableReferences(ctx, []kibana.SavedObjectRef{ip, missing}, nil)
+	refs, _, err := srcClient.Spaces.GetShareableReferences(ctx, &kibana.GetShareableReferencesRequest{Objects: []kibana.SavedObjectRef{ip, missing}}, nil)
 	if err != nil {
 		t.Fatalf("GetShareableReferences() error = %v", err)
 	}
@@ -90,9 +90,9 @@ func TestAccSpacesSavedObjects(t *testing.T) {
 	}
 
 	// Kibana accepts disabling aliases that don't exist.
-	if _, err := client.Spaces.DisableLegacyURLAliases(ctx, []kibana.LegacyURLAlias{
+	if _, err := client.Spaces.DisableLegacyURLAliases(ctx, &kibana.DisableLegacyURLAliasesRequest{Aliases: []kibana.LegacyURLAlias{
 		{TargetSpace: src, TargetType: "index-pattern", SourceID: randName(t, "alias")},
-	}, nil); err != nil {
+	}}, nil); err != nil {
 		t.Errorf("DisableLegacyURLAliases() error = %v", err)
 	}
 }

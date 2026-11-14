@@ -22,11 +22,11 @@ func TestDataViewsService_UpdateFieldsMetadata(t *testing.T) {
 			"msg":{"customLabel":null,"customDescription":null,"count":null,"format":null}}}`)
 		writeJSON(t, w, http.StatusOK, fixture(t, "dataviews/fields_metadata.json"))
 	})
-	got, _, err := client.InSpace("x").DataViews.UpdateFieldsMetadata(context.Background(), "probe-dv-2", map[string]kibana.DataViewFieldMetadata{
+	got, _, err := client.InSpace("x").DataViews.UpdateFieldsMetadata(context.Background(), "probe-dv-2", &kibana.UpdateFieldsMetadataRequest{Fields: map[string]kibana.DataViewFieldMetadata{
 		"host":   {CustomLabel: new("H"), CustomDescription: new("desc"), Count: new(5)},
 		"status": {Format: &kibana.DataViewFieldFormat{ID: "bytes"}},
 		"msg":    {CustomLabel: new(""), CustomDescription: new(""), Count: new(0), Format: &kibana.DataViewFieldFormat{}},
-	}, nil)
+	}}, nil)
 	if err != nil {
 		t.Fatalf("UpdateFieldsMetadata() error = %v", err)
 	}
@@ -41,7 +41,7 @@ func TestDataViewsService_UpdateFieldsMetadata_errors(t *testing.T) {
 		writeJSON(t, w, http.StatusBadRequest, fixture(t, "dataviews/fm_long.json"))
 	})
 	ctx := context.Background()
-	if _, _, err := client.DataViews.UpdateFieldsMetadata(ctx, "v", map[string]kibana.DataViewFieldMetadata{"host": {CustomLabel: new("x")}}, nil); !errors.Is(err, kibana.ErrBadRequest) {
+	if _, _, err := client.DataViews.UpdateFieldsMetadata(ctx, "v", &kibana.UpdateFieldsMetadataRequest{Fields: map[string]kibana.DataViewFieldMetadata{"host": {CustomLabel: new("x")}}}, nil); !errors.Is(err, kibana.ErrBadRequest) {
 		t.Errorf("UpdateFieldsMetadata() error = %v, want ErrBadRequest", err)
 	}
 	for name, fields := range map[string]map[string]kibana.DataViewFieldMetadata{
@@ -49,11 +49,14 @@ func TestDataViewsService_UpdateFieldsMetadata_errors(t *testing.T) {
 		"empty name":       {"": {CustomLabel: new("x")}},
 		"long description": {"host": {CustomDescription: new(strings.Repeat("é", 301))}},
 	} {
-		if _, _, err := client.DataViews.UpdateFieldsMetadata(ctx, "v", fields, nil); err == nil {
+		if _, _, err := client.DataViews.UpdateFieldsMetadata(ctx, "v", &kibana.UpdateFieldsMetadataRequest{Fields: fields}, nil); err == nil {
 			t.Errorf("UpdateFieldsMetadata(%s) error = nil, want error", name)
 		}
 	}
-	if _, _, err := client.DataViews.UpdateFieldsMetadata(ctx, "", map[string]kibana.DataViewFieldMetadata{"host": {}}, nil); err == nil {
+	if _, _, err := client.DataViews.UpdateFieldsMetadata(ctx, "v", nil, nil); err == nil {
+		t.Error("UpdateFieldsMetadata(nil request) error = nil, want error")
+	}
+	if _, _, err := client.DataViews.UpdateFieldsMetadata(ctx, "", &kibana.UpdateFieldsMetadataRequest{Fields: map[string]kibana.DataViewFieldMetadata{"host": {}}}, nil); err == nil {
 		t.Error("UpdateFieldsMetadata(no view) error = nil, want error")
 	}
 	// 300 characters, not bytes, are allowed.
@@ -61,7 +64,7 @@ func TestDataViewsService_UpdateFieldsMetadata_errors(t *testing.T) {
 	mux2.HandleFunc("POST /api/data_views/data_view/{viewId}/fields", func(w http.ResponseWriter, _ *http.Request) {
 		writeJSON(t, w, http.StatusOK, fixture(t, "dataviews/fields_metadata.json"))
 	})
-	if _, _, err := client2.DataViews.UpdateFieldsMetadata(ctx, "v", map[string]kibana.DataViewFieldMetadata{"host": {CustomDescription: new(strings.Repeat("é", 300))}}, nil); err != nil {
+	if _, _, err := client2.DataViews.UpdateFieldsMetadata(ctx, "v", &kibana.UpdateFieldsMetadataRequest{Fields: map[string]kibana.DataViewFieldMetadata{"host": {CustomDescription: new(strings.Repeat("é", 300))}}}, nil); err != nil {
 		t.Errorf("UpdateFieldsMetadata(300 characters) error = %v", err)
 	}
 }

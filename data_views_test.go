@@ -62,11 +62,11 @@ func TestDataViewsService_Get(t *testing.T) {
 	if got.TypeMeta != nil {
 		t.Errorf("TypeMeta = %+v, want nil", got.TypeMeta)
 	}
-	host := got.Fields["host"]
-	if host == nil || host.Type != "string" || !reflect.DeepEqual(host.ESTypes, []string{"keyword"}) || !host.Aggregatable || host.CustomLabel != "Host" || host.Count != 3 {
+	host, ok := got.Fields["host"]
+	if !ok || host.Type != "string" || !reflect.DeepEqual(host.ESTypes, []string{"keyword"}) || !host.Aggregatable || host.CustomLabel != "Host" || host.Count != 3 {
 		t.Errorf("Fields[host] = %+v", host)
 	}
-	if rt := got.Fields["rt1"]; rt == nil || rt.RuntimeField == nil || rt.RuntimeField.Type != "keyword" {
+	if rt, ok := got.Fields["rt1"]; !ok || rt.RuntimeField == nil || rt.RuntimeField.Type != "keyword" {
 		t.Errorf("Fields[rt1] = %+v, want a runtime field", rt)
 	}
 }
@@ -75,6 +75,8 @@ func TestDataViewsService_Create(t *testing.T) {
 	mux, client := setup(t)
 	mux.HandleFunc("POST /s/x/api/data_views/data_view", func(w http.ResponseWriter, r *http.Request) {
 		testHeader(t, r, "kbn-xsrf", "true")
+		// Override goes in the body, not the query.
+		testQuery(t, r, "")
 		// Fields and Version are not sent; empty fields are left out,
 		// because Kibana rejects null.
 		testJSONBody(t, r, `{"data_view":{"id":"probe-dv-2","title":"probe-logs-1","name":"Probe logs","timeFieldName":"@timestamp",
@@ -90,7 +92,7 @@ func TestDataViewsService_Create(t *testing.T) {
 		RuntimeFieldMap: map[string]kibana.RuntimeField{"rt1": {Type: "keyword", Script: &kibana.RuntimeFieldScript{Source: `emit("x")`}}},
 		FieldAttrs:      map[string]kibana.DataViewFieldAttrs{"host": {CustomLabel: "Host", Count: 3}},
 		Namespaces:      []string{"x"},
-		Fields:          map[string]*kibana.DataViewField{"host": {Name: "host"}},
+		Fields:          map[string]kibana.DataViewField{"host": {Name: "host"}},
 		AllowHidden:     true,
 		Version:         "ignored",
 	}
@@ -143,6 +145,8 @@ func TestDataViewsService_Update(t *testing.T) {
 		if got := r.PathValue("viewId"); got != "probe-dv-2" {
 			t.Errorf("viewId = %q", got)
 		}
+		// RefreshFields goes in the body, not the query.
+		testQuery(t, r, "")
 		// Only the fields Kibana accepts on update.
 		testJSONBody(t, r, `{"data_view":{"title":"probe-logs-1","name":"Probe logs","timeFieldName":"@timestamp","allowNoIndex":false,
 			"sourceFilters":[{"value":"msg"}],"fieldFormats":{"status":{"id":"number","params":{"pattern":"0,0"}}},
@@ -240,8 +244,8 @@ func TestDataViewsService_GetDefault(t *testing.T) {
 				writeJSON(t, w, http.StatusOK, fixture(t, name))
 			})
 			got, _, err := client.InSpace("x").DataViews.GetDefault(context.Background(), nil)
-			if err != nil || got != want {
-				t.Errorf("GetDefault() = %q, %v; want %q", got, err, want)
+			if err != nil || got.ID != want {
+				t.Errorf("GetDefault() = %+v, %v; want %q", got, err, want)
 			}
 		})
 	}

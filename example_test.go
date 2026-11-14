@@ -182,8 +182,8 @@ func ExampleSpacesService_CopySavedObjects() {
 		log.Fatal(err)
 	}
 	for _, e := range results["sales"].Errors {
-		if e.Error != nil {
-			fmt.Printf("%s %s: %s\n", e.Type, e.ID, e.Error.Type)
+		if e.Detail != nil {
+			fmt.Printf("%s %s: %s\n", e.Type, e.ID, e.Detail.Type)
 		}
 	}
 }
@@ -290,13 +290,14 @@ func ExampleSavedObjectsService_Export() {
 	defer f.Close()
 
 	// Export all dashboards and the objects they use.
-	_, err = client.SavedObjects.Export(context.Background(), &kibana.ExportSavedObjectsRequest{
+	details, _, err := client.SavedObjects.Export(context.Background(), f, &kibana.ExportSavedObjectsRequest{
 		Types:                 []string{"dashboard"},
 		IncludeReferencesDeep: true,
-	}, f, nil)
+	}, nil)
 	if err != nil {
 		log.Fatal(err)
 	}
+	fmt.Println("exported", details.ExportedCount, "objects; missing references:", details.MissingRefCount)
 }
 
 func ExampleSavedObjectsService_Import() {
@@ -317,7 +318,7 @@ func ExampleSavedObjectsService_Import() {
 	}
 	// Objects can fail although the import succeeded.
 	for _, e := range result.Errors {
-		fmt.Println("not imported:", e.Type, e.ID, e.Error.Type)
+		fmt.Println("not imported:", e.Error())
 	}
 	fmt.Println("imported", result.SuccessCount, "objects")
 }
@@ -347,7 +348,7 @@ func ExampleSavedObjectsService_Get() {
 	if obj.Attributes, err = json.Marshal(attrs); err != nil {
 		log.Fatal(err)
 	}
-	if _, _, err := client.SavedObjects.Update(ctx, obj, nil); err != nil {
+	if _, _, err := client.SavedObjects.Update(ctx, "dashboard", obj.ID, obj, nil); err != nil {
 		log.Fatal(err)
 	}
 }
@@ -360,11 +361,10 @@ func ExampleSavedObjectsService_FindAll() {
 
 	// Find the visualizations that use a data view.
 	opt := &kibana.FindSavedObjectsOptions{
-		Types:        []string{"visualization", "lens"},
 		HasReference: []kibana.SavedObjectRef{{Type: "index-pattern", ID: "logs-data-view"}},
 		Fields:       []string{"title"},
 	}
-	for obj, err := range client.SavedObjects.FindAll(context.Background(), opt) {
+	for obj, err := range client.SavedObjects.FindAll(context.Background(), []string{"visualization", "lens"}, opt) {
 		if err != nil {
 			log.Fatal(err)
 		}
