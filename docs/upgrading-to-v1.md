@@ -33,8 +33,11 @@ The new options types are named `<Method><Noun>Options`, e.g. `GetSpaceOptions`,
 `DeleteRoleOptions`, `ListDataViewsOptions` or `PreviewSwapReferencesOptions`. Iterators share the options
 of their single-page method (`QueryRolesOptions` for `Query` and `QueryAll`).
 
-Options and `…Request` structs now have an unexported field. Literals of them must name their fields
-(`&kibana.ListSpacesOptions{Purpose: kibana.SpacePurposeAny}`), and they can't be compared with `==`.
+Every exported struct now has an unexported field. Literals must name their fields
+(`&kibana.ListSpacesOptions{Purpose: kibana.SpacePurposeAny}`, `kibana.SavedObjectRef{Type: "dashboard", ID: id}`),
+and structs can't be compared with `==` or used as map keys: compare them with `reflect.DeepEqual`, or
+compare their fields. In return, a field added in a later v1 release can't break such code. `%+v` output now
+starts with `_:[]`.
 
 ## Renamed and removed identifiers
 
@@ -77,3 +80,4 @@ Options and `…Request` structs now have an unexported field. Literals of them 
 | `importErr.Error` (`*ImportErrorDetail`) | `importErr.Detail`. `*ImportError` implements `error`. |
 | `kibana.ImportSuccess{Type: t, ID: id}`, also `ImportError`, `ShareableReference`, `ObjectSpaces`, `BulkDeleteStatus` and `ExportExcludedObject` | `kibana.ImportSuccess{SavedObjectRef: kibana.SavedObjectRef{Type: t, ID: id}}`. Reading `r.Type` and `r.ID` is unchanged. |
 | `Feature.Privileges` (`map[string]*FeaturePrivilege`), `Feature.SubFeatures`, `SubFeature.PrivilegeGroups`, `SubFeaturePrivilegeGroup.Privileges`, `QueryRolesResult.Roles`, `ListTagsResult.Tags`, `FindSavedObjectsResult.SavedObjects`, `DataView.Fields`, `RuntimeFieldResult.Fields` (pointers) | Values (`map[string]FeaturePrivilege`, `[]Role`, …). Use `&result.Roles[i]` for a pointer, and the `ok` of a map lookup instead of a nil check. Iterators still yield pointers. |
+| `BulkCreateOrUpdateRolesResult.Errors` (`map[string]BulkRoleError`) | `map[string]*BulkRoleError`; `*BulkRoleError` implements `error` |

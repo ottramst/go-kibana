@@ -10,6 +10,8 @@ import (
 // LegacyURLAlias identifies a legacy URL alias: an alias from an object's ID
 // before Kibana 8.0 to its current ID.
 type LegacyURLAlias struct {
+	_ [0]func()
+
 	// TargetSpace is the space of the object the alias points to.
 	TargetSpace string `json:"targetSpace"`
 

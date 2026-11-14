@@ -40,6 +40,8 @@ type InvalidateSessionsRequest struct {
 
 // SessionQuery selects sessions by authentication provider and user.
 type SessionQuery struct {
+	_ [0]func()
+
 	// Provider is the authentication provider of the sessions. Required.
 	Provider SessionProvider `json:"provider"`
 
@@ -49,6 +51,8 @@ type SessionQuery struct {
 
 // SessionProvider is a Kibana authentication provider.
 type SessionProvider struct {
+	_ [0]func()
+
 	// Type is the provider type, such as "basic", "token", "saml", "oidc",
 	// "kerberos" or "pki". Required.
 	Type string `json:"type"`
@@ -60,6 +64,8 @@ type SessionProvider struct {
 
 // InvalidateSessionsResult is the result of [UserSessionsService.Invalidate].
 type InvalidateSessionsResult struct {
+	_ [0]func()
+
 	// Total is the number of sessions that were invalidated.
 	Total int `json:"total"`
 }

@@ -9,6 +9,8 @@ import (
 // ShareableReference describes a saved object and its references, and the
 // spaces they are in.
 type ShareableReference struct {
+	_ [0]func()
+
 	SavedObjectRef
 
 	// Spaces lists the spaces the object is in. It is empty for objects that
@@ -86,6 +88,8 @@ type UpdateObjectsSpacesRequest struct {
 // ObjectSpaces is the result of [SpacesService.UpdateObjectsSpaces] for one
 // object.
 type ObjectSpaces struct {
+	_ [0]func()
+
 	SavedObjectRef
 
 	// Spaces lists the spaces the object is in after the update. It is empty

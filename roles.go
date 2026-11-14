@@ -18,6 +18,8 @@ type RolesService service
 // Kibana privileges per space. The same type is used to read and write roles,
 // so a role can be read, changed and written back.
 type Role struct {
+	_ [0]func()
+
 	// Name is the role name. It is read-only: [RolesService.CreateOrUpdate]
 	// takes the name as an argument.
 	Name string `json:"name,omitempty"`
@@ -48,12 +50,16 @@ type Role struct {
 // RoleTransformError describes application privileges of a role that
 // Kibana could not convert to Kibana privileges.
 type RoleTransformError struct {
+	_ [0]func()
+
 	Reason string          `json:"reason"`
 	State  json.RawMessage `json:"state,omitempty"`
 }
 
 // ElasticsearchPrivileges are the Elasticsearch privileges of a role.
 type ElasticsearchPrivileges struct {
+	_ [0]func()
+
 	// Cluster lists cluster privileges, such as "monitor" or "manage".
 	Cluster []string `json:"cluster,omitempty"`
 
@@ -69,6 +75,8 @@ type ElasticsearchPrivileges struct {
 
 // IndexPrivilege grants privileges on a set of Elasticsearch indices.
 type IndexPrivilege struct {
+	_ [0]func()
+
 	// Names lists index names or patterns. Required.
 	Names []string `json:"names"`
 
@@ -87,6 +95,8 @@ type IndexPrivilege struct {
 
 // RemoteIndexPrivilege grants privileges on indices of remote clusters.
 type RemoteIndexPrivilege struct {
+	_ [0]func()
+
 	// Clusters lists remote cluster aliases or patterns. Required.
 	Clusters []string `json:"clusters"`
 
@@ -105,6 +115,8 @@ type RemoteIndexPrivilege struct {
 
 // RemoteClusterPrivilege grants cluster privileges on remote clusters.
 type RemoteClusterPrivilege struct {
+	_ [0]func()
+
 	// Clusters lists remote cluster aliases or patterns. Required.
 	Clusters []string `json:"clusters"`
 
@@ -116,6 +128,8 @@ type RemoteClusterPrivilege struct {
 // KibanaPrivilege grants Kibana privileges in a set of spaces. Set either
 // Base or Feature.
 type KibanaPrivilege struct {
+	_ [0]func()
+
 	// Base lists base privileges, "all" or "read", that apply to every
 	// feature.
 	Base []string `json:"base"`

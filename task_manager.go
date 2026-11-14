@@ -27,6 +27,8 @@ const (
 
 // TaskManagerHealth is the health of the Kibana Task Manager.
 type TaskManagerHealth struct {
+	_ [0]func()
+
 	// ID is the UUID of the Kibana instance.
 	ID         string                  `json:"id"`
 	Status     TaskManagerHealthStatus `json:"status"`
@@ -43,6 +45,8 @@ type TaskManagerHealth struct {
 
 // TaskManagerHealthStat is a statistics section of [TaskManagerHealth].
 type TaskManagerHealthStat struct {
+	_ [0]func()
+
 	Status    TaskManagerHealthStatus `json:"status"`
 	Timestamp time.Time               `json:"timestamp"`
 
