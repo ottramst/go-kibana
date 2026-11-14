@@ -5,6 +5,7 @@ import (
 	"crypto/x509"
 	"errors"
 	"io"
+	"net"
 	"net/http"
 	"net/http/httptest"
 	"slices"
@@ -175,14 +176,16 @@ func TestWithRetry_retryAfter(t *testing.T) {
 	}
 }
 
-func TestWithRetry_retryAfterTooLong(t *testing.T) {
-	srv := &retryServer{statuses: []int{429}, header: http.Header{"Retry-After": {"60"}}}
+func TestWithRetry_retryAfterCapped(t *testing.T) {
+	// Kibana's startup 503 asks for 30 seconds; the wait is capped at
+	// MaxBackoff.
+	srv := &retryServer{statuses: []int{503}, header: http.Header{"Retry-After": {"30"}}}
 	client, waits := retryClient(t, srv, kibana.RetryPolicy{MaxBackoff: 10 * time.Second})
-	if _, _, err := client.Spaces.Get(context.Background(), "marketing", nil); !errors.Is(err, kibana.ErrTooManyRequests) {
-		t.Errorf("Get() error = %v, want ErrTooManyRequests", err)
+	if _, _, err := client.Spaces.Get(context.Background(), "marketing", nil); err != nil {
+		t.Errorf("Get() error = %v, want a retry", err)
 	}
-	if srv.n() != 1 || len(*waits) != 0 {
-		t.Errorf("attempts = %d, waits = %v; want 1 attempt and no wait", srv.n(), *waits)
+	if srv.n() != 2 || len(*waits) != 1 || (*waits)[0] != 10*time.Second {
+		t.Errorf("attempts = %d, waits = %v; want 2 attempts and a 10s wait", srv.n(), *waits)
 	}
 }
 
@@ -310,6 +313,7 @@ func TestWithRetry_transportErrors(t *testing.T) {
 		{"GET", http.MethodGet, errors.New("connection reset"), 2},
 		{"POST", http.MethodPost, errors.New("connection reset"), 1},
 		{"certificate", http.MethodGet, x509.UnknownAuthorityError{}, 1},
+		{"rejected certificate", http.MethodGet, &net.OpError{Op: "remote error", Err: errors.New("tls: bad certificate")}, 1},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

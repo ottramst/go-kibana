@@ -23,9 +23,10 @@ func TestAccRetry(t *testing.T) {
 	if space, _, err = client.Spaces.Update(ctx, id, space, nil); err != nil || space.Description != "retried" {
 		t.Errorf("Update() = %+v, %v; want the description", space, err)
 	}
-	// 404 is not retried.
+	// 404 is not retried: a retry would wait at least 10 seconds.
+	slow := accClient(t, kibana.WithRetry(kibana.RetryPolicy{MinBackoff: 10 * time.Second, MaxBackoff: 10 * time.Second}))
 	start := time.Now()
-	if _, _, err := client.Spaces.Get(ctx, randName(t, "acc"), nil); !errors.Is(err, kibana.ErrNotFound) {
+	if _, _, err := slow.Spaces.Get(ctx, randName(t, "acc"), nil); !errors.Is(err, kibana.ErrNotFound) {
 		t.Errorf("Get(missing) error = %v, want ErrNotFound", err)
 	}
 	if d := time.Since(start); d > 5*time.Second {

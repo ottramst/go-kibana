@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"io"
 	"math/rand/v2"
+	"net"
 	"net/http"
 	"slices"
 	"strconv"
@@ -61,18 +62,23 @@ type RetryPolicy struct {
 // codes of RetryOn and on network errors. Other requests, such as POST, are
 // retried only when Kibana has not processed them: on 429, and on 503 with
 // a Retry-After header, if RetryOn contains them. Requests are not retried
-// after TLS certificate errors, when their context is done, or when their
-// body cannot be sent again, such as the streamed file of
-// [SavedObjectsService.Import].
+// after TLS errors, such as an invalid or rejected certificate, when their
+// context is done, or when their body cannot be sent again, such as the
+// streamed file of [SavedObjectsService.Import].
 //
-// A Retry-After header, in seconds or as an HTTP date, sets the wait. If it
-// is longer than MaxBackoff, or a wait would end after the context's
+// A Retry-After header, in seconds or as an HTTP date, sets the wait, up to
+// MaxBackoff. Kibana sends "Retry-After: 30" with the 503 responses it
+// returns while it starts. If a wait would end after the context's
 // deadline, the client returns the last response instead of waiting.
+//
+// The rules go by HTTP method, so read-only endpoints that use POST,
+// such as [RolesService.Query] and [SavedObjectsService.BulkGet], are only
+// retried on 429, and on 503 with a Retry-After header.
 //
 // The timeout of the HTTP client (see [WithHTTPClient]) and the context's
 // deadline span all attempts. With the defaults, a request waits at most
-// 7 seconds between attempts, or 90 seconds if every response asks for a
-// 30-second Retry-After. [StatusService.Get] waits through retried 503
+// 7 seconds in total between its attempts (1, 2 and 4 seconds), or 90
+// seconds if every response asks for a 30-second Retry-After. [StatusService.Get] waits through retried 503
 // responses before it returns the last one. A retried PUT or DELETE can
 // fail with [ErrConflict] or [ErrNotFound] if Kibana processed an earlier
 // attempt whose response was lost.
@@ -197,15 +203,12 @@ func (t *retryTransport) shouldRetry(method string, resp *http.Response, err err
 }
 
 // wait returns how long to wait before the attempt after the given one, or
-// false if the wait is too long.
+// false if the wait would end after the context's deadline.
 func (t *retryTransport) wait(ctx context.Context, attempt int, resp *http.Response) (time.Duration, bool) {
 	var d time.Duration
 	if resp != nil {
 		if ra, ok := retryAfter(resp.Header.Get("Retry-After")); ok {
-			if ra > t.policy.MaxBackoff {
-				return 0, false
-			}
-			d = ra
+			d = min(ra, t.policy.MaxBackoff)
 		}
 	}
 	if d == 0 {
@@ -272,8 +275,13 @@ func isTLSError(err error) bool {
 		verification     *tls.CertificateVerificationError
 		recordHeader     tls.RecordHeaderError
 	)
-	return errors.As(err, &unknownAuthority) || errors.As(err, &invalid) || errors.As(err, &hostname) ||
-		errors.As(err, &verification) || errors.As(err, &recordHeader)
+	if errors.As(err, &unknownAuthority) || errors.As(err, &invalid) || errors.As(err, &hostname) ||
+		errors.As(err, &verification) || errors.As(err, &recordHeader) {
+		return true
+	}
+	// A TLS alert from the server, such as a rejected client certificate.
+	var opErr *net.OpError
+	return errors.As(err, &opErr) && opErr.Op == "remote error"
 }
 
 // sleepContext waits for d, or until ctx is done.
