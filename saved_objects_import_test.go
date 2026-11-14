@@ -371,3 +371,27 @@ func TestSavedObjectsService_Export_details(t *testing.T) {
 		})
 	}
 }
+
+// errWriter fails once more than n bytes have been written.
+type errWriter struct{ n int }
+
+func (w *errWriter) Write(p []byte) (int, error) {
+	if len(p) > w.n {
+		n := w.n
+		w.n = 0
+		return n, errors.New("disk full")
+	}
+	w.n -= len(p)
+	return len(p), nil
+}
+
+func TestSavedObjectsService_Export_writeError(t *testing.T) {
+	mux, client := setup(t)
+	mux.HandleFunc("POST /api/saved_objects/_export", func(w http.ResponseWriter, _ *http.Request) {
+		serveInChunks(t, w, fixture(t, "savedobjects/export.ndjson"))
+	})
+	details, _, err := client.SavedObjects.Export(context.Background(), &errWriter{n: 100}, &kibana.ExportSavedObjectsRequest{Types: []string{"dashboard"}}, nil)
+	if err == nil || details != nil {
+		t.Errorf("Export() = %+v, %v; want no details and an error", details, err)
+	}
+}

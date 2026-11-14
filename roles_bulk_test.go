@@ -93,6 +93,9 @@ func TestRolesService_BulkCreateOrUpdate_invalidArguments(t *testing.T) {
 			t.Errorf("BulkCreateOrUpdate(%s): error = nil, want error", name)
 		}
 	}
+	if _, _, err := client.Roles.BulkCreateOrUpdate(context.Background(), nil, nil); err == nil {
+		t.Error("BulkCreateOrUpdate(nil request): error = nil, want error")
+	}
 	// The error names the role.
 	_, _, err := client.Roles.BulkCreateOrUpdate(context.Background(), &kibana.BulkCreateOrUpdateRolesRequest{Roles: map[string]*kibana.Role{
 		"good": {},

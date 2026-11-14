@@ -53,6 +53,9 @@ func TestDataViewsService_UpdateFieldsMetadata_errors(t *testing.T) {
 			t.Errorf("UpdateFieldsMetadata(%s) error = nil, want error", name)
 		}
 	}
+	if _, _, err := client.DataViews.UpdateFieldsMetadata(ctx, "v", nil, nil); err == nil {
+		t.Error("UpdateFieldsMetadata(nil request) error = nil, want error")
+	}
 	if _, _, err := client.DataViews.UpdateFieldsMetadata(ctx, "", &kibana.UpdateFieldsMetadataRequest{Fields: map[string]kibana.DataViewFieldMetadata{"host": {}}}, nil); err == nil {
 		t.Error("UpdateFieldsMetadata(no view) error = nil, want error")
 	}

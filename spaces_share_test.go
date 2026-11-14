@@ -119,6 +119,9 @@ func TestSpacesService_DisableLegacyURLAliases(t *testing.T) {
 		t.Errorf("status = %d, want 204", resp.StatusCode)
 	}
 
+	if _, err := client.Spaces.DisableLegacyURLAliases(context.Background(), nil, nil); err == nil {
+		t.Error("DisableLegacyURLAliases(nil request): error = nil, want error")
+	}
 	for name, aliases := range map[string][]kibana.LegacyURLAlias{
 		"nil":            nil,
 		"missing source": {{TargetSpace: "marketing", TargetType: "dashboard"}},
