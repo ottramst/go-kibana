@@ -134,7 +134,9 @@ type CreateSavedObjectOptions struct {
 // [SavedObjectsService.Import].
 //
 // Kibana API: POST /api/saved_objects/{type}
+//
 // Kibana API: POST /api/saved_objects/{type}/{id}
+//
 // Kibana API docs: https://www.elastic.co/docs/api/doc/kibana/operation/operation-post-saved-objects-type-id
 func (s *SavedObjectsService) Create(ctx context.Context, obj *SavedObject, opt *CreateSavedObjectOptions, opts ...RequestOption) (*SavedObject, *Response, error) {
 	body, err := newSavedObjectWrite(obj)
@@ -169,6 +171,7 @@ func (s *SavedObjectsService) Create(ctx context.Context, obj *SavedObject, opt 
 // [SavedObjectsService.Export].
 //
 // Kibana API: GET /api/saved_objects/{type}/{id}
+//
 // Kibana API docs: https://www.elastic.co/docs/api/doc/kibana/operation/operation-get-saved-objects-type-id
 func (s *SavedObjectsService) Get(ctx context.Context, objType, id string, opts ...RequestOption) (*SavedObject, *Response, error) {
 	if err := requireID("saved object type", objType); err != nil {
@@ -207,6 +210,7 @@ type UpdateSavedObjectOptions struct {
 // [SavedObjectsService.Import].
 //
 // Kibana API: PUT /api/saved_objects/{type}/{id}
+//
 // Kibana API docs: https://www.elastic.co/docs/api/doc/kibana/operation/operation-put-saved-objects-type-id
 func (s *SavedObjectsService) Update(ctx context.Context, obj *SavedObject, opt *UpdateSavedObjectOptions, opts ...RequestOption) (*SavedObject, *Response, error) {
 	body, err := newSavedObjectWrite(obj)
@@ -244,6 +248,7 @@ type DeleteSavedObjectOptions struct {
 // API of the object type where there is one, such as data views.
 //
 // Kibana API: DELETE /api/saved_objects/{type}/{id}
+//
 // Kibana API docs: https://www.elastic.co/docs/api/doc/kibana/operation/operation-delete-saved-objects-type-id
 func (s *SavedObjectsService) Delete(ctx context.Context, objType, id string, opt *DeleteSavedObjectOptions, opts ...RequestOption) (*Response, error) {
 	if err := requireID("saved object type", objType); err != nil {

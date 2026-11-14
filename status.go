@@ -94,6 +94,7 @@ type ServiceStatus struct {
 // Status.Overall.Level.
 //
 // Kibana API: GET /api/status
+//
 // Kibana API docs: https://www.elastic.co/docs/api/doc/kibana/operation/operation-get-status
 func (s *StatusService) Get(ctx context.Context, opts ...RequestOption) (*Status, *Response, error) {
 	status := new(Status)

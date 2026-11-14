@@ -25,6 +25,7 @@ type LegacyURLAlias struct {
 // not exist.
 //
 // Kibana API: POST /api/spaces/_disable_legacy_url_aliases
+//
 // Kibana API docs: https://www.elastic.co/docs/api/doc/kibana/operation/operation-post-spaces-disable-legacy-url-aliases
 func (s *SpacesService) DisableLegacyURLAliases(ctx context.Context, aliases []LegacyURLAlias, opts ...RequestOption) (*Response, error) {
 	if len(aliases) == 0 {

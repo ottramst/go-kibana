@@ -138,6 +138,7 @@ type TagList struct {
 // List returns a page of the tags of the client's space.
 //
 // Kibana API: GET /api/tags
+//
 // Kibana API docs: https://www.elastic.co/docs/api/doc/kibana/operation/operation-get-tags
 func (s *TagsService) List(ctx context.Context, opt *ListTagsOptions, opts ...RequestOption) (*TagList, *Response, error) {
 	path, err := addQuery("/api/tags", opt)
@@ -185,6 +186,7 @@ func (s *TagsService) ListAll(ctx context.Context, opt *ListTagsOptions, opts ..
 // Get returns a tag by its ID.
 //
 // Kibana API: GET /api/tags/{id}
+//
 // Kibana API docs: https://www.elastic.co/docs/api/doc/kibana/operation/operation-get-tags-id
 func (s *TagsService) Get(ctx context.Context, id string, opts ...RequestOption) (*Tag, *Response, error) {
 	if err := requireID("tag ID", id); err != nil {
@@ -203,6 +205,7 @@ func (s *TagsService) Get(ctx context.Context, id string, opts ...RequestOption)
 // that is taken.
 //
 // Kibana API: POST /api/tags
+//
 // Kibana API docs: https://www.elastic.co/docs/api/doc/kibana/operation/operation-post-tags
 func (s *TagsService) Create(ctx context.Context, tag *Tag, opts ...RequestOption) (*Tag, *Response, error) {
 	payload, err := newTagPayload(tag)
@@ -226,6 +229,7 @@ func (s *TagsService) Create(ctx context.Context, tag *Tag, opts ...RequestOptio
 // [TagsService.Get] to keep its other fields.
 //
 // Kibana API: PUT /api/tags/{id}
+//
 // Kibana API docs: https://www.elastic.co/docs/api/doc/kibana/operation/operation-put-tags-id
 func (s *TagsService) Update(ctx context.Context, id string, tag *Tag, opts ...RequestOption) (*Tag, *Response, error) {
 	if err := requireID("tag ID", id); err != nil {
@@ -246,6 +250,7 @@ func (s *TagsService) Update(ctx context.Context, id string, tag *Tag, opts ...R
 // Delete deletes a tag by its ID.
 //
 // Kibana API: DELETE /api/tags/{id}
+//
 // Kibana API docs: https://www.elastic.co/docs/api/doc/kibana/operation/operation-delete-tags-id
 func (s *TagsService) Delete(ctx context.Context, id string, opts ...RequestOption) (*Response, error) {
 	if err := requireID("tag ID", id); err != nil {

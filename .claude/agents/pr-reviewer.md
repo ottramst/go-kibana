@@ -29,8 +29,8 @@ You are an independent reviewer of a pull request in github.com/ottramst/go-kiba
    - **Correctness and edge cases:** nil and empty inputs, escaping, error mapping, `204` and empty bodies, read-only fields that must not be sent, and that the caller's values are never mutated.
    - **Kibana behaviour:** request and response field names and types against the pinned OpenAPI specs in `.cache/specs/` (`make coverage` downloads them; grep, don't read them whole). Check both supported versions (8.19.x and 9.5.x), and inputs that Kibana would silently widen.
    - **Conventions:**
-     - `// Kibana API:` and `// Kibana API docs:` annotations;
-     - `…Options` structs only for query parameters, `…Request` structs for request bodies;
+     - the v1 API rules in CLAUDE.md's "Service conventions": names, the signature shape with a nil-able `opt` on every method, query parameters only in `…Options`, `…Request` structs with body fields only, `_ [0]func()` on Options and `…Request` structs, result shapes, and value collections inside structs;
+     - `// Kibana API:` and `// Kibana API docs:` annotations, as separate paragraphs;
      - a `CHANGELOG.md` entry under `## Unreleased` for user-visible changes;
      - unit tests (stdlib only, fixtures captured from real Kibana);
      - acceptance tests that pass on both versions;

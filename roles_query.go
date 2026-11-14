@@ -64,6 +64,7 @@ type QueryRolesResult struct {
 // [RolesService.QueryAll] to iterate over all pages.
 //
 // Kibana API: POST /api/security/role/_query
+//
 // Kibana API docs: https://www.elastic.co/docs/api/doc/kibana/operation/operation-post-security-role-query
 func (s *RolesService) Query(ctx context.Context, req *QueryRolesRequest, opts ...RequestOption) (*QueryRolesResult, *Response, error) {
 	if req == nil {

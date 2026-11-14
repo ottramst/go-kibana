@@ -178,6 +178,7 @@ type ImportSavedObjectsOptions struct {
 // succeeds. Retry them with [SavedObjectsService.ResolveImportErrors].
 //
 // Kibana API: POST /api/saved_objects/_import
+//
 // Kibana API docs: https://www.elastic.co/docs/api/doc/kibana/operation/operation-post-saved-objects-import
 func (s *SavedObjectsService) Import(ctx context.Context, r io.Reader, opt *ImportSavedObjectsOptions, opts ...RequestOption) (*ImportSavedObjectsResult, *Response, error) {
 	if r == nil {
@@ -250,6 +251,7 @@ type ResolveImportErrorsRequest struct {
 // export. It is streamed like the file of Import.
 //
 // Kibana API: POST /api/saved_objects/_resolve_import_errors
+//
 // Kibana API docs: https://www.elastic.co/docs/api/doc/kibana/operation/operation-post-saved-objects-resolve-import-errors
 func (s *SavedObjectsService) ResolveImportErrors(ctx context.Context, r io.Reader, req *ResolveImportErrorsRequest, opts ...RequestOption) (*ImportSavedObjectsResult, *Response, error) {
 	if r == nil {

@@ -58,6 +58,7 @@ type TaskManagerHealthStat struct {
 // background tasks such as alerting rules and reporting.
 //
 // Kibana API: GET /api/task_manager/_health
+//
 // Kibana API docs: https://www.elastic.co/docs/api/doc/kibana/operation/operation-task-manager-health
 func (s *TaskManagerService) Health(ctx context.Context, opts ...RequestOption) (*TaskManagerHealth, *Response, error) {
 	health := new(TaskManagerHealth)

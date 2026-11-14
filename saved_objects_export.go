@@ -66,6 +66,7 @@ type ExportExcludedObject struct {
 // savedObjects.maxImportExportSize setting.
 //
 // Kibana API: POST /api/saved_objects/_export
+//
 // Kibana API docs: https://www.elastic.co/docs/api/doc/kibana/operation/operation-post-saved-objects-export
 func (s *SavedObjectsService) Export(ctx context.Context, req *ExportSavedObjectsRequest, w io.Writer, opts ...RequestOption) (*Response, error) {
 	if req == nil {

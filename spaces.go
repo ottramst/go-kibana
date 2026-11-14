@@ -105,6 +105,7 @@ type ListSpacesOptions struct {
 // List returns the spaces the user is authorized to access.
 //
 // Kibana API: GET /api/spaces/space
+//
 // Kibana API docs: https://www.elastic.co/docs/api/doc/kibana/operation/operation-get-spaces-space
 func (s *SpacesService) List(ctx context.Context, opt *ListSpacesOptions, opts ...RequestOption) ([]*Space, *Response, error) {
 	path, err := addQuery("/api/spaces/space", opt)
@@ -122,6 +123,7 @@ func (s *SpacesService) List(ctx context.Context, opt *ListSpacesOptions, opts .
 // Get returns the space with the given ID.
 //
 // Kibana API: GET /api/spaces/space/{id}
+//
 // Kibana API docs: https://www.elastic.co/docs/api/doc/kibana/operation/operation-get-spaces-space-id
 func (s *SpacesService) Get(ctx context.Context, id string, opts ...RequestOption) (*Space, *Response, error) {
 	if err := requireID("space ID", id); err != nil {
@@ -138,6 +140,7 @@ func (s *SpacesService) Get(ctx context.Context, id string, opts ...RequestOptio
 // Create creates a space. ID and Name are required.
 //
 // Kibana API: POST /api/spaces/space
+//
 // Kibana API docs: https://www.elastic.co/docs/api/doc/kibana/operation/operation-post-spaces-space
 func (s *SpacesService) Create(ctx context.Context, space *Space, opts ...RequestOption) (*Space, *Response, error) {
 	if space == nil {
@@ -159,6 +162,7 @@ func (s *SpacesService) Create(ctx context.Context, space *Space, opts ...Reques
 // is not modified.
 //
 // Kibana API: PUT /api/spaces/space/{id}
+//
 // Kibana API docs: https://www.elastic.co/docs/api/doc/kibana/operation/operation-put-spaces-space-id
 func (s *SpacesService) Update(ctx context.Context, id string, space *Space, opts ...RequestOption) (*Space, *Response, error) {
 	if err := requireID("space ID", id); err != nil {
@@ -181,6 +185,7 @@ func (s *SpacesService) Update(ctx context.Context, id string, space *Space, opt
 // saved objects in it.
 //
 // Kibana API: DELETE /api/spaces/space/{id}
+//
 // Kibana API docs: https://www.elastic.co/docs/api/doc/kibana/operation/operation-delete-spaces-space-id
 func (s *SpacesService) Delete(ctx context.Context, id string, opts ...RequestOption) (*Response, error) {
 	if err := requireID("space ID", id); err != nil {

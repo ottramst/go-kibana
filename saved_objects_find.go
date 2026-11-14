@@ -124,6 +124,7 @@ func findPath(opt *FindSavedObjectsOptions) (string, error) {
 // or [SavedObjectsService.Export].
 //
 // Kibana API: GET /api/saved_objects/_find
+//
 // Kibana API docs: https://www.elastic.co/docs/api/doc/kibana/operation/operation-get-saved-objects-find
 func (s *SavedObjectsService) Find(ctx context.Context, opt *FindSavedObjectsOptions, opts ...RequestOption) (*FindSavedObjectsResult, *Response, error) {
 	path, err := findPath(opt)
@@ -179,6 +180,7 @@ func (s *SavedObjectsService) FindAll(ctx context.Context, opt *FindSavedObjects
 // Deprecated: Kibana deprecated the saved objects resolve API in 8.7.
 //
 // Kibana API: GET /api/saved_objects/resolve/{type}/{id}
+//
 // Kibana API docs: https://www.elastic.co/docs/api/doc/kibana/operation/operation-get-saved-objects-resolve-type-id
 func (s *SavedObjectsService) Resolve(ctx context.Context, objType, id string, opts ...RequestOption) (*ResolvedSavedObject, *Response, error) {
 	if err := requireID("saved object type", objType); err != nil {
