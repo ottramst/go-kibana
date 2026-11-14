@@ -51,7 +51,7 @@ type DataView struct {
 	// Create: use [SpacesService.UpdateObjectsSpaces] to share a data view.
 	Namespaces []string `json:"namespaces,omitempty"`
 
-	// Type is "rollup" for rollup data views. Kibana does not return it.
+	// Type is "rollup" for rollup data views, and empty otherwise.
 	Type     string            `json:"type,omitempty"`
 	TypeMeta *DataViewTypeMeta `json:"typeMeta,omitempty"`
 
@@ -59,8 +59,8 @@ type DataView struct {
 	// runtime fields. Set by Kibana.
 	Fields map[string]*DataViewField `json:"fields,omitempty"`
 
-	// AllowHidden is true if the data view includes hidden indices. Set by
-	// Kibana.
+	// AllowHidden includes hidden and system indices, such as .alerts-*.
+	// It is only written by Create.
 	AllowHidden bool `json:"allowHidden,omitempty"`
 
 	// Version identifies the revision of the data view. Set by Kibana.
@@ -188,6 +188,7 @@ type dataViewCreateFields struct {
 	RuntimeFieldMap map[string]RuntimeField        `json:"runtimeFieldMap,omitempty"`
 	FieldAttrs      map[string]DataViewFieldAttrs  `json:"fieldAttrs,omitempty"`
 	Namespaces      []string                       `json:"namespaces,omitempty"`
+	AllowHidden     bool                           `json:"allowHidden,omitempty"`
 	Type            string                         `json:"type,omitempty"`
 	TypeMeta        *DataViewTypeMeta              `json:"typeMeta,omitempty"`
 }
@@ -251,7 +252,7 @@ func (s *DataViewsService) Get(ctx context.Context, id string, opts ...RequestOp
 }
 
 // Create creates a data view in the client's space. It sends every field
-// except Fields, AllowHidden and Version. Data views with the same title
+// except Fields and Version. Data views with the same title
 // are allowed; an existing ID fails with [ErrBadRequest] unless
 // opt.Override is set.
 //
@@ -277,6 +278,7 @@ func (s *DataViewsService) Create(ctx context.Context, dv *DataView, opt *Create
 		RuntimeFieldMap: dv.RuntimeFieldMap,
 		FieldAttrs:      dv.FieldAttrs,
 		Namespaces:      dv.Namespaces,
+		AllowHidden:     dv.AllowHidden,
 		Type:            dv.Type,
 		TypeMeta:        dv.TypeMeta,
 	}}
@@ -300,8 +302,8 @@ type UpdateDataViewOptions struct {
 //   - An empty Title keeps the stored title.
 //   - SourceFilters, FieldFormats and RuntimeFieldMap are kept when nil, and
 //     replaced when not nil: an empty map removes all runtime fields.
-//   - ID, FieldAttrs, Namespaces, Fields, AllowHidden and Version are not
-//     sent. Field attributes are changed with the field metadata endpoint.
+//   - ID, FieldAttrs, Namespaces, AllowHidden, Fields and Version are not
+//     sent, because Kibana rejects them. Field attributes are changed with the field metadata endpoint.
 //
 // Kibana API: POST /api/data_views/data_view/{viewId}
 // Kibana API docs: https://www.elastic.co/docs/api/doc/kibana/operation/operation-updatedataviewdefault

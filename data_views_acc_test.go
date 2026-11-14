@@ -28,6 +28,7 @@ func TestAccDataViews(t *testing.T) {
 		Name:          "acc view",
 		TimeFieldName: "@timestamp",
 		AllowNoIndex:  true,
+		AllowHidden:   true,
 		SourceFilters: []kibana.DataViewSourceFilter{{Value: "secret*"}},
 		RuntimeFieldMap: map[string]kibana.RuntimeField{
 			"rt": {Type: "keyword", Script: &kibana.RuntimeFieldScript{Source: `emit("x")`}},
@@ -38,7 +39,7 @@ func TestAccDataViews(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Create() error = %v", err)
 	}
-	if created.ID != dv.ID || created.Title != dv.Title || created.Version == "" || created.RuntimeFieldMap["rt"].Type != "keyword" || created.FieldAttrs["rt"].CustomLabel != "Runtime" {
+	if created.ID != dv.ID || created.Title != dv.Title || created.Version == "" || !created.AllowHidden || created.RuntimeFieldMap["rt"].Type != "keyword" || created.FieldAttrs["rt"].CustomLabel != "Runtime" {
 		t.Errorf("Create() = %+v, want the data view", created)
 	}
 
@@ -63,8 +64,8 @@ func TestAccDataViews(t *testing.T) {
 		t.Errorf("Get() = %+v, want the data view", got)
 	}
 
-	// Writing back an unchanged data view works, although Kibana returns a
-	// typeMeta of null, which it rejects in requests.
+	// Writing back an unchanged data view works: the fields Kibana rejects
+	// on update are not sent.
 	if _, _, err := client.DataViews.Update(ctx, dv.ID, got, nil); err != nil {
 		t.Fatalf("Update(unchanged) error = %v", err)
 	}

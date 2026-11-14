@@ -58,7 +58,7 @@ func TestDataViewsService_Get(t *testing.T) {
 	if a := got.FieldAttrs["host"]; a.CustomLabel != "Host" || a.Count != 3 {
 		t.Errorf("FieldAttrs[host] = %+v", a)
 	}
-	// A JSON null typeMeta decodes to nil.
+	// Kibana leaves out typeMeta for views that are not rollups.
 	if got.TypeMeta != nil {
 		t.Errorf("TypeMeta = %+v, want nil", got.TypeMeta)
 	}
@@ -75,12 +75,12 @@ func TestDataViewsService_Create(t *testing.T) {
 	mux, client := setup(t)
 	mux.HandleFunc("POST /s/x/api/data_views/data_view", func(w http.ResponseWriter, r *http.Request) {
 		testHeader(t, r, "kbn-xsrf", "true")
-		// Fields, AllowHidden and Version are not sent; empty fields are
-		// left out, because Kibana rejects null.
+		// Fields and Version are not sent; empty fields are left out,
+		// because Kibana rejects null.
 		testJSONBody(t, r, `{"data_view":{"id":"probe-dv-2","title":"probe-logs-1","name":"Probe logs","timeFieldName":"@timestamp",
 			"sourceFilters":[{"value":"msg"}],"fieldFormats":{"status":{"id":"number","params":{"pattern":"0,0"}}},
 			"runtimeFieldMap":{"rt1":{"type":"keyword","script":{"source":"emit(\"x\")"}}},
-			"fieldAttrs":{"host":{"customLabel":"Host","count":3}},"namespaces":["x"]},"override":true}`)
+			"fieldAttrs":{"host":{"customLabel":"Host","count":3}},"namespaces":["x"],"allowHidden":true},"override":true}`)
 		writeJSON(t, w, http.StatusOK, fixture(t, "dataviews/get.json"))
 	})
 	dv := &kibana.DataView{
@@ -143,7 +143,7 @@ func TestDataViewsService_Update(t *testing.T) {
 		if got := r.PathValue("viewId"); got != "probe-dv-2" {
 			t.Errorf("viewId = %q", got)
 		}
-		// Only the fields Kibana accepts on update; no null typeMeta.
+		// Only the fields Kibana accepts on update.
 		testJSONBody(t, r, `{"data_view":{"title":"probe-logs-1","name":"Probe logs","timeFieldName":"@timestamp","allowNoIndex":false,
 			"sourceFilters":[{"value":"msg"}],"fieldFormats":{"status":{"id":"number","params":{"pattern":"0,0"}}},
 			"runtimeFieldMap":{"rt1":{"type":"keyword","script":{"source":"emit(\"x\")"}}}},"refresh_fields":true}`)
