@@ -185,3 +185,14 @@ func TestRolesService_invalidArguments(t *testing.T) {
 		}
 	}
 }
+
+func TestRolesService_Get_options(t *testing.T) {
+	mux, client := setup(t)
+	mux.HandleFunc("GET /api/security/role/{name}", func(w http.ResponseWriter, r *http.Request) {
+		testQuery(t, r, "replaceDeprecatedPrivileges=true")
+		writeJSON(t, w, http.StatusOK, fixture(t, "roles/get.json"))
+	})
+	if _, _, err := client.Roles.Get(context.Background(), "my_kibana_role", &kibana.GetRoleOptions{ReplaceDeprecatedPrivileges: true}); err != nil {
+		t.Fatalf("Get() error = %v", err)
+	}
+}

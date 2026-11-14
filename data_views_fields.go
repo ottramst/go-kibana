@@ -287,8 +287,14 @@ type SwapReferencesDeleteStatus struct {
 	RemainingRefs int `json:"remainingRefs"`
 }
 
-// SwapReferencesOptions are the options of [DataViewsService.SwapReferences] and [DataViewsService.PreviewSwapReferences].
+// SwapReferencesOptions are the options of [DataViewsService.SwapReferences].
 type SwapReferencesOptions struct {
+	_ [0]func()
+}
+
+// PreviewSwapReferencesOptions are the options of
+// [DataViewsService.PreviewSwapReferences].
+type PreviewSwapReferencesOptions struct {
 	_ [0]func()
 }
 
@@ -310,7 +316,7 @@ func (s *DataViewsService) SwapReferences(ctx context.Context, req *SwapReferenc
 // Kibana API: POST /api/data_views/swap_references/_preview
 //
 // Kibana API docs: https://www.elastic.co/docs/api/doc/kibana/operation/operation-previewswapdataviewsdefault
-func (s *DataViewsService) PreviewSwapReferences(ctx context.Context, req *SwapReferencesRequest, opt *SwapReferencesOptions, opts ...RequestOption) (*SwapReferencesResult, *Response, error) {
+func (s *DataViewsService) PreviewSwapReferences(ctx context.Context, req *SwapReferencesRequest, opt *PreviewSwapReferencesOptions, opts ...RequestOption) (*SwapReferencesResult, *Response, error) {
 	return s.swapReferences(ctx, "/api/data_views/swap_references/_preview", req, opt, opts)
 }
 

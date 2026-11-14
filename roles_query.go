@@ -93,7 +93,7 @@ func (s *RolesService) Query(ctx context.Context, req *QueryRolesRequest, opt *Q
 // plus the page size exceeds 10,000, the iterator yields an [ErrBadRequest]
 // error.
 //
-//	for role, err := range client.Roles.QueryAll(ctx, nil) {
+//	for role, err := range client.Roles.QueryAll(ctx, nil, nil) {
 //		if err != nil {
 //			return err
 //		}

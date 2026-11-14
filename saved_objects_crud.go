@@ -202,7 +202,7 @@ type UpdateSavedObjectOptions struct {
 	// Upsert holds the attributes to create the object with if it does not
 	// exist. Without it, updating a missing object fails with
 	// [ErrNotFound].
-	Upsert json.RawMessage
+	Upsert json.RawMessage `url:"-"`
 }
 
 // Update updates a saved object of the client's space. obj.Attributes are
@@ -236,7 +236,7 @@ func (s *SavedObjectsService) Update(ctx context.Context, obj *SavedObject, opt 
 		body.Upsert = opt.Upsert
 	}
 	updated := new(SavedObject)
-	resp, err := s.client.do(ctx, http.MethodPut, pathf("/api/saved_objects/%s/%s", obj.Type, obj.ID), body, updated, nil, opts)
+	resp, err := s.client.do(ctx, http.MethodPut, pathf("/api/saved_objects/%s/%s", obj.Type, obj.ID), body, updated, opt, opts)
 	if err != nil {
 		return nil, resp, err
 	}

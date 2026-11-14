@@ -30,9 +30,8 @@ need an option:
 | `client.SavedObjects.BulkDelete(ctx, refs, &kibana.DeleteSavedObjectOptions{Force: true})` | `client.SavedObjects.BulkDelete(ctx, refs, &kibana.BulkDeleteSavedObjectsOptions{Force: true})` |
 
 The new options types are named `<Method><Noun>Options`, e.g. `GetSpaceOptions`, `CreateShortURLOptions`,
-`DeleteRoleOptions`, `ListDataViewsOptions` or `GetTaskManagerHealthOptions`. Iterators share the options
-of their single-page method (`QueryRolesOptions` for `Query` and `QueryAll`; `SwapReferencesOptions` for
-`SwapReferences` and `PreviewSwapReferences`).
+`DeleteRoleOptions`, `ListDataViewsOptions` or `PreviewSwapReferencesOptions`. Iterators share the options
+of their single-page method (`QueryRolesOptions` for `Query` and `QueryAll`).
 
 Options and `…Request` structs now have an unexported field. Literals of them must name their fields
 (`&kibana.ListSpacesOptions{Purpose: kibana.SpacePurposeAny}`), and they can't be compared with `==`.

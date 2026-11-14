@@ -57,7 +57,11 @@ func addQuery(path string, opt any) (string, error) {
 	if len(v) == 0 {
 		return path, nil
 	}
-	return path + "?" + v.Encode(), nil
+	sep := "?"
+	if strings.Contains(path, "?") {
+		sep = "&"
+	}
+	return path + sep + v.Encode(), nil
 }
 
 // requireID returns an error if a required path parameter is empty, "." or
