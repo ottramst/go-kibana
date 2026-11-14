@@ -57,7 +57,8 @@ jobs:
   warm-proxy:
     needs: release
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    # 38.5 minutes of waiting, plus up to 20 s for each request.
+    timeout-minutes: 55
     permissions: {}
     steps:
       - name: Warm the Go module proxy
@@ -71,6 +72,7 @@ jobs:
             if curl -sS --max-time 20 --fail-with-body "$url"; then
               exit 0
             fi
+            echo
             echo "Attempt $attempt: $TAG is not on the proxy yet."
             if [ "$attempt" -lt 38 ]; then
               sleep 60
