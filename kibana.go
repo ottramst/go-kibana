@@ -12,6 +12,7 @@ import (
 	"net/url"
 	"runtime/debug"
 	"strings"
+	"time"
 )
 
 const (
@@ -39,6 +40,11 @@ type Client struct {
 	authorization string
 
 	userAgent string
+
+	// retry is the policy of WithRetry, if any, and retrySleep the function
+	// its transport waits with (replaced in tests).
+	retry      *RetryPolicy
+	retrySleep func(ctx context.Context, d time.Duration) error
 
 	// Reuse a single struct instead of allocating one for each service.
 	common service
@@ -89,8 +95,9 @@ func WithBasicAuth(username, password string) ClientOption {
 }
 
 // WithHTTPClient sets the HTTP client used for requests. Use it to configure
-// timeouts, TLS, proxies or a retrying transport. The default client has no
-// timeout; pass a context with a deadline to bound individual calls.
+// timeouts, TLS or proxies. The default client has no timeout; pass a
+// context with a deadline to bound individual calls. To retry failed
+// requests, use [WithRetry] rather than a retrying transport.
 func WithHTTPClient(httpClient *http.Client) ClientOption {
 	return func(c *Client) error {
 		if httpClient == nil {
@@ -152,6 +159,20 @@ func NewClient(baseURL string, opts ...ClientOption) (*Client, error) {
 		if err := opt(c); err != nil {
 			return nil, err
 		}
+	}
+	if c.retry != nil {
+		// Wrap a copy, so that the caller's client is not changed.
+		hc := *c.httpClient
+		base := hc.Transport
+		if base == nil {
+			base = http.DefaultTransport
+		}
+		sleep := c.retrySleep
+		if sleep == nil {
+			sleep = sleepContext
+		}
+		hc.Transport = &retryTransport{base: base, policy: c.retry, sleep: sleep}
+		c.httpClient = &hc
 	}
 	c.initServices()
 	return c, nil
