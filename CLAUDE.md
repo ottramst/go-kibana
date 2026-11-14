@@ -42,7 +42,12 @@ The stack runs with security enabled and a trial license, on ports bound to 127.
 ## Architecture
 
 **Client core (`kibana.go`, `request.go`, `errors.go`):**
-- `NewClient(baseURL, ...ClientOption)`. Options: `WithAPIKey`, `WithBasicAuth`, `WithHTTPClient`, `WithUserAgent`, `WithSpace`. The base URL keeps any `server.basePath` and loses its trailing slash. The default `http.Client` has no timeout; contexts govern. The User-Agent is `go-kibana/<module version>`, read from build info.
+- `NewClient(baseURL, ...ClientOption)`. Options: `WithAPIKey`, `WithBasicAuth`, `WithHTTPClient`, `WithUserAgent`, `WithSpace`, `WithRetry`. The base URL keeps any `server.basePath` and loses its trailing slash. The default `http.Client` has no timeout; contexts govern. The User-Agent is `go-kibana/<module version>`, read from build info.
+- `WithRetry(RetryPolicy)` (`retry.go`) is applied after the other options: it wraps the transport of a copy of the `http.Client` (nil means `http.DefaultTransport`), so option order doesn't matter and the caller's client is unchanged.
+  - GET/HEAD/PUT/DELETE/OPTIONS retry on `RetryOn` (default 429/502/503/504) and network errors. Other methods only retry on 429 and on 503 with `Retry-After`, because Kibana did not process them.
+  - No retry after TLS errors (certificate verification, and alerts from the server such as a rejected client certificate, which surface as `*net.OpError{Op: "remote error"}`), when the context is done, or for bodies without `GetBody` (the streamed import).
+  - The decision and the wait are made before the old response is drained (up to 64 KiB), so a response that isn't retried reaches `Do` unread. `Retry-After` is capped at `MaxBackoff`: Kibana sends `Retry-After: 30` with its startup and auth-not-ready 503s, so giving up instead would never retry them with a smaller `MaxBackoff`. A wait past the context deadline returns the last response. `http.Client.Timeout` shows up as a context deadline in the transport.
+  - Tests replace the sleep with `WithRetrySleep` from `export_test.go`.
 - Services use the go-github pattern: `type SpacesService service`, all sharing `Client.common`. A new service needs a field on `Client` and a line in `initServices()`. `InSpace(id)` copies the `Client` and calls `initServices()` on the copy, so services must never cache the client elsewhere.
 - `NewRequest(ctx, method, path, body, ...RequestOption)`:
   - `path` is the literal API path from the spec (`/api/...`), with segments already escaped and an optional `?query`. Paths with a `#`, and paths or query strings with characters that must be escaped (spaces, control characters, non-ASCII), are rejected. Escaped characters of the base path (`%2F`) are kept.

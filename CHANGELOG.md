@@ -27,6 +27,7 @@ BREAKING CHANGES:
 
 FEATURES:
 
+* `WithRetry` retries requests that fail with a transient error (429, 502, 503 and 504 by default, and network errors), with exponential backoff and `Retry-After`. Requests that Kibana may have processed, such as a POST answered with 502, are not retried ([#45](https://github.com/ottramst/go-kibana/issues/45))
 * `ErrServiceUnavailable` matches 503 Service Unavailable responses ([#43](https://github.com/ottramst/go-kibana/issues/43))
 * status: `StatusFromError` returns the status Kibana sends with a 503 ([#43](https://github.com/ottramst/go-kibana/issues/43))
 
