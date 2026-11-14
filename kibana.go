@@ -46,6 +46,8 @@ const (
 // A Client manages communication with the Kibana API. It is safe for
 // concurrent use by multiple goroutines.
 type Client struct {
+	_ [0]func()
+
 	httpClient *http.Client
 
 	// baseURL is the Kibana URL, including any server.basePath, without a
