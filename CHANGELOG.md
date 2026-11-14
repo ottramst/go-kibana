@@ -9,7 +9,7 @@ FEATURES:
 
 NOTES:
 
-* Tested against Kibana 8.19.25 and 9.5.6, which behave identically for data views. Kibana answers 400, not 409, for an existing data view ID; `SetDefault` always sends `force`, because Kibana otherwise keeps an existing default without an error; and Kibana fails to return composite runtime fields with `GetRuntimeField` (400), although it creates them
+* Tested against Kibana 8.19.25 and 9.5.6, which behave identically for data views. Kibana answers 400, not 409, for an existing data view ID; `SetDefault` always sends `force`, because Kibana otherwise keeps an existing default without an error; and Kibana fails to return composite runtime fields with `GetRuntimeField` (400, and 404 for their subfields), although it creates them ([#36](https://github.com/ottramst/go-kibana/issues/36))
 
 ## v0.4.0
 
