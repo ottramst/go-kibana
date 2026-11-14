@@ -62,6 +62,8 @@ type ExportExcludedObject struct {
 	_ [0]func()
 
 	SavedObjectRef
+
+	// Reason says why the object was left out, such as "excluded".
 	Reason string `json:"reason,omitempty"`
 }
 

@@ -29,7 +29,11 @@ type DataView struct {
 	Title string `json:"title"`
 
 	// Name is the display name. Kibana uses Title if it is empty.
-	Name          string `json:"name,omitempty"`
+	Name string `json:"name,omitempty"`
+
+	// TimeFieldName is the field that the time filter of Discover and
+	// dashboards applies to, such as "@timestamp". Empty for data without
+	// a time field.
 	TimeFieldName string `json:"timeFieldName,omitempty"`
 
 	// AllowNoIndex keeps the data view usable when no index matches Title.
@@ -54,6 +58,7 @@ type DataView struct {
 	Namespaces []string `json:"namespaces,omitempty"`
 
 	// Type is "rollup" for rollup data views, and empty otherwise.
+	// TypeMeta holds the rollup job's settings of rollup data views.
 	Type     string            `json:"type,omitempty"`
 	TypeMeta *DataViewTypeMeta `json:"typeMeta,omitempty"`
 
@@ -73,6 +78,8 @@ type DataView struct {
 type DataViewSourceFilter struct {
 	_ [0]func()
 
+	// Value is a field name, or a pattern with wildcards such as
+	// "user.*".
 	Value string `json:"value"`
 }
 
@@ -81,7 +88,12 @@ type DataViewSourceFilter struct {
 type DataViewFieldFormat struct {
 	_ [0]func()
 
-	ID     string          `json:"id"`
+	// ID is the field formatter, such as "number", "bytes", "date" or
+	// "url".
+	ID string `json:"id"`
+
+	// Params are the formatter's settings, such as {"pattern":"0,0.[00]"}
+	// for "number".
 	Params json.RawMessage `json:"params,omitempty"`
 }
 
@@ -180,6 +192,10 @@ type DataViewField struct {
 	Type    string   `json:"type"`
 	ESTypes []string `json:"esTypes,omitempty"`
 
+	// Searchable and Aggregatable report whether the field can be
+	// queried and aggregated on. ReadFromDocValues reports whether Kibana
+	// reads its values from doc values instead of the _source. Scripted is
+	// true for legacy scripted fields.
 	Searchable        bool `json:"searchable"`
 	Aggregatable      bool `json:"aggregatable"`
 	ReadFromDocValues bool `json:"readFromDocValues"`
@@ -188,6 +204,9 @@ type DataViewField struct {
 	// IsMapped is false for fields that are not in the index mappings.
 	IsMapped *bool `json:"isMapped,omitempty"`
 
+	// CustomLabel, CustomDescription, Count (the popularity, which
+	// orders fields in Discover) and Format are the field's metadata,
+	// stored in DataView.FieldAttrs and FieldFormats.
 	CustomLabel       string               `json:"customLabel,omitempty"`
 	CustomDescription string               `json:"customDescription,omitempty"`
 	Count             int                  `json:"count"`

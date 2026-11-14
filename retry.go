@@ -78,10 +78,11 @@ type RetryPolicy struct {
 // The timeout of the HTTP client (see [WithHTTPClient]) and the context's
 // deadline span all attempts. With the defaults, a request waits at most
 // 7 seconds in total between its attempts (1, 2 and 4 seconds), or 90
-// seconds if every response asks for a 30-second Retry-After. [StatusService.Get] waits through retried 503
-// responses before it returns the last one. A retried PUT or DELETE can
-// fail with [ErrConflict] or [ErrNotFound] if Kibana processed an earlier
-// attempt whose response was lost.
+// seconds if every response asks for a 30-second Retry-After.
+// [StatusService.Get] waits through retried 503 responses before it
+// returns the last one. A retried PUT or DELETE can fail with [ErrConflict]
+// or [ErrNotFound] if Kibana processed an earlier attempt whose response
+// was lost.
 //
 // WithRetry wraps the transport of a copy of the HTTP client, so the
 // client passed to WithHTTPClient is not changed, and the order of the

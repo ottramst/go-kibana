@@ -29,6 +29,17 @@ updates:
       "tools":
         patterns:
           - "*"
+  - package-ecosystem: "gomod"
+    directory: "/tools/gorelease"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    cooldown:
+      default-days: 7
+    groups:
+      "gorelease":
+        patterns:
+          - "*"
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:

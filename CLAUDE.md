@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-`github.com/ottramst/go-kibana` is a hand-written, idiomatic Go client for the [Kibana REST API](https://www.elastic.co/docs/api/doc/kibana) (single package `kibana`, Go 1.26+, one dependency: `go-querystring`). It is pre-1.0. Breaking changes are allowed but must be listed under `BREAKING CHANGES` in `CHANGELOG.md`.
+`github.com/ottramst/go-kibana` is a hand-written, idiomatic Go client for the [Kibana REST API](https://www.elastic.co/docs/api/doc/kibana) (single package `kibana`, Go 1.26+, one dependency: `go-querystring`). Until v1.0.0, breaking changes are allowed but must be listed under `BREAKING CHANGES` in `CHANGELOG.md` and in `docs/upgrading-to-v1.md`. From v1.0.0, the module follows semver: breaking changes need a `/v2` module path, and the `API compatibility` CI job enforces it (exceptions for technical preview and experimental endpoints only, per README "Stability").
 
 The client supports and tests the latest patch of the newest Kibana 9.x minor and of 8.19, the last 8.x line (currently 9.5.6 and 8.19.25). Kibana's API differs between these versions. Check new code against both: endpoints missing from one version, different HTTP methods for the same endpoint, and request fields one version rejects.
 
@@ -178,7 +178,7 @@ The stack runs with security enabled and a trial license, on ports bound to 127.
   - PUT replaces every field (a missing `description` clears it) and is an upsert: 200 when it updated, 201 when it created the tag with that ID. Its response leaves out `created_at`. There is no optimistic concurrency: `meta.version` cannot be sent.
   - POST answers 201. Duplicate names in a space are 409. DELETE answers 204. Tags belong to a space (404 from another one).
 
-**Tooling:** `tools/coverage/` is a separate module, so the library keeps one dependency.
+**Tooling:** `tools/coverage/` and `tools/gorelease/` are separate modules, so the library keeps one dependency. `tools/gorelease` only pins `golang.org/x/exp/cmd/gorelease` (a `tool` directive) for the API compatibility job; gorelease needs a clean checkout. With a v0 base it never fails, so the check only works against v1+ releases.
 - It parses the pinned specs and the `// Kibana API:` annotations, then writes `COVERAGE.md`.
 - It fails on malformed annotations (e.g. a lower case method), annotations that match no spec, are not on a method, or are duplicated.
 - Versions are passed oldest first; the newest spec's tag and x-state win. Untagged operations get the tag of the closest path.
@@ -209,7 +209,7 @@ The stack runs with security enabled and a trial license, on ports bound to 127.
 
 GitHub Actions workflows in `.github/workflows/`:
 - `main.yml` ("CI/CD") calls the reusable `lint`, `build`, `test` and `coverage` workflows. The single `CI gate` job is the required status check. CI/CD, Security and CodeQL run on every pull request, including stacked ones that target another branch.
-- `build`: go.mod tidy check, build, vet, and race-enabled unit tests on Go 1.26.x and 1.27.x, the two supported Go releases. The go.mod `go` directive is the oldest one.
+- `build`: go.mod tidy check, build, vet, and race-enabled unit tests on Go 1.26.x and 1.27.x, the two supported Go releases. The go.mod `go` directive is the oldest one. Its `api-compat` job runs gorelease against the latest `v1.x.y` from the proxy with `-version` set to the next minor, and passes when there is no v1 release yet. A committed `.github/api-break-allowed` holding the latest release turns failures against that release into warnings (on the PR, on main and on later PRs) until the next release; the release PR deletes it. A failed proxy lookup fails the job. A label was rejected: re-runs reuse the event payload, and pushes to main have no labels.
 - `test`: acceptance tests on a Kibana {8.19.25, 9.5.6} matrix via `docker compose up -d --wait`. The image tag comes from `ELASTIC_STACK_VERSION`, whose default in `docker-compose.yml` is the newest. Dependabot does not bump the stack; see CONTRIBUTING.md for the version bump checklist (test matrix, compose default, `KIBANA_SPEC_VERSIONS`, README, this file).
 - `coverage`: tests the coverage tool, runs `make coverage`, and fails if `COVERAGE.md` changed.
 - Also: CodeQL (`codeql.yml`), govulncheck and dependency review (`security.yml`), OpenSSF Scorecard, actionlint plus zizmor for workflow changes (zizmor is pinned in `workflow-lint.yml` and fails the job on findings, without uploading SARIF; reusable workflows are called with `./` paths plus `# zizmor: ignore[self-repository]`, because the `$/` syntax zizmor suggests fails actionlint), lock threads, and waiting-response triage.

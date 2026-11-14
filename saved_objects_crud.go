@@ -71,6 +71,8 @@ func (o *SavedObject) Ref() SavedObjectRef {
 type SavedObjectReference struct {
 	_ [0]func()
 
+	// Name identifies the reference within the object, such as
+	// "kibanaSavedObjectMeta.searchSourceJSON.index".
 	Name string `json:"name"`
 	Type string `json:"type"`
 	ID   string `json:"id"`

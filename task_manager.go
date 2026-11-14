@@ -30,10 +30,13 @@ type TaskManagerHealth struct {
 	_ [0]func()
 
 	// ID is the UUID of the Kibana instance.
-	ID         string                  `json:"id"`
-	Status     TaskManagerHealthStatus `json:"status"`
-	Timestamp  time.Time               `json:"timestamp"`
-	LastUpdate time.Time               `json:"last_update"`
+	ID     string                  `json:"id"`
+	Status TaskManagerHealthStatus `json:"status"`
+
+	// Timestamp is when Kibana computed the health, and LastUpdate when
+	// it last updated the statistics.
+	Timestamp  time.Time `json:"timestamp"`
+	LastUpdate time.Time `json:"last_update"`
 
 	// Reason explains a status other than TaskManagerHealthStatusOK.
 	Reason string `json:"reason,omitempty"`

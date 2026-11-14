@@ -297,6 +297,8 @@ type SwapReferencesResult struct {
 type SwapReferencesDeleteStatus struct {
 	_ [0]func()
 
+	// DeletePerformed reports whether the object whose references were
+	// swapped was deleted.
 	DeletePerformed bool `json:"deletePerformed"`
 
 	// RemainingRefs is the number of saved objects that still reference

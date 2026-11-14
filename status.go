@@ -37,7 +37,11 @@ type Status struct {
 	Name string `json:"name"`
 
 	// UUID is the unique ID of the Kibana instance.
-	UUID    string        `json:"uuid"`
+	UUID string `json:"uuid"`
+
+	// Version is empty, like Name and UUID, for unauthenticated callers
+	// and, since Kibana 9.5, for callers without the monitor cluster
+	// privilege: they only get Health.Overall.Level.
 	Version StatusVersion `json:"version"`
 
 	// Health is the overall status and the status of each service.
@@ -80,9 +84,12 @@ type StatusHealth struct {
 type ServiceStatus struct {
 	_ [0]func()
 
-	Level   StatusLevel `json:"level"`
-	Summary string      `json:"summary,omitempty"`
-	Detail  string      `json:"detail,omitempty"`
+	Level StatusLevel `json:"level"`
+
+	// Summary is a short description of the status, and Detail an
+	// optional longer one.
+	Summary string `json:"summary,omitempty"`
+	Detail  string `json:"detail,omitempty"`
 
 	// Reported is true for plugins that report their own status.
 	Reported bool `json:"reported,omitempty"`
