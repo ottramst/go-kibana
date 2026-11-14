@@ -34,14 +34,14 @@ func TestFeaturesService_List(t *testing.T) {
 		t.Errorf("Category = %+v, want %+v", dashboard.Category, wantCategory)
 	}
 	all := dashboard.Privileges["all"]
-	if all == nil || !reflect.DeepEqual(all.App, []string{"dashboards", "kibana"}) || len(all.SavedObject.All) == 0 || len(all.SavedObject.Read) == 0 {
+	if len(all.App) == 0 || !reflect.DeepEqual(all.App, []string{"dashboards", "kibana"}) || len(all.SavedObject.All) == 0 || len(all.SavedObject.Read) == 0 {
 		t.Errorf(`Privileges["all"] = %+v, want apps and saved object types`, all)
 	}
 	if len(dashboard.SubFeatures) == 0 || len(dashboard.SubFeatures[0].PrivilegeGroups) == 0 {
 		t.Fatalf("SubFeatures = %+v, want privilege groups", dashboard.SubFeatures)
 	}
 	group := dashboard.SubFeatures[0].PrivilegeGroups[0]
-	want := &kibana.SubFeaturePrivilege{
+	want := kibana.SubFeaturePrivilege{
 		ID: "url_create", Name: "Create Short URLs", IncludeIn: "all",
 		UI:          []string{"createShortUrl"},
 		SavedObject: kibana.FeatureSavedObjectPrivileges{All: []string{"url"}, Read: []string{}},

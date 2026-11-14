@@ -32,10 +32,9 @@ func TestSpacesService_CopySavedObjects(t *testing.T) {
 		Success:      true,
 		SuccessCount: 1,
 		SuccessResults: []kibana.ImportSuccess{{
-			Type:          "index-pattern",
-			ID:            "probe-ip1",
-			Meta:          kibana.SavedObjectMeta{Title: "logs-*", Icon: "indexPatternApp"},
-			DestinationID: "9b2ff723-07fa-4e02-a0e6-c1174fb61a76",
+			SavedObjectRef: kibana.SavedObjectRef{Type: "index-pattern", ID: "probe-ip1"},
+			Meta:           kibana.SavedObjectMeta{Title: "logs-*", Icon: "indexPatternApp"},
+			DestinationID:  "9b2ff723-07fa-4e02-a0e6-c1174fb61a76",
 		}},
 	}}
 	if !reflect.DeepEqual(got, want) {
@@ -67,17 +66,17 @@ func TestSpacesService_CopySavedObjects_errors(t *testing.T) {
 		{
 			fixture: "spaces/copy_conflict.json",
 			want: kibana.ImportError{
-				Type: "index-pattern", ID: "probe-ip1",
-				Meta:  kibana.SavedObjectMeta{Title: "logs-*", Icon: "indexPatternApp"},
-				Error: &kibana.ImportErrorDetail{Type: kibana.ImportErrorTypeConflict, DestinationID: "9b2ff723-07fa-4e02-a0e6-c1174fb61a76"},
+				SavedObjectRef: kibana.SavedObjectRef{Type: "index-pattern", ID: "probe-ip1"},
+				Meta:           kibana.SavedObjectMeta{Title: "logs-*", Icon: "indexPatternApp"},
+				Detail:         &kibana.ImportErrorDetail{Type: kibana.ImportErrorTypeConflict, DestinationID: "9b2ff723-07fa-4e02-a0e6-c1174fb61a76"},
 			},
 		},
 		{
 			fixture: "spaces/copy_missing_references.json",
 			want: kibana.ImportError{
-				Type: "visualization", ID: "probe-vis1",
-				Meta: kibana.SavedObjectMeta{Title: "probe vis", Icon: "visualizeApp"},
-				Error: &kibana.ImportErrorDetail{
+				SavedObjectRef: kibana.SavedObjectRef{Type: "visualization", ID: "probe-vis1"},
+				Meta:           kibana.SavedObjectMeta{Title: "probe vis", Icon: "visualizeApp"},
+				Detail: &kibana.ImportErrorDetail{
 					Type:       kibana.ImportErrorTypeMissingReferences,
 					References: []kibana.SavedObjectRef{{Type: "index-pattern", ID: "probe-missing-ip"}},
 				},
@@ -102,7 +101,7 @@ func TestSpacesService_CopySavedObjects_errors(t *testing.T) {
 				t.Fatalf("result = %+v, want one error", res)
 			}
 			if !reflect.DeepEqual(res.Errors[0], tt.want) {
-				t.Errorf("error = %+v (detail %+v), want %+v (detail %+v)", res.Errors[0], res.Errors[0].Error, tt.want, tt.want.Error)
+				t.Errorf("error = %+v (detail %+v), want %+v (detail %+v)", res.Errors[0], res.Errors[0].Detail, tt.want, tt.want.Detail)
 			}
 		})
 	}
@@ -133,11 +132,11 @@ func TestImportError_unknownError(t *testing.T) {
 		t.Fatalf("Unmarshal() error = %v", err)
 	}
 	want := kibana.ImportError{
-		Type: "dashboard", ID: "d", Meta: kibana.SavedObjectMeta{Title: "D"}, Overwrite: true,
-		Error: &kibana.ImportErrorDetail{Type: kibana.ImportErrorTypeUnknown, StatusCode: 500, Message: "boom"},
+		SavedObjectRef: kibana.SavedObjectRef{Type: "dashboard", ID: "d"}, Meta: kibana.SavedObjectMeta{Title: "D"}, Overwrite: true,
+		Detail: &kibana.ImportErrorDetail{Type: kibana.ImportErrorTypeUnknown, StatusCode: 500, Message: "boom"},
 	}
 	if !reflect.DeepEqual(got, want) {
-		t.Errorf("ImportError = %+v (detail %+v), want %+v (detail %+v)", got, got.Error, want, want.Error)
+		t.Errorf("ImportError = %+v (detail %+v), want %+v (detail %+v)", got, got.Detail, want, want.Detail)
 	}
 }
 

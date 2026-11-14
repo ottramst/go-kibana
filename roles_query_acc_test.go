@@ -33,9 +33,9 @@ func TestAccRolesQueryAndBulk(t *testing.T) {
 	}
 
 	// Create in bulk.
-	result, _, err := client.Roles.BulkCreateOrUpdate(ctx, map[string]*kibana.Role{
+	result, _, err := client.Roles.BulkCreateOrUpdate(ctx, &kibana.BulkCreateOrUpdateRolesRequest{Roles: map[string]*kibana.Role{
 		names[0]: role("monitor"), names[1]: role("monitor"), names[2]: role("monitor"),
-	}, nil)
+	}}, nil)
 	if err != nil {
 		t.Fatalf("BulkCreateOrUpdate(create) error = %v", err)
 	}
@@ -45,9 +45,9 @@ func TestAccRolesQueryAndBulk(t *testing.T) {
 	}
 
 	// Unchanged, changed and invalid roles.
-	result, _, err = client.Roles.BulkCreateOrUpdate(ctx, map[string]*kibana.Role{
+	result, _, err = client.Roles.BulkCreateOrUpdate(ctx, &kibana.BulkCreateOrUpdateRolesRequest{Roles: map[string]*kibana.Role{
 		names[0]: role("monitor"), names[1]: role("manage"), prefix + "-bad": role("not_a_privilege"),
-	}, nil)
+	}}, nil)
 	if err != nil {
 		t.Fatalf("BulkCreateOrUpdate(update) error = %v", err)
 	}
@@ -86,12 +86,12 @@ func TestAccRolesQueryAndBulk(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Query(reserved) error = %v", err)
 	}
-	if !slices.ContainsFunc(reserved.Roles, func(r *kibana.Role) bool { return r.Name == "superuser" }) {
+	if !slices.ContainsFunc(reserved.Roles, func(r kibana.Role) bool { return r.Name == "superuser" }) {
 		t.Errorf("Query(ShowReservedRoles) does not return superuser")
 	}
 }
 
-func firstName(roles []*kibana.Role) string {
+func firstName(roles []kibana.Role) string {
 	if len(roles) == 0 {
 		return ""
 	}

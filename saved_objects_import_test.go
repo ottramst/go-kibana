@@ -68,9 +68,9 @@ func TestSavedObjectsService_Import(t *testing.T) {
 		t.Fatalf("Import() = %+v, want 3 imported objects", got)
 	}
 	want := kibana.ImportSuccess{
-		Type: "index-pattern", ID: "probe-ip",
-		Meta:          kibana.SavedObjectMeta{Title: "probe2-*", Icon: "indexPatternApp"},
-		DestinationID: "e9fa6a65-eab7-499b-b2cb-4b9fcbcb7688",
+		SavedObjectRef: kibana.SavedObjectRef{Type: "index-pattern", ID: "probe-ip"},
+		Meta:           kibana.SavedObjectMeta{Title: "probe2-*", Icon: "indexPatternApp"},
+		DestinationID:  "e9fa6a65-eab7-499b-b2cb-4b9fcbcb7688",
 	}
 	if got.SuccessResults[0] != want {
 		t.Errorf("SuccessResults[0] = %+v, want %+v", got.SuccessResults[0], want)
@@ -108,8 +108,8 @@ func TestSavedObjectsService_Import_conflicts(t *testing.T) {
 		t.Fatalf("Import() = %+v, want 3 errors", got)
 	}
 	want := &kibana.ImportErrorDetail{Type: kibana.ImportErrorTypeConflict, DestinationID: "e9fa6a65-eab7-499b-b2cb-4b9fcbcb7688"}
-	if e := got.Errors[0]; e.ID != "probe-ip" || !reflect.DeepEqual(e.Error, want) {
-		t.Errorf("Errors[0] = %+v (%+v), want a conflict with %+v", e, e.Error, want)
+	if e := got.Errors[0]; e.ID != "probe-ip" || !reflect.DeepEqual(e.Detail, want) {
+		t.Errorf("Errors[0] = %+v (%+v), want a conflict with %+v", e, e.Detail, want)
 	}
 }
 
@@ -190,13 +190,10 @@ func TestSavedObjectsService_ResolveImportErrors(t *testing.T) {
 		}
 		writeJSON(t, w, http.StatusOK, fixture(t, "savedobjects/rie_overwrite.json"))
 	})
-	got, _, err := client.SavedObjects.ResolveImportErrors(context.Background(), bytes.NewReader(export), &kibana.ResolveImportErrorsRequest{
-		CreateNewCopies: true,
-		Retries: []kibana.ImportRetry{
-			{Type: "dashboard", ID: "d", Overwrite: true, DestinationID: "d2", ReplaceReferences: []kibana.ImportReferenceReplacement{{Type: "index-pattern", From: "a", To: "b"}}},
-			{Type: "index-pattern", ID: "i", CreateNewCopy: true, IgnoreMissingReferences: true},
-		},
-	}, nil)
+	got, _, err := client.SavedObjects.ResolveImportErrors(context.Background(), bytes.NewReader(export), []kibana.ImportRetry{
+		{Type: "dashboard", ID: "d", Overwrite: true, DestinationID: "d2", ReplaceReferences: []kibana.ImportReferenceReplacement{{Type: "index-pattern", From: "a", To: "b"}}},
+		{Type: "index-pattern", ID: "i", CreateNewCopy: true, IgnoreMissingReferences: true},
+	}, &kibana.ResolveImportErrorsOptions{CreateNewCopies: true})
 	if err != nil {
 		t.Fatalf("ResolveImportErrors() error = %v", err)
 	}
@@ -221,16 +218,18 @@ func TestSavedObjectsService_importInvalidArguments(t *testing.T) {
 		}
 	}
 	retry := []kibana.ImportRetry{{Type: "dashboard", ID: "d"}}
-	if _, _, err := client.SavedObjects.ResolveImportErrors(ctx, nil, &kibana.ResolveImportErrorsRequest{Retries: retry}, nil); err == nil {
+	if _, _, err := client.SavedObjects.ResolveImportErrors(ctx, nil, retry, nil); err == nil {
 		t.Error("ResolveImportErrors(nil reader) error = nil, want error")
 	}
-	for name, req := range map[string]*kibana.ResolveImportErrorsRequest{
-		"nil request":                  nil,
-		"no retries":                   {},
-		"retry without":                {Retries: []kibana.ImportRetry{{Type: "dashboard"}}},
-		"new copies and compatibility": {Retries: retry, CreateNewCopies: true, CompatibilityMode: true},
+	for name, tt := range map[string]struct {
+		retries []kibana.ImportRetry
+		opt     *kibana.ResolveImportErrorsOptions
+	}{
+		"no retries":                   {nil, nil},
+		"retry without":                {[]kibana.ImportRetry{{Type: "dashboard"}}, nil},
+		"new copies and compatibility": {retry, &kibana.ResolveImportErrorsOptions{CreateNewCopies: true, CompatibilityMode: true}},
 	} {
-		if _, _, err := client.SavedObjects.ResolveImportErrors(ctx, file, req, nil); err == nil {
+		if _, _, err := client.SavedObjects.ResolveImportErrors(ctx, file, tt.retries, tt.opt); err == nil {
 			t.Errorf("ResolveImportErrors(%s) error = nil, want error", name)
 		}
 	}
@@ -246,15 +245,19 @@ func TestSavedObjectsService_Export(t *testing.T) {
 	})
 
 	var buf bytes.Buffer
-	_, err := client.InSpace("x").SavedObjects.Export(context.Background(), &kibana.ExportSavedObjectsRequest{
+	details, _, err := client.InSpace("x").SavedObjects.Export(context.Background(), &buf, &kibana.ExportSavedObjectsRequest{
 		Objects:               []kibana.SavedObjectRef{{Type: "dashboard", ID: "probe-dash"}},
 		IncludeReferencesDeep: true,
-	}, &buf, nil)
+	}, nil)
 	if err != nil {
 		t.Fatalf("Export() error = %v", err)
 	}
 	if !bytes.Equal(buf.Bytes(), export) {
 		t.Errorf("Export() wrote %q, want the response verbatim", buf.String())
+	}
+	want := &kibana.ExportDetails{ExportedCount: 3, MissingReferences: []kibana.SavedObjectRef{}, ExcludedObjects: []kibana.ExportExcludedObject{}}
+	if !reflect.DeepEqual(details, want) {
+		t.Errorf("Export() details = %+v, want %+v", details, want)
 	}
 }
 
@@ -264,14 +267,14 @@ func TestSavedObjectsService_Export_types(t *testing.T) {
 		testJSONBody(t, r, `{"type":["visualization"],"search":"probe*","hasReference":[{"type":"index-pattern","id":"i"}],"excludeExportDetails":true}`)
 		w.WriteHeader(http.StatusOK)
 	})
-	_, err := client.SavedObjects.Export(context.Background(), &kibana.ExportSavedObjectsRequest{
+	details, _, err := client.SavedObjects.Export(context.Background(), io.Discard, &kibana.ExportSavedObjectsRequest{
 		Types:                []string{"visualization"},
 		Search:               "probe*",
 		HasReference:         []kibana.SavedObjectRef{{Type: "index-pattern", ID: "i"}},
 		ExcludeExportDetails: true,
-	}, io.Discard, nil)
-	if err != nil {
-		t.Fatalf("Export() error = %v", err)
+	}, nil)
+	if err != nil || details != nil {
+		t.Fatalf("Export() = %+v, %v; want no details and no error", details, err)
 	}
 }
 
@@ -281,7 +284,7 @@ func TestSavedObjectsService_Export_missingObject(t *testing.T) {
 		writeJSON(t, w, http.StatusBadRequest, fixture(t, "savedobjects/export_missing.json"))
 	})
 	var buf bytes.Buffer
-	_, err := client.SavedObjects.Export(context.Background(), &kibana.ExportSavedObjectsRequest{Objects: []kibana.SavedObjectRef{{Type: "dashboard", ID: "probe-nope"}}}, &buf, nil)
+	_, _, err := client.SavedObjects.Export(context.Background(), &buf, &kibana.ExportSavedObjectsRequest{Objects: []kibana.SavedObjectRef{{Type: "dashboard", ID: "probe-nope"}}}, nil)
 	var errResp *kibana.ErrorResponse
 	if !errors.As(err, &errResp) || !errors.Is(err, kibana.ErrBadRequest) || len(errResp.Attributes) == 0 {
 		t.Errorf("Export() error = %v, want ErrBadRequest with the missing objects", err)
@@ -301,11 +304,70 @@ func TestSavedObjectsService_Export_invalidArguments(t *testing.T) {
 		"types and objects": {Types: []string{"dashboard"}, Objects: obj},
 		"object without ID": {Objects: []kibana.SavedObjectRef{{Type: "dashboard"}}},
 	} {
-		if _, err := client.SavedObjects.Export(ctx, req, io.Discard, nil); err == nil {
+		if _, _, err := client.SavedObjects.Export(ctx, io.Discard, req, nil); err == nil {
 			t.Errorf("Export(%s) error = nil, want error", name)
 		}
 	}
-	if _, err := client.SavedObjects.Export(ctx, &kibana.ExportSavedObjectsRequest{Objects: obj}, nil, nil); err == nil {
+	if _, _, err := client.SavedObjects.Export(ctx, nil, &kibana.ExportSavedObjectsRequest{Objects: obj}, nil); err == nil {
 		t.Error("Export(nil writer) error = nil, want error")
+	}
+}
+
+// serveInChunks writes data in 1-byte chunks, like a slow connection.
+func serveInChunks(t *testing.T, w http.ResponseWriter, data []byte) {
+	t.Helper()
+	w.Header().Set("Content-Type", "application/ndjson")
+	f, _ := w.(http.Flusher)
+	for i := range data {
+		if _, err := w.Write(data[i : i+1]); err != nil {
+			t.Errorf("writing response: %v", err)
+			return
+		}
+		if f != nil && i%97 == 0 {
+			f.Flush()
+		}
+	}
+}
+
+func TestSavedObjectsService_Export_details(t *testing.T) {
+	export := fixture(t, "savedobjects/export.ndjson")
+	lines := bytes.Split(bytes.TrimSpace(export), []byte("\n"))
+	detailsLine := lines[len(lines)-1]
+	tests := []struct {
+		name    string
+		body    []byte
+		wantErr bool
+		want    int
+	}{
+		{"chunked", export, false, 3},
+		{"no trailing newline", bytes.TrimSuffix(export, []byte("\n")), false, 3},
+		{"trailing blank lines", append(bytes.Clone(export), "\n\n"...), false, 3},
+		// An export without objects only has the details line.
+		{"only details", append(bytes.Clone(detailsLine), '\n'), false, 3},
+		// A saved object line also decodes into ExportDetails.
+		{"no details line", bytes.Join(lines[:len(lines)-1], []byte("\n")), true, 0},
+		{"empty", nil, true, 0},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			mux, client := setup(t)
+			mux.HandleFunc("POST /api/saved_objects/_export", func(w http.ResponseWriter, _ *http.Request) {
+				serveInChunks(t, w, tt.body)
+			})
+			var buf bytes.Buffer
+			details, _, err := client.SavedObjects.Export(context.Background(), &buf, &kibana.ExportSavedObjectsRequest{Types: []string{"dashboard"}}, nil)
+			if tt.wantErr {
+				if err == nil {
+					t.Errorf("Export() = %+v, want an error", details)
+				}
+				return
+			}
+			if err != nil || details == nil || details.ExportedCount != tt.want {
+				t.Errorf("Export() = %+v, %v; want %d exported", details, err, tt.want)
+			}
+			if !bytes.Equal(buf.Bytes(), tt.body) {
+				t.Error("Export() did not write the whole response")
+			}
+		})
 	}
 }

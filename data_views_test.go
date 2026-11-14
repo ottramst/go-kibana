@@ -62,11 +62,11 @@ func TestDataViewsService_Get(t *testing.T) {
 	if got.TypeMeta != nil {
 		t.Errorf("TypeMeta = %+v, want nil", got.TypeMeta)
 	}
-	host := got.Fields["host"]
-	if host == nil || host.Type != "string" || !reflect.DeepEqual(host.ESTypes, []string{"keyword"}) || !host.Aggregatable || host.CustomLabel != "Host" || host.Count != 3 {
+	host, ok := got.Fields["host"]
+	if !ok || host.Type != "string" || !reflect.DeepEqual(host.ESTypes, []string{"keyword"}) || !host.Aggregatable || host.CustomLabel != "Host" || host.Count != 3 {
 		t.Errorf("Fields[host] = %+v", host)
 	}
-	if rt := got.Fields["rt1"]; rt == nil || rt.RuntimeField == nil || rt.RuntimeField.Type != "keyword" {
+	if rt, ok := got.Fields["rt1"]; !ok || rt.RuntimeField == nil || rt.RuntimeField.Type != "keyword" {
 		t.Errorf("Fields[rt1] = %+v, want a runtime field", rt)
 	}
 }
@@ -90,7 +90,7 @@ func TestDataViewsService_Create(t *testing.T) {
 		RuntimeFieldMap: map[string]kibana.RuntimeField{"rt1": {Type: "keyword", Script: &kibana.RuntimeFieldScript{Source: `emit("x")`}}},
 		FieldAttrs:      map[string]kibana.DataViewFieldAttrs{"host": {CustomLabel: "Host", Count: 3}},
 		Namespaces:      []string{"x"},
-		Fields:          map[string]*kibana.DataViewField{"host": {Name: "host"}},
+		Fields:          map[string]kibana.DataViewField{"host": {Name: "host"}},
 		AllowHidden:     true,
 		Version:         "ignored",
 	}
@@ -240,8 +240,8 @@ func TestDataViewsService_GetDefault(t *testing.T) {
 				writeJSON(t, w, http.StatusOK, fixture(t, name))
 			})
 			got, _, err := client.InSpace("x").DataViews.GetDefault(context.Background(), nil)
-			if err != nil || got != want {
-				t.Errorf("GetDefault() = %q, %v; want %q", got, err, want)
+			if err != nil || got.ID != want {
+				t.Errorf("GetDefault() = %+v, %v; want %q", got, err, want)
 			}
 		})
 	}

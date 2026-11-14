@@ -140,7 +140,7 @@ func TestSavedObjectsService_Update(t *testing.T) {
 		testJSONBody(t, r, `{"attributes":{"title":"probe2-*"},"version":"WzUsMV0="}`)
 		writeJSON(t, w, http.StatusOK, fixture(t, "savedobjects/so_update.json"))
 	})
-	got, _, err := client.SavedObjects.Update(context.Background(), &kibana.SavedObject{
+	got, _, err := client.SavedObjects.Update(context.Background(), "index-pattern", "probe-ip", &kibana.SavedObject{
 		ID: "probe-ip", Type: "index-pattern", Attributes: json.RawMessage(`{"title":"probe2-*"}`),
 		Version: "WzUsMV0=", CoreMigrationVersion: "8.8.0", TypeMigrationVersion: "8.0.0",
 	}, nil)
@@ -159,7 +159,7 @@ func TestSavedObjectsService_Update_upsertAndReferences(t *testing.T) {
 		testJSONBody(t, r, `{"attributes":{"title":"u-*"},"references":[],"upsert":{"title":"u-*"}}`)
 		writeJSON(t, w, http.StatusOK, fixture(t, "savedobjects/so_update_upsert.json"))
 	})
-	_, _, err := client.SavedObjects.Update(context.Background(), &kibana.SavedObject{
+	_, _, err := client.SavedObjects.Update(context.Background(), "index-pattern", "probe-upsert", &kibana.SavedObject{
 		ID: "probe-upsert", Type: "index-pattern", Attributes: json.RawMessage(`{"title":"u-*"}`),
 		References: []kibana.SavedObjectReference{},
 	}, &kibana.UpdateSavedObjectOptions{Upsert: json.RawMessage(`{"title":"u-*"}`)})
@@ -183,7 +183,7 @@ func TestSavedObjectsService_Update_errors(t *testing.T) {
 			mux.HandleFunc("PUT /api/saved_objects/{type}/{id}", func(w http.ResponseWriter, _ *http.Request) {
 				writeJSON(t, w, tt.status, fixture(t, tt.fixture))
 			})
-			_, _, err := client.SavedObjects.Update(context.Background(), &kibana.SavedObject{Type: "t", ID: "i", Attributes: json.RawMessage(`{}`)}, nil)
+			_, _, err := client.SavedObjects.Update(context.Background(), "t", "i", &kibana.SavedObject{Type: "t", ID: "i", Attributes: json.RawMessage(`{}`)}, nil)
 			if !errors.Is(err, tt.want) {
 				t.Errorf("Update() error = %v, want %v", err, tt.want)
 			}
@@ -232,12 +232,19 @@ func TestSavedObjectsService_crudInvalidArguments(t *testing.T) {
 		if _, _, err := client.SavedObjects.Create(ctx, obj, nil); err == nil {
 			t.Errorf("Create(%s) error = nil, want error", name)
 		}
-		if _, _, err := client.SavedObjects.Update(ctx, obj, nil); err == nil {
+		objType, id := "t", "i"
+		if obj != nil {
+			objType, id = obj.Type, obj.ID
+		}
+		if _, _, err := client.SavedObjects.Update(ctx, objType, id, obj, nil); err == nil {
 			t.Errorf("Update(%s) error = nil, want error", name)
 		}
 	}
-	if _, _, err := client.SavedObjects.Update(ctx, &kibana.SavedObject{Type: "t", Attributes: attrs}, nil); err == nil {
+	if _, _, err := client.SavedObjects.Update(ctx, "t", "", &kibana.SavedObject{Attributes: attrs}, nil); err == nil {
 		t.Error("Update(no ID) error = nil, want error")
+	}
+	if _, _, err := client.SavedObjects.Update(ctx, "", "i", &kibana.SavedObject{Attributes: attrs}, nil); err == nil {
+		t.Error("Update(no type) error = nil, want error")
 	}
 	for _, args := range [][2]string{{"", "i"}, {"t", ""}, {".", "i"}, {"t", ".."}} {
 		if _, _, err := client.SavedObjects.Get(ctx, args[0], args[1], nil); err == nil {

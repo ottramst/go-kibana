@@ -19,18 +19,18 @@ func TestAccDataViewsFields(t *testing.T) {
 	}
 
 	// Field metadata: set, then remove. The field does not need to exist.
-	got, _, err := client.DataViews.UpdateFieldsMetadata(ctx, dv.ID, map[string]kibana.DataViewFieldMetadata{
+	got, _, err := client.DataViews.UpdateFieldsMetadata(ctx, dv.ID, &kibana.UpdateFieldsMetadataRequest{Fields: map[string]kibana.DataViewFieldMetadata{
 		"host": {CustomLabel: new("Host"), CustomDescription: new("The host"), Count: new(3), Format: &kibana.DataViewFieldFormat{ID: "string"}},
-	}, nil)
+	}}, nil)
 	if err != nil {
 		t.Fatalf("UpdateFieldsMetadata() error = %v", err)
 	}
 	if a := got.FieldAttrs["host"]; a.CustomLabel != "Host" || a.CustomDescription != "The host" || a.Count != 3 || got.FieldFormats["host"].ID != "string" {
 		t.Errorf("UpdateFieldsMetadata() = %+v, %+v; want the metadata", got.FieldAttrs, got.FieldFormats)
 	}
-	got, _, err = client.DataViews.UpdateFieldsMetadata(ctx, dv.ID, map[string]kibana.DataViewFieldMetadata{
+	got, _, err = client.DataViews.UpdateFieldsMetadata(ctx, dv.ID, &kibana.UpdateFieldsMetadataRequest{Fields: map[string]kibana.DataViewFieldMetadata{
 		"host": {CustomLabel: new(""), Count: new(0), Format: &kibana.DataViewFieldFormat{}},
-	}, nil)
+	}}, nil)
 	if err != nil {
 		t.Fatalf("UpdateFieldsMetadata(remove) error = %v", err)
 	}

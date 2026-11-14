@@ -199,7 +199,8 @@ type ResolveSavedObjectOptions struct {
 // object IDs unique across spaces, or when they were imported, can still be
 // found by their old ID.
 //
-// Deprecated: Kibana deprecated the saved objects resolve API in 8.7.
+// Deprecated: Kibana deprecated the saved objects resolve API in 8.7. There
+// is no replacement.
 //
 // Kibana API: GET /api/saved_objects/resolve/{type}/{id}
 //

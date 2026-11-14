@@ -20,10 +20,14 @@ func TestAccSavedObjectsExportImport(t *testing.T) {
 
 	// Export the index pattern, with the details line.
 	var export bytes.Buffer
-	if _, err := src.SavedObjects.Export(ctx, &kibana.ExportSavedObjectsRequest{
+	exported, _, err := src.SavedObjects.Export(ctx, &export, &kibana.ExportSavedObjectsRequest{
 		Objects: []kibana.SavedObjectRef{{Type: "index-pattern", ID: ipID}},
-	}, &export, nil); err != nil {
+	}, nil)
+	if err != nil {
 		t.Fatalf("Export() error = %v", err)
+	}
+	if exported == nil || exported.ExportedCount != 1 || exported.MissingRefCount != 0 {
+		t.Errorf("Export() details = %+v, want 1 exported object", exported)
 	}
 	var lines [][]byte
 	sc := bufio.NewScanner(bytes.NewReader(export.Bytes()))
@@ -38,9 +42,9 @@ func TestAccSavedObjectsExportImport(t *testing.T) {
 		t.Errorf("export details = %+v, %v; want 1 exported object", details, err)
 	}
 
-	_, err := src.SavedObjects.Export(ctx, &kibana.ExportSavedObjectsRequest{
+	_, _, err = src.SavedObjects.Export(ctx, &bytes.Buffer{}, &kibana.ExportSavedObjectsRequest{
 		Objects: []kibana.SavedObjectRef{{Type: "index-pattern", ID: randName(t, "missing")}},
-	}, &bytes.Buffer{}, nil)
+	}, nil)
 	if !errors.Is(err, kibana.ErrBadRequest) {
 		t.Errorf("Export(missing) error = %v, want ErrBadRequest", err)
 	}
@@ -61,13 +65,13 @@ func TestAccSavedObjectsExportImport(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Import(again) error = %v", err)
 	}
-	if result.Success || len(result.Errors) != 1 || result.Errors[0].Error == nil || result.Errors[0].Error.Type != kibana.ImportErrorTypeConflict {
+	if result.Success || len(result.Errors) != 1 || result.Errors[0].Detail == nil || result.Errors[0].Detail.Type != kibana.ImportErrorTypeConflict {
 		t.Fatalf("Import(again) = %+v, want a conflict", result)
 	}
 
 	// Resolve the conflict by overwriting.
-	result, _, err = dst.SavedObjects.ResolveImportErrors(ctx, bytes.NewReader(export.Bytes()), &kibana.ResolveImportErrorsRequest{
-		Retries: []kibana.ImportRetry{{Type: "index-pattern", ID: ipID, Overwrite: true, DestinationID: result.Errors[0].Error.DestinationID}},
+	result, _, err = dst.SavedObjects.ResolveImportErrors(ctx, bytes.NewReader(export.Bytes()), []kibana.ImportRetry{
+		{Type: "index-pattern", ID: ipID, Overwrite: true, DestinationID: result.Errors[0].Detail.DestinationID},
 	}, nil)
 	if err != nil {
 		t.Fatalf("ResolveImportErrors() error = %v", err)

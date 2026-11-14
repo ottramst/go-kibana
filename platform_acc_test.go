@@ -43,7 +43,11 @@ func TestAccFeatures(t *testing.T) {
 	if i < 0 {
 		t.Fatalf("List() = %v, want advancedSettings", ids)
 	}
-	if f := features[i]; f.Privileges["all"] == nil || f.Privileges["read"] == nil {
+	f := features[i]
+	if _, ok := f.Privileges["all"]; !ok {
+		t.Errorf("advancedSettings privileges = %v, want all and read", f.Privileges)
+	}
+	if _, ok := f.Privileges["read"]; !ok {
 		t.Errorf("advancedSettings privileges = %v, want all and read", f.Privileges)
 	}
 }
