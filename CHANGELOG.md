@@ -30,6 +30,11 @@ FEATURES:
 * `ErrServiceUnavailable` matches 503 Service Unavailable responses ([#43](https://github.com/ottramst/go-kibana/issues/43))
 * status: `StatusFromError` returns the status Kibana sends with a 503 ([#43](https://github.com/ottramst/go-kibana/issues/43))
 
+NOTES:
+
+* The README, the package documentation and CONTRIBUTING.md describe the v1 stability policy, with a cookbook of common tasks; non-obvious struct fields are documented ([#44](https://github.com/ottramst/go-kibana/issues/44))
+* CI checks the API against the latest v1 release with gorelease, from v1.0.0 on ([#43](https://github.com/ottramst/go-kibana/issues/43))
+
 ## v0.5.0
 
 FEATURES:
