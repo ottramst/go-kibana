@@ -24,7 +24,7 @@ import (
 
 // accClient returns a client for the acceptance test Kibana, or skips the
 // test unless KIBANA_ACC is set.
-func accClient(t *testing.T) *kibana.Client {
+func accClient(t *testing.T, opts ...kibana.ClientOption) *kibana.Client {
 	t.Helper()
 	if os.Getenv("KIBANA_ACC") == "" {
 		t.Skip("set KIBANA_ACC=1 to run acceptance tests")
@@ -33,7 +33,7 @@ func accClient(t *testing.T) *kibana.Client {
 	if key := os.Getenv("KIBANA_API_KEY"); key != "" {
 		auth = kibana.WithAPIKey(key)
 	}
-	client, err := kibana.NewClient(envOr("KIBANA_URL", "http://localhost:5601"), auth)
+	client, err := kibana.NewClient(envOr("KIBANA_URL", "http://localhost:5601"), append([]kibana.ClientOption{auth}, opts...)...)
 	if err != nil {
 		t.Fatalf("NewClient() error = %v", err)
 	}

@@ -71,7 +71,7 @@ func (s *retryServer) reset(statuses ...int) {
 
 // retryClient returns a client for srv that retries with policy and records
 // the waits instead of sleeping.
-func retryClient(t *testing.T, srv http.Handler, policy kibana.RetryPolicy, opts ...kibana.ClientOption) (*kibana.Client, *[]time.Duration) {
+func retryClient(t *testing.T, srv http.Handler, policy kibana.RetryPolicy) (*kibana.Client, *[]time.Duration) {
 	t.Helper()
 	server := httptest.NewServer(srv)
 	t.Cleanup(server.Close)
@@ -80,8 +80,7 @@ func retryClient(t *testing.T, srv http.Handler, policy kibana.RetryPolicy, opts
 		waits = append(waits, d)
 		return ctx.Err()
 	}
-	opts = append([]kibana.ClientOption{kibana.WithRetry(policy), kibana.WithRetrySleep(sleep)}, opts...)
-	client, err := kibana.NewClient(server.URL, opts...)
+	client, err := kibana.NewClient(server.URL, kibana.WithRetry(policy), kibana.WithRetrySleep(sleep))
 	if err != nil {
 		t.Fatalf("NewClient() error = %v", err)
 	}
@@ -415,5 +414,30 @@ func TestRetryAfter(t *testing.T) {
 	}
 	if got, ok := kibana.RetryAfter(future); !ok || got < 58*time.Second || got > time.Minute {
 		t.Errorf("retryAfter(%q) = %v, %v; want about a minute", future, got, ok)
+	}
+}
+
+func TestWithRetry_realSleep(t *testing.T) {
+	srv := &retryServer{statuses: []int{503}}
+	server := httptest.NewServer(srv)
+	t.Cleanup(server.Close)
+	client, err := kibana.NewClient(server.URL, kibana.WithRetry(kibana.RetryPolicy{MinBackoff: time.Millisecond, MaxBackoff: time.Millisecond}))
+	if err != nil {
+		t.Fatalf("NewClient() error = %v", err)
+	}
+	if _, _, err := client.Spaces.Get(context.Background(), "marketing", nil); err != nil || srv.n() != 2 {
+		t.Errorf("Get() error = %v after %d attempts, want success after 2", err, srv.n())
+	}
+
+	// Canceling the context ends the wait.
+	srv.reset(503)
+	client, err = kibana.NewClient(server.URL, kibana.WithRetry(kibana.RetryPolicy{MinBackoff: time.Minute, MaxBackoff: time.Minute}))
+	if err != nil {
+		t.Fatalf("NewClient() error = %v", err)
+	}
+	ctx, cancel := context.WithCancel(context.Background())
+	time.AfterFunc(50*time.Millisecond, cancel)
+	if _, _, err := client.Spaces.Get(ctx, "marketing", nil); !errors.Is(err, context.Canceled) || srv.n() != 1 {
+		t.Errorf("Get() error = %v after %d attempts, want context.Canceled after 1", err, srv.n())
 	}
 }

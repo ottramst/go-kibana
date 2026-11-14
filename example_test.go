@@ -45,6 +45,25 @@ func ExampleNewClient_basicAuth() {
 	_ = client
 }
 
+func ExampleWithRetry() {
+	// Retry transient errors, such as the 503 Kibana returns while it
+	// starts, up to 5 attempts. The HTTP client's timeout spans all of them.
+	client, err := kibana.NewClient("https://kibana.example.com:5601",
+		kibana.WithAPIKey(os.Getenv("KIBANA_API_KEY")),
+		kibana.WithHTTPClient(&http.Client{Timeout: 2 * time.Minute}),
+		kibana.WithRetry(kibana.RetryPolicy{MaxAttempts: 5, MaxBackoff: 20 * time.Second}),
+	)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	status, _, err := client.Status.Get(context.Background(), nil)
+	if err != nil {
+		log.Fatal(err)
+	}
+	fmt.Println(status.Health.Overall.Level)
+}
+
 func ExampleClient_InSpace() {
 	client, err := kibana.NewClient("http://localhost:5601", kibana.WithAPIKey(os.Getenv("KIBANA_API_KEY")))
 	if err != nil {

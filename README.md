@@ -155,13 +155,15 @@ if errors.As(err, &errResp) {
 ### Timeouts, retries and custom transports
 
 The default HTTP client has no timeout: pass a context with a deadline, or bring your own client.
-The client does not retry. To retry, for example on the 503 Kibana returns while it starts
-(`errors.Is(err, kibana.ErrServiceUnavailable)`), plug in a retrying transport:
+The client does not retry unless you pass `WithRetry`. It then retries the 429, 502, 503 and 504
+responses and network errors, for example the 503 Kibana returns while it starts. Requests that
+Kibana may have processed, such as a POST answered with 502, are not retried:
 
 ```go
 client, err := kibana.NewClient(kibanaURL,
 	kibana.WithAPIKey(apiKey),
-	kibana.WithHTTPClient(&http.Client{Timeout: 30 * time.Second, Transport: myRetryingTransport}),
+	kibana.WithHTTPClient(&http.Client{Timeout: 2 * time.Minute}), // spans all attempts
+	kibana.WithRetry(kibana.RetryPolicy{}),                         // 4 attempts, 1s to 30s backoff
 )
 ```
 
