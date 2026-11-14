@@ -67,7 +67,7 @@ The stack runs with security enabled and a trial license, on ports bound to 127.
   - `requireID(name, v)` rejects empty, `.` and `..` path parameters before sending.
 - `ErrorResponse{Method, URL (without credentials), Header, StatusCode, StatusText (the "error" field), Message, Attributes, Body}`. The format of `Error()` is not part of the API. `Is()` maps 400/401/403/404/409/429/503 to `ErrBadRequest`/`ErrUnauthorized`/`ErrForbidden`/`ErrNotFound`/`ErrConflict`/`ErrTooManyRequests`/`ErrServiceUnavailable`. Fields of unexpected types are skipped. Bodies that are not a JSON object, such as proxy pages, become `Message`, cut to 512 bytes; `Body` keeps the whole body (up to 1 MiB).
 
-**Service conventions** (`spaces.go` is the template). These are the v1 API rules; changes that break them need a new major version after v1.0.0. The v1.0.0 milestone PRs (#43) bring the existing code in line with them, so until v1.0.0 some code still differs (e.g. bodies passed as bare slices or maps); `docs/upgrading-to-v1.md` tracks every change.
+**Service conventions** (`spaces.go` is the template). These are the v1 API rules; changes that break them need a new major version.
 - **Names:**
   - Methods: `List`, `Get`, `Create`, `Update`, `Delete`. A PUT that creates or replaces (an upsert) is `CreateOrUpdate`. Other operations are named after the endpoint, e.g. `CopySavedObjects` or `Query`.
   - Iterators are the single-page method plus `All` (`QueryAll`, `ListAll`, `FindAll`). They return `iter.Seq2[*T, error]` and are built on the internal paginators in `pagination.go`: lazy, restartable, yield an error once and stop, and stop on an empty page.
@@ -219,7 +219,7 @@ GitHub Actions workflows in `.github/workflows/`:
 
 ## Rules
 
-- Until v1.0.0, every pull request that breaks the API adds its changes to `docs/upgrading-to-v1.md`.
+- Since v1.0.0, a change that breaks the API needs a `/v2` module path; the `API compatibility` job enforces it. `docs/upgrading-to-v1.md` records the changes from v0.5.0 and is not extended.
 - Add a `CHANGELOG.md` entry under `## Unreleased` for user-visible changes (HashiCorp style: `BREAKING CHANGES`, `FEATURES`, `ENHANCEMENTS`, `BUG FIXES`, `NOTES`), linking the issue.
 - Every new service method needs the `// Kibana API:` and `// Kibana API docs:` lines, unit tests, an acceptance test on both supported versions, and a regenerated `COVERAGE.md` (`make coverage`).
 - Pull request titles follow Conventional Commits (`feat(spaces): ...`, `fix(roles)!: ...`). PRs are squash-merged and reference their issue (`Closes #N`).
