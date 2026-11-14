@@ -1,4 +1,6 @@
-## Unreleased
+## v1.0.0
+
+v1.0.0 is the first stable release: from now on, go-kibana follows semantic versioning, and CI checks every change against the v1 API. This release reworks the API once so that it can stay stable. Upgrading from v0.5.0? [Upgrading to v1](https://github.com/ottramst/go-kibana/blob/v1.0.0/docs/upgrading-to-v1.md) lists every change that can break your code, with what to use instead. Tested against Kibana 8.19.25 and 9.5.6.
 
 BREAKING CHANGES:
 
