@@ -27,13 +27,13 @@ func TestStatusService_Get(t *testing.T) {
 			if got.Version.Number == "" || got.Version.BuildHash == "" || got.Version.BuildDate.IsZero() {
 				t.Errorf("Version = %+v, want number, build hash and date", got.Version)
 			}
-			if got.Summary.Overall.Level != kibana.StatusLevelAvailable {
-				t.Errorf("Overall.Level = %q, want %q", got.Summary.Overall.Level, kibana.StatusLevelAvailable)
+			if got.Health.Overall.Level != kibana.StatusLevelAvailable {
+				t.Errorf("Overall.Level = %q, want %q", got.Health.Overall.Level, kibana.StatusLevelAvailable)
 			}
-			if es := got.Summary.Core["elasticsearch"]; es.Level != kibana.StatusLevelAvailable || len(es.Meta) == 0 {
+			if es := got.Health.Core["elasticsearch"]; es.Level != kibana.StatusLevelAvailable || len(es.Meta) == 0 {
 				t.Errorf("Core[elasticsearch] = %+v, want available with meta", es)
 			}
-			if tm := got.Summary.Plugins["taskManager"]; tm.Level != kibana.StatusLevelAvailable || !tm.Reported {
+			if tm := got.Health.Plugins["taskManager"]; tm.Level != kibana.StatusLevelAvailable || !tm.Reported {
 				t.Errorf("Plugins[taskManager] = %+v, want available and reported", tm)
 			}
 			if len(got.Metrics) == 0 {
@@ -78,7 +78,7 @@ func TestStatusService_Get_redacted(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Get() error = %v", err)
 	}
-	if got.Version.Number != "" || got.Summary.Overall.Level != kibana.StatusLevelAvailable {
+	if got.Version.Number != "" || got.Health.Overall.Level != kibana.StatusLevelAvailable {
 		t.Errorf("Get() = %+v, want only the overall level", got)
 	}
 }
@@ -103,7 +103,7 @@ func TestStatusService_Get_unavailable(t *testing.T) {
 		t.Errorf("Response = %v, want the 503 response", resp)
 	}
 	status, ok := kibana.StatusFromError(err)
-	if !ok || status.Summary.Overall.Level != kibana.StatusLevelUnavailable || status.Summary.Core["elasticsearch"].Summary != "down" {
+	if !ok || status.Health.Overall.Level != kibana.StatusLevelUnavailable || status.Health.Core["elasticsearch"].Summary != "down" {
 		t.Errorf("StatusFromError() = %+v, %v; want unavailable with the core status", status, ok)
 	}
 	// Wrapped errors work too.

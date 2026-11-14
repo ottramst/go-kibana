@@ -15,16 +15,16 @@ func TestAccStatus(t *testing.T) {
 		t.Fatal("Get() returned no version")
 	}
 	// Kibana answers 200 when it is degraded too.
-	if status.Summary.Overall.Level == "" {
+	if status.Health.Overall.Level == "" {
 		t.Error("Overall.Level is empty")
 	}
-	if _, ok := status.Summary.Core["elasticsearch"]; !ok {
+	if _, ok := status.Health.Core["elasticsearch"]; !ok {
 		t.Error("Core has no elasticsearch status")
 	}
-	if len(status.Summary.Plugins) == 0 {
+	if len(status.Health.Plugins) == 0 {
 		t.Error("Plugins is empty")
 	}
-	t.Logf("Kibana %s, %s", status.Version.Number, status.Summary.Overall.Level)
+	t.Logf("Kibana %s, %s", status.Version.Number, status.Health.Overall.Level)
 }
 
 func TestAccFeatures(t *testing.T) {

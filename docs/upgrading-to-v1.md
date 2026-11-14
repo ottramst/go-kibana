@@ -15,7 +15,7 @@ that can break your code, with what to use instead.
 | `CheckResponse(resp)` | Removed. `Client.Do` returns the `*ErrorResponse`. |
 | — | `ErrServiceUnavailable` for 503 responses |
 | `Status.Get(ctx)` returns the status together with the error on a 503 | `Status.Get(ctx, nil)` returns only the error; `status, ok := kibana.StatusFromError(err)` |
-| `status.Status.Overall` (`StatusInfo`) | `status.Summary.Overall` (`StatusSummary`) |
+| `status.Status.Overall` (`StatusInfo`) | `status.Health.Overall` (`StatusHealth`) |
 | `StatusAvailable`, `StatusDegraded`, `StatusUnavailable`, `StatusCritical` | `StatusLevelAvailable`, `StatusLevelDegraded`, `StatusLevelUnavailable`, `StatusLevelCritical` |
 
 ## Method signatures
