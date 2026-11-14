@@ -47,8 +47,6 @@ func (s *SavedObjectsService) BulkCreate(ctx context.Context, objs []*SavedObjec
 // BulkGetSavedObjectsItem is an object to get with
 // [SavedObjectsService.BulkGet].
 type BulkGetSavedObjectsItem struct {
-	_ [0]func()
-
 	Type string `json:"type"`
 	ID   string `json:"id"`
 

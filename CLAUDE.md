@@ -54,7 +54,7 @@ The stack runs with security enabled and a trial license, on ports bound to 127.
   - `v == nil` drains the body; an `io.Writer` gets the raw body (for ndjson exports).
   - Anything else is JSON-decoded. An empty body (204) is success and leaves `v` untouched. Data after the JSON value is an error.
   - The body is always drained and closed.
-- Service methods call the unexported `c.do(ctx, method, path, body, v, opts)`.
+- Service methods call the unexported `c.do(ctx, method, path, body, v, opt, opts)`, which encodes `opt` like `addQuery`.
 - Helpers:
   - `pathf("/api/x/%s", id)` escapes each segment with `url.PathEscape`. Never `fmt.Sprintf` a path.
   - `addQuery(path, opt)` encodes `url:"..."` struct tags with go-querystring, for any HTTP method.
@@ -62,7 +62,7 @@ The stack runs with security enabled and a trial license, on ports bound to 127.
   - `requireID(name, v)` rejects empty, `.` and `..` path parameters before sending.
 - `ErrorResponse{Method, URL (without credentials), Header, StatusCode, StatusText (the "error" field), Message, Attributes, Body}`. The format of `Error()` is not part of the API. `Is()` maps 400/401/403/404/409/429/503 to `ErrBadRequest`/`ErrUnauthorized`/`ErrForbidden`/`ErrNotFound`/`ErrConflict`/`ErrTooManyRequests`/`ErrServiceUnavailable`. Fields of unexpected types are skipped. Bodies that are not a JSON object, such as proxy pages, become `Message`, cut to 512 bytes; `Body` keeps the whole body (up to 1 MiB).
 
-**Service conventions** (`spaces.go` is the template). These are the v1 API rules; changes that break them need a new major version after v1.0.0.
+**Service conventions** (`spaces.go` is the template). These are the v1 API rules; changes that break them need a new major version after v1.0.0. The v1.0.0 milestone PRs (#43) bring the existing code in line with them, so until v1.0.0 some code still differs (e.g. bodies passed as bare slices or maps); `docs/upgrading-to-v1.md` tracks every change.
 - **Names:**
   - Methods: `List`, `Get`, `Create`, `Update`, `Delete`. A PUT that creates or replaces (an upsert) is `CreateOrUpdate`. Other operations are named after the endpoint, e.g. `CopySavedObjects` or `Query`.
   - Iterators are the single-page method plus `All` (`QueryAll`, `ListAll`, `FindAll`). They return `iter.Seq2[*T, error]` and are built on the internal paginators in `pagination.go`: lazy, restartable, yield an error once and stop, and stop on an empty page.
@@ -72,7 +72,7 @@ The stack runs with security enabled and a trial license, on ports bound to 127.
   - Every method has a nil-able `opt`, even if the options struct is still empty, so that query parameters can be added later without breaking callers.
   - Options hold query parameters (`url:"..."`), and flags that Kibana takes in the body next to the domain object (`url:"-"`, e.g. `CreateDataViewOptions.Override`). `…Request` structs hold only body fields.
   - A JSON object body is passed as a domain object (`*Space`, `*Role`) or a `…Request` struct, never as a bare slice or map. JSON-array bodies (the saved objects bulk endpoints) take slices.
-  - Every Options and `…Request` struct has an unexported `_ [0]func()` field, which makes it non-comparable, so that adding a slice or map field later is not a breaking change.
+  - Every Options and `…Request` struct has an unexported `_ [0]func()` as its first field (first, because a trailing zero-size field adds padding). It makes the struct non-comparable, so that adding a slice or map field later is not a breaking change, and requires keyed literals.
 - **Results:** envelopes around a resource or collection are unwrapped (`{"data_view": {...}}` returns `*DataView`). Scalar results and results with metadata are a `*<Verb><Noun>Result`. Returned collections are `[]*T` (or a `map[string]*T` keyed by Kibana); collections inside structs hold values. Exception: `BulkRoleError` has a value receiver, so the values of `map[string]BulkRoleError` are errors.
 - **Annotations:** every method's doc comment ends with lines that `tools/coverage` parses, as separate paragraphs, so that pkg.go.dev doesn't join them:
   ```go
@@ -213,9 +213,11 @@ GitHub Actions workflows in `.github/workflows/`:
 
 ## Rules
 
+- Until v1.0.0, every pull request that breaks the API adds its changes to `docs/upgrading-to-v1.md`.
 - Add a `CHANGELOG.md` entry under `## Unreleased` for user-visible changes (HashiCorp style: `BREAKING CHANGES`, `FEATURES`, `ENHANCEMENTS`, `BUG FIXES`, `NOTES`), linking the issue.
 - Every new service method needs the `// Kibana API:` and `// Kibana API docs:` lines, unit tests, an acceptance test on both supported versions, and a regenerated `COVERAGE.md` (`make coverage`).
 - Pull request titles follow Conventional Commits (`feat(spaces): ...`, `fix(roles)!: ...`). PRs are squash-merged and reference their issue (`Closes #N`).
 - Keep the library to the standard library plus go-querystring. Tooling dependencies belong in `tools/`.
 - Record newly discovered Kibana API quirks in the "Kibana API quirks" section above.
+- Plans for a milestone, or for any change that spans several pull requests, go through the `plan-critic` subagent (`.claude/agents/plan-critic.md`) before they are approved. Spawn it with the plan file path and the decisions the user has made only, fold the confirmed findings into the plan, and note in the plan which were taken. Run it again if the findings change the plan's structure, such as its pull requests or their order.
 - Every pull request, including Dependabot and release pull requests, gets an independent review by the `pr-reviewer` subagent (`.claude/agents/pr-reviewer.md`) before it is merged. Spawn it with the PR number and the PR's purpose only, not your own conclusions, so the review is independent. Fix confirmed findings on the PR branch, and have the fix commits reviewed again before merging.

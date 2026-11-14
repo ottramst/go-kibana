@@ -211,12 +211,8 @@ func (s *RolesService) Get(ctx context.Context, name string, opt *GetRoleOptions
 	if err := requireID("role name", name); err != nil {
 		return nil, nil, err
 	}
-	path, err := addQuery(pathf("/api/security/role/%s", name), opt)
-	if err != nil {
-		return nil, nil, err
-	}
 	role := new(Role)
-	resp, err := s.client.do(ctx, http.MethodGet, path, nil, role, nil, opts)
+	resp, err := s.client.do(ctx, http.MethodGet, pathf("/api/security/role/%s", name), nil, role, opt, opts)
 	if err != nil {
 		return nil, resp, err
 	}

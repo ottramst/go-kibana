@@ -15,7 +15,7 @@ that can break your code, with what to use instead.
 | `CheckResponse(resp)` | Removed. `Client.Do` returns the `*ErrorResponse`. |
 | — | `ErrServiceUnavailable` for 503 responses |
 | `Status.Get(ctx)` returns the status together with the error on a 503 | `Status.Get(ctx, nil)` returns only the error; `status, ok := kibana.StatusFromError(err)` |
-| `status.Status.Overall` (`StatusInfo`) | `status.Summary.Overall` (`StatusSummary`) |
+| `status.Status.Overall` (`StatusInfo`) | `status.Health.Overall` (`StatusHealth`) |
 | `StatusAvailable`, `StatusDegraded`, `StatusUnavailable`, `StatusCritical` | `StatusLevelAvailable`, `StatusLevelDegraded`, `StatusLevelUnavailable`, `StatusLevelCritical` |
 
 ## Method signatures
@@ -30,9 +30,8 @@ need an option:
 | `client.SavedObjects.BulkDelete(ctx, refs, &kibana.DeleteSavedObjectOptions{Force: true})` | `client.SavedObjects.BulkDelete(ctx, refs, &kibana.BulkDeleteSavedObjectsOptions{Force: true})` |
 
 The new options types are named `<Method><Noun>Options`, e.g. `GetSpaceOptions`, `CreateShortURLOptions`,
-`DeleteRoleOptions`, `ListDataViewsOptions` or `GetTaskManagerHealthOptions`. Iterators share the options
-of their single-page method (`QueryRolesOptions` for `Query` and `QueryAll`; `SwapReferencesOptions` for
-`SwapReferences` and `PreviewSwapReferences`).
+`DeleteRoleOptions`, `ListDataViewsOptions` or `PreviewSwapReferencesOptions`. Iterators share the options
+of their single-page method (`QueryRolesOptions` for `Query` and `QueryAll`).
 
 Options and `…Request` structs now have an unexported field. Literals of them must name their fields
 (`&kibana.ListSpacesOptions{Purpose: kibana.SpacePurposeAny}`), and they can't be compared with `==`.

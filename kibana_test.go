@@ -367,3 +367,25 @@ func TestWithHTTPClient(t *testing.T) {
 type roundTripFunc func(*http.Request) (*http.Response, error)
 
 func (f roundTripFunc) RoundTrip(r *http.Request) (*http.Response, error) { return f(r) }
+
+func TestAddQuery(t *testing.T) {
+	opt := &kibana.GetRoleOptions{ReplaceDeprecatedPrivileges: true}
+	tests := []struct {
+		path string
+		opt  any
+		want string
+	}{
+		{"/api/x", opt, "/api/x?replaceDeprecatedPrivileges=true"},
+		// A path that has a query gets the options appended to it.
+		{"/api/x?a=1", opt, "/api/x?a=1&replaceDeprecatedPrivileges=true"},
+		{"/api/x?a=1", (*kibana.GetRoleOptions)(nil), "/api/x?a=1"},
+		{"/api/x", nil, "/api/x"},
+		{"/api/x", &kibana.GetRoleOptions{}, "/api/x"},
+	}
+	for _, tt := range tests {
+		got, err := kibana.AddQuery(tt.path, tt.opt)
+		if err != nil || got != tt.want {
+			t.Errorf("addQuery(%q, %+v) = %q, %v; want %q", tt.path, tt.opt, got, err, tt.want)
+		}
+	}
+}

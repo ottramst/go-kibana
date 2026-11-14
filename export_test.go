@@ -12,3 +12,6 @@ func Paginate[T any](ctx context.Context, from, size int, fetch func(ctx context
 
 // CheckResponse exposes checkResponse to the tests of package kibana_test.
 var CheckResponse = checkResponse
+
+// AddQuery exposes addQuery to the tests of package kibana_test.
+var AddQuery = addQuery

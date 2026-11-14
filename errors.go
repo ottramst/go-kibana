@@ -28,8 +28,9 @@ var (
 	ErrTooManyRequests = errors.New("kibana: too many requests")
 
 	// ErrServiceUnavailable is returned for 503 Service Unavailable, e.g.
-	// while Kibana starts. [StatusFromError] returns the status Kibana sends
-	// with it.
+	// while Kibana starts, or when a core service is unavailable. In the
+	// second case, [StatusFromError] returns the status Kibana sends with
+	// it.
 	ErrServiceUnavailable = errors.New("kibana: service unavailable")
 )
 

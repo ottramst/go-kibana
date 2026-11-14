@@ -331,7 +331,7 @@ func (s *DataViewsService) Create(ctx context.Context, dv *DataView, opt *Create
 	if opt != nil {
 		body.Override = opt.Override
 	}
-	return s.dataView(ctx, http.MethodPost, "/api/data_views/data_view", body, nil, opts)
+	return s.dataView(ctx, http.MethodPost, "/api/data_views/data_view", body, opt, opts)
 }
 
 // UpdateDataViewOptions are the options of [DataViewsService.Update].
@@ -378,7 +378,7 @@ func (s *DataViewsService) Update(ctx context.Context, id string, dv *DataView, 
 	if opt != nil {
 		body.RefreshFields = opt.RefreshFields
 	}
-	return s.dataView(ctx, http.MethodPost, pathf("/api/data_views/data_view/%s", id), body, nil, opts)
+	return s.dataView(ctx, http.MethodPost, pathf("/api/data_views/data_view/%s", id), body, opt, opts)
 }
 
 // DeleteDataViewOptions are the options of [DataViewsService.Delete].

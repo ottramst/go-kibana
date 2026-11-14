@@ -248,7 +248,7 @@ func (s *SavedObjectsService) Update(ctx context.Context, objType, id string, ob
 		body.Upsert = opt.Upsert
 	}
 	updated := new(SavedObject)
-	resp, err := s.client.do(ctx, http.MethodPut, pathf("/api/saved_objects/%s/%s", objType, id), body, updated, nil, opts)
+	resp, err := s.client.do(ctx, http.MethodPut, pathf("/api/saved_objects/%s/%s", objType, id), body, updated, opt, opts)
 	if err != nil {
 		return nil, resp, err
 	}
