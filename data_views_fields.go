@@ -62,22 +62,34 @@ type UpdateFieldsMetadataOptions struct {
 	_ [0]func()
 }
 
+// UpdateFieldsMetadataRequest is the request of
+// [DataViewsService.UpdateFieldsMetadata].
+type UpdateFieldsMetadataRequest struct {
+	_ [0]func()
+
+	// Fields maps field names to the changes. The fields do not need to
+	// exist in the mappings. Required.
+	Fields map[string]DataViewFieldMetadata `json:"fields"`
+}
+
 // UpdateFieldsMetadata changes the custom labels, descriptions, popularity
-// and formats of fields of a data view of the client's space. fields maps
-// field names to the changes; the fields do not need to exist in the
-// mappings. It returns the data view without its fields.
+// and formats of fields of a data view of the client's space. It returns the
+// data view without its fields.
 //
 // Kibana API: POST /api/data_views/data_view/{viewId}/fields
 //
 // Kibana API docs: https://www.elastic.co/docs/api/doc/kibana/operation/operation-updatefieldsmetadatadefault
-func (s *DataViewsService) UpdateFieldsMetadata(ctx context.Context, viewID string, fields map[string]DataViewFieldMetadata, opt *UpdateFieldsMetadataOptions, opts ...RequestOption) (*DataView, *Response, error) {
+func (s *DataViewsService) UpdateFieldsMetadata(ctx context.Context, viewID string, req *UpdateFieldsMetadataRequest, opt *UpdateFieldsMetadataOptions, opts ...RequestOption) (*DataView, *Response, error) {
 	if err := requireID("data view ID", viewID); err != nil {
 		return nil, nil, err
 	}
-	if len(fields) == 0 {
-		return nil, nil, errors.New("kibana: fields must not be empty")
+	if req == nil {
+		return nil, nil, errors.New("kibana: request must not be nil")
 	}
-	for name, m := range fields {
+	if len(req.Fields) == 0 {
+		return nil, nil, errors.New("kibana: Fields must not be empty")
+	}
+	for name, m := range req.Fields {
 		if name == "" {
 			return nil, nil, errors.New("kibana: field names must not be empty")
 		}
@@ -85,10 +97,7 @@ func (s *DataViewsService) UpdateFieldsMetadata(ctx context.Context, viewID stri
 			return nil, nil, fmt.Errorf("kibana: field %q: CustomDescription must have at most 300 characters", name)
 		}
 	}
-	body := struct {
-		Fields map[string]DataViewFieldMetadata `json:"fields"`
-	}{fields}
-	return s.dataView(ctx, http.MethodPost, pathf("/api/data_views/data_view/%s/fields", viewID), body, opt, opts)
+	return s.dataView(ctx, http.MethodPost, pathf("/api/data_views/data_view/%s/fields", viewID), req, opt, opts)
 }
 
 // RuntimeFieldResult is the result of the runtime field methods of
@@ -96,8 +105,8 @@ func (s *DataViewsService) UpdateFieldsMetadata(ctx context.Context, viewID stri
 // field. A composite runtime field has an entry for each of its subfields,
 // named "<field>.<subfield>".
 type RuntimeFieldResult struct {
-	DataView *DataView        `json:"data_view"`
-	Fields   []*DataViewField `json:"fields"`
+	DataView *DataView       `json:"data_view"`
+	Fields   []DataViewField `json:"fields"`
 }
 
 // runtimeFieldRequest is the body of the runtime field create and

@@ -102,6 +102,15 @@ func newSavedObjectWrite(obj *SavedObject) (*savedObjectWrite, error) {
 	if err := requireID("saved object type", obj.Type); err != nil {
 		return nil, err
 	}
+	return newSavedObjectFields(obj)
+}
+
+// newSavedObjectFields returns the writable fields of obj, without checking
+// its type.
+func newSavedObjectFields(obj *SavedObject) (*savedObjectWrite, error) {
+	if obj == nil {
+		return nil, errors.New("kibana: saved object must not be nil")
+	}
 	if len(obj.Attributes) == 0 {
 		return nil, errors.New("kibana: saved object Attributes must not be empty")
 	}
@@ -202,13 +211,13 @@ type UpdateSavedObjectOptions struct {
 	// Upsert holds the attributes to create the object with if it does not
 	// exist. Without it, updating a missing object fails with
 	// [ErrNotFound].
-	Upsert json.RawMessage
+	Upsert json.RawMessage `url:"-"`
 }
 
-// Update updates a saved object of the client's space. obj.Attributes are
-// merged into the object's attributes: top-level fields that obj leaves
-// out are kept. obj.References replace the object's references, unless
-// they are nil.
+// Update updates the saved object of the client's space with the given type
+// and ID; obj.Type and obj.ID are ignored. obj.Attributes are merged into the
+// object's attributes: top-level fields that obj leaves out are kept.
+// obj.References replace the object's references, unless they are nil.
 //
 // If obj.Version is set, as it is on an object returned by
 // [SavedObjectsService.Get], the update fails with [ErrConflict] when the
@@ -221,12 +230,15 @@ type UpdateSavedObjectOptions struct {
 // Kibana API: PUT /api/saved_objects/{type}/{id}
 //
 // Kibana API docs: https://www.elastic.co/docs/api/doc/kibana/operation/operation-put-saved-objects-type-id
-func (s *SavedObjectsService) Update(ctx context.Context, obj *SavedObject, opt *UpdateSavedObjectOptions, opts ...RequestOption) (*SavedObject, *Response, error) {
-	body, err := newSavedObjectWrite(obj)
-	if err != nil {
+func (s *SavedObjectsService) Update(ctx context.Context, objType, id string, obj *SavedObject, opt *UpdateSavedObjectOptions, opts ...RequestOption) (*SavedObject, *Response, error) {
+	if err := requireID("saved object type", objType); err != nil {
 		return nil, nil, err
 	}
-	if err := requireID("saved object ID", obj.ID); err != nil {
+	if err := requireID("saved object ID", id); err != nil {
+		return nil, nil, err
+	}
+	body, err := newSavedObjectFields(obj)
+	if err != nil {
 		return nil, nil, err
 	}
 	// Kibana does not accept the migration versions on updates.
@@ -236,7 +248,7 @@ func (s *SavedObjectsService) Update(ctx context.Context, obj *SavedObject, opt 
 		body.Upsert = opt.Upsert
 	}
 	updated := new(SavedObject)
-	resp, err := s.client.do(ctx, http.MethodPut, pathf("/api/saved_objects/%s/%s", obj.Type, obj.ID), body, updated, nil, opts)
+	resp, err := s.client.do(ctx, http.MethodPut, pathf("/api/saved_objects/%s/%s", objType, id), body, updated, nil, opts)
 	if err != nil {
 		return nil, resp, err
 	}

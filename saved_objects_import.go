@@ -24,8 +24,7 @@ type ImportSavedObjectsResult struct {
 
 // ImportSuccess is an object that was imported or copied.
 type ImportSuccess struct {
-	Type string          `json:"type"`
-	ID   string          `json:"id"`
+	SavedObjectRef
 	Meta SavedObjectMeta `json:"meta"`
 
 	// DestinationID is the ID of the new object, if it differs from ID.
@@ -72,11 +71,12 @@ const (
 // For an object, Type, ID, Meta and Error are set. When the copy into a
 // whole space failed, only StatusCode, StatusText and Message are set.
 type ImportError struct {
-	Type  string          `json:"type,omitempty"`
-	ID    string          `json:"id,omitempty"`
+	SavedObjectRef
 	Title string          `json:"title,omitempty"`
 	Meta  SavedObjectMeta `json:"meta"`
-	Error *ImportErrorDetail
+
+	// Detail describes why the object was not imported.
+	Detail *ImportErrorDetail `json:"error,omitempty"`
 
 	// Overwrite is true if the object would have overwritten an existing
 	// object.
@@ -105,10 +105,28 @@ func (e *ImportError) UnmarshalJSON(data []byte) error {
 	case raw.Error[0] == '"':
 		return json.Unmarshal(raw.Error, &e.StatusText)
 	default:
-		e.Error = new(ImportErrorDetail)
-		return json.Unmarshal(raw.Error, e.Error)
+		e.Detail = new(ImportErrorDetail)
+		return json.Unmarshal(raw.Error, e.Detail)
 	}
 	return nil
+}
+
+// Error describes the error: the object and the error type, or the status of
+// a failure of the copy into a whole space. Its format is not part of the
+// API and may change.
+func (e *ImportError) Error() string {
+	if e.Detail != nil {
+		msg := string(e.Detail.Type)
+		if e.Detail.Message != "" {
+			msg += ": " + e.Detail.Message
+		}
+		return fmt.Sprintf("kibana: %s %s: %s", e.Type, e.ID, msg)
+	}
+	msg := e.Message
+	if msg == "" {
+		msg = e.StatusText
+	}
+	return fmt.Sprintf("kibana: %d %s", e.StatusCode, msg)
 }
 
 // ImportErrorDetail describes why an object was not imported or copied.
@@ -246,24 +264,15 @@ type ImportReferenceReplacement struct {
 	To   string `json:"to"`
 }
 
-// ResolveImportErrorsRequest is the request of
+// ResolveImportErrorsOptions are the options of
 // [SavedObjectsService.ResolveImportErrors].
-type ResolveImportErrorsRequest struct {
-	_ [0]func()
-
-	// Retries lists the objects of the file to import. Objects of the file
-	// that are not listed are not imported. Required.
-	Retries []ImportRetry `url:"-"`
-
-	// CreateNewCopies and CompatibilityMode must have the values of the
-	// import that is retried.
-	CreateNewCopies   bool `url:"createNewCopies,omitempty"`
-	CompatibilityMode bool `url:"compatibilityMode,omitempty"`
-}
-
-// ResolveImportErrorsOptions are the options of [SavedObjectsService.ResolveImportErrors].
 type ResolveImportErrorsOptions struct {
 	_ [0]func()
+
+	// CreateNewCopies and CompatibilityMode must have the values of the
+	// import that is retried. They cannot be combined.
+	CreateNewCopies   bool `url:"createNewCopies,omitempty"`
+	CompatibilityMode bool `url:"compatibilityMode,omitempty"`
 }
 
 // ResolveImportErrors imports saved objects from r into the client's space
@@ -271,37 +280,33 @@ type ResolveImportErrorsOptions struct {
 // for example by overwriting conflicting objects. r must be the same ndjson
 // export. It is streamed like the file of Import.
 //
+// retries lists the objects of the file to import; objects of the file that
+// are not listed are not imported.
+//
 // Kibana API: POST /api/saved_objects/_resolve_import_errors
 //
 // Kibana API docs: https://www.elastic.co/docs/api/doc/kibana/operation/operation-post-saved-objects-resolve-import-errors
-func (s *SavedObjectsService) ResolveImportErrors(ctx context.Context, r io.Reader, req *ResolveImportErrorsRequest, opt *ResolveImportErrorsOptions, opts ...RequestOption) (*ImportSavedObjectsResult, *Response, error) {
+func (s *SavedObjectsService) ResolveImportErrors(ctx context.Context, r io.Reader, retries []ImportRetry, opt *ResolveImportErrorsOptions, opts ...RequestOption) (*ImportSavedObjectsResult, *Response, error) {
 	if r == nil {
 		return nil, nil, errors.New("kibana: reader must not be nil")
 	}
-	if req == nil {
-		return nil, nil, errors.New("kibana: request must not be nil")
+	if len(retries) == 0 {
+		return nil, nil, errors.New("kibana: retries must not be empty")
 	}
-	if len(req.Retries) == 0 {
-		return nil, nil, errors.New("kibana: Retries must not be empty")
-	}
-	if req.CreateNewCopies && req.CompatibilityMode {
+	if opt != nil && opt.CreateNewCopies && opt.CompatibilityMode {
 		return nil, nil, errors.New("kibana: CreateNewCopies cannot be combined with CompatibilityMode")
 	}
-	for i, retry := range req.Retries {
+	for i, retry := range retries {
 		if retry.Type == "" || retry.ID == "" {
 			return nil, nil, fmt.Errorf("kibana: retry %d must have a type and an ID", i)
 		}
 	}
-	retries, err := json.Marshal(req.Retries)
+	data, err := json.Marshal(retries)
 	if err != nil {
 		return nil, nil, fmt.Errorf("kibana: encoding retries: %w", err)
 	}
-	path, err := addQuery("/api/saved_objects/_resolve_import_errors", req)
-	if err != nil {
-		return nil, nil, err
-	}
 	result := new(ImportSavedObjectsResult)
-	resp, err := s.uploadNDJSON(ctx, path, r, map[string]string{"retries": string(retries)}, result, opt, opts)
+	resp, err := s.uploadNDJSON(ctx, "/api/saved_objects/_resolve_import_errors", r, map[string]string{"retries": string(data)}, result, opt, opts)
 	if err != nil {
 		return nil, resp, err
 	}

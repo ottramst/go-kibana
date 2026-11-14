@@ -52,7 +52,7 @@ type QueryRolesFilters struct {
 
 // QueryRolesResult is a page of roles.
 type QueryRolesResult struct {
-	Roles []*Role `json:"roles"`
+	Roles []Role `json:"roles"`
 
 	// Count is the number of roles in this page.
 	Count int `json:"count"`
@@ -123,6 +123,6 @@ func (s *RolesService) QueryAll(ctx context.Context, req *QueryRolesRequest, opt
 		if err != nil {
 			return nil, 0, err
 		}
-		return result.Roles, result.Total, nil
+		return pointers(result.Roles), result.Total, nil
 	})
 }

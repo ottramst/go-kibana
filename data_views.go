@@ -57,7 +57,7 @@ type DataView struct {
 
 	// Fields maps the field names to their specification, including the
 	// runtime fields. Set by Kibana.
-	Fields map[string]*DataViewField `json:"fields,omitempty"`
+	Fields map[string]DataViewField `json:"fields,omitempty"`
 
 	// AllowHidden includes hidden and system indices, such as .alerts-*.
 	// It is only written by Create.
