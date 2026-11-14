@@ -13,7 +13,7 @@ body:
     attributes:
       label: go-kibana version
       description: The module version from your `go.mod`.
-      placeholder: "v0.1.0"
+      placeholder: "v1.0.0"
     validations:
       required: true
   - type: input

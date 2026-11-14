@@ -1,4 +1,6 @@
-## Unreleased
+## v1.0.0
+
+v1.0.0 is the first stable release: from now on, go-kibana follows semantic versioning, and CI checks every change against the v1 API. This release reworks the API once so that it can stay stable. Upgrading from v0.5.0? [Upgrading to v1](https://github.com/ottramst/go-kibana/blob/v1.0.0/docs/upgrading-to-v1.md) lists every change that can break your code, with what to use instead. Tested against Kibana 8.19.25 and 9.5.6.
 
 BREAKING CHANGES:
 
@@ -15,7 +17,7 @@ BREAKING CHANGES:
 * saved objects: the `ImportError*` constants are `ImportErrorType*`, the `Resolve*` outcome constants are `ResolveOutcome*`, `BulkGetSavedObjectsRequest` is `BulkGetSavedObjectsItem`, and `BulkDelete` takes `BulkDeleteSavedObjectsOptions` ([#43](https://github.com/ottramst/go-kibana/issues/43))
 * Task Manager: the health constants are `TaskManagerHealthStatus*` ([#43](https://github.com/ottramst/go-kibana/issues/43))
 * short URLs: `LegacyShortURLLocator` is `LegacyShortURLLocatorID` ([#43](https://github.com/ottramst/go-kibana/issues/43))
-* `RuntimeField.Type`, `ImportWarning.Type`, `SubFeaturePrivilegeGroup.GroupType` and `ResolvedSavedObject.AliasPurpose` have named string types (`RuntimeFieldType`, `ImportWarningType`, `SubFeaturePrivilegeGroupType`, `ResolveAliasPurpose`) with constants ([#43](https://github.com/ottramst/go-kibana/issues/43))
+* `RuntimeField.Type` and `RuntimeSubField.Type`, `ImportWarning.Type`, `SubFeaturePrivilegeGroup.GroupType` and `ResolvedSavedObject.AliasPurpose` have named string types (`RuntimeFieldType`, `ImportWarningType`, `SubFeaturePrivilegeGroupType`, `ResolveAliasPurpose`) with constants ([#43](https://github.com/ottramst/go-kibana/issues/43))
 * Methods whose body is a JSON object take a `…Request` struct instead of a bare slice or map: `Spaces.GetShareableReferences` (`GetShareableReferencesRequest`), `Spaces.DisableLegacyURLAliases` (`DisableLegacyURLAliasesRequest`), `Roles.BulkCreateOrUpdate` (`BulkCreateOrUpdateRolesRequest`) and `DataViews.UpdateFieldsMetadata` (`UpdateFieldsMetadataRequest`) ([#43](https://github.com/ottramst/go-kibana/issues/43))
 * saved objects: `Export` takes the writer before the request, and returns the export details line decoded as `*ExportDetails` (nil with `ExcludeExportDetails`). It fails if the last line is not the details line ([#43](https://github.com/ottramst/go-kibana/issues/43))
 * saved objects: `ResolveImportErrors` takes the retries as a slice; `CreateNewCopies` and `CompatibilityMode` moved to `ResolveImportErrorsOptions`, and `ResolveImportErrorsRequest` is removed ([#43](https://github.com/ottramst/go-kibana/issues/43))
