@@ -20,6 +20,11 @@ type LegacyURLAlias struct {
 	SourceID string `json:"sourceId"`
 }
 
+// DisableLegacyURLAliasesOptions are the options of [SpacesService.DisableLegacyURLAliases].
+type DisableLegacyURLAliasesOptions struct {
+	_ [0]func()
+}
+
 // DisableLegacyURLAliases disables legacy URL aliases, so that they no
 // longer resolve to their target objects. Kibana succeeds for aliases that do
 // not exist.
@@ -27,7 +32,7 @@ type LegacyURLAlias struct {
 // Kibana API: POST /api/spaces/_disable_legacy_url_aliases
 //
 // Kibana API docs: https://www.elastic.co/docs/api/doc/kibana/operation/operation-post-spaces-disable-legacy-url-aliases
-func (s *SpacesService) DisableLegacyURLAliases(ctx context.Context, aliases []LegacyURLAlias, opts ...RequestOption) (*Response, error) {
+func (s *SpacesService) DisableLegacyURLAliases(ctx context.Context, aliases []LegacyURLAlias, opt *DisableLegacyURLAliasesOptions, opts ...RequestOption) (*Response, error) {
 	if len(aliases) == 0 {
 		return nil, errors.New("kibana: aliases must not be empty")
 	}
@@ -40,5 +45,5 @@ func (s *SpacesService) DisableLegacyURLAliases(ctx context.Context, aliases []L
 		Aliases []LegacyURLAlias `json:"aliases"`
 	}{aliases}
 	// Kibana answers 204 No Content.
-	return s.client.do(ctx, http.MethodPost, "/api/spaces/_disable_legacy_url_aliases", body, nil, opts)
+	return s.client.do(ctx, http.MethodPost, "/api/spaces/_disable_legacy_url_aliases", body, nil, opt, opts)
 }

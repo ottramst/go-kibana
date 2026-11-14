@@ -104,7 +104,7 @@ func (s *StatusService) Get(ctx context.Context, opt *GetStatusOptions, opts ...
 		return nil, nil, err
 	}
 	status := new(Status)
-	resp, err := s.client.do(ctx, http.MethodGet, path, nil, status, opts)
+	resp, err := s.client.do(ctx, http.MethodGet, path, nil, status, nil, opts)
 	if err != nil {
 		return nil, resp, err
 	}

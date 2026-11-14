@@ -16,8 +16,9 @@ type ShareableReference struct {
 	// cannot be shared, which exist in a single space.
 	Spaces []string `json:"spaces"`
 
-	// InboundReferences lists the objects that reference this object.
-	InboundReferences []InboundReference `json:"inboundReferences"`
+	// InboundReferences lists the objects that reference this object, with
+	// the reference's name in each of them.
+	InboundReferences []SavedObjectReference `json:"inboundReferences"`
 
 	// IsMissing is true if the object does not exist.
 	IsMissing bool `json:"isMissing,omitempty"`
@@ -31,11 +32,9 @@ type ShareableReference struct {
 	SpacesWithMatchingOrigins []string `json:"spacesWithMatchingOrigins,omitempty"`
 }
 
-// InboundReference is a reference from another saved object.
-type InboundReference struct {
-	Type string `json:"type"`
-	ID   string `json:"id"`
-	Name string `json:"name"`
+// GetShareableReferencesOptions are the options of [SpacesService.GetShareableReferences].
+type GetShareableReferencesOptions struct {
+	_ [0]func()
 }
 
 // GetShareableReferences returns the given saved objects, the objects they
@@ -45,7 +44,7 @@ type InboundReference struct {
 // Kibana API: POST /api/spaces/_get_shareable_references
 //
 // Kibana API docs: https://www.elastic.co/docs/api/doc/kibana/operation/operation-post-spaces-get-shareable-references
-func (s *SpacesService) GetShareableReferences(ctx context.Context, objects []SavedObjectRef, opts ...RequestOption) ([]*ShareableReference, *Response, error) {
+func (s *SpacesService) GetShareableReferences(ctx context.Context, objects []SavedObjectRef, opt *GetShareableReferencesOptions, opts ...RequestOption) ([]*ShareableReference, *Response, error) {
 	if err := validateRefs(objects); err != nil {
 		return nil, nil, err
 	}
@@ -55,7 +54,7 @@ func (s *SpacesService) GetShareableReferences(ctx context.Context, objects []Sa
 	var result struct {
 		Objects []*ShareableReference `json:"objects"`
 	}
-	resp, err := s.client.do(ctx, http.MethodPost, "/api/spaces/_get_shareable_references", body, &result, opts)
+	resp, err := s.client.do(ctx, http.MethodPost, "/api/spaces/_get_shareable_references", body, &result, opt, opts)
 	if err != nil {
 		return nil, resp, err
 	}
@@ -64,6 +63,8 @@ func (s *SpacesService) GetShareableReferences(ctx context.Context, objects []Sa
 
 // UpdateObjectsSpacesRequest is the request of [SpacesService.UpdateObjectsSpaces].
 type UpdateObjectsSpacesRequest struct {
+	_ [0]func()
+
 	Objects []SavedObjectRef `json:"objects"`
 
 	// SpacesToAdd lists the spaces to share the objects into. "*" shares
@@ -89,6 +90,11 @@ type ObjectSpaces struct {
 	Error *ObjectError `json:"error,omitempty"`
 }
 
+// UpdateObjectsSpacesOptions are the options of [SpacesService.UpdateObjectsSpaces].
+type UpdateObjectsSpacesOptions struct {
+	_ [0]func()
+}
+
 // UpdateObjectsSpaces shares saved objects into spaces and removes them from
 // spaces. The objects are looked up in the client's space; use
 // [Client.InSpace] for another space. Removing an object from all its spaces
@@ -100,7 +106,7 @@ type ObjectSpaces struct {
 // Kibana API: POST /api/spaces/_update_objects_spaces
 //
 // Kibana API docs: https://www.elastic.co/docs/api/doc/kibana/operation/operation-post-spaces-update-objects-spaces
-func (s *SpacesService) UpdateObjectsSpaces(ctx context.Context, req *UpdateObjectsSpacesRequest, opts ...RequestOption) ([]*ObjectSpaces, *Response, error) {
+func (s *SpacesService) UpdateObjectsSpaces(ctx context.Context, req *UpdateObjectsSpacesRequest, opt *UpdateObjectsSpacesOptions, opts ...RequestOption) ([]*ObjectSpaces, *Response, error) {
 	if req == nil {
 		return nil, nil, errors.New("kibana: request must not be nil")
 	}
@@ -121,7 +127,7 @@ func (s *SpacesService) UpdateObjectsSpaces(ctx context.Context, req *UpdateObje
 	var result struct {
 		Objects []*ObjectSpaces `json:"objects"`
 	}
-	resp, err := s.client.do(ctx, http.MethodPost, "/api/spaces/_update_objects_spaces", &body, &result, opts)
+	resp, err := s.client.do(ctx, http.MethodPost, "/api/spaces/_update_objects_spaces", &body, &result, opt, opts)
 	if err != nil {
 		return nil, resp, err
 	}

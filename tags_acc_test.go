@@ -27,12 +27,12 @@ func TestAccTags(t *testing.T) {
 	ctx := t.Context()
 	name := randName(t, "acc")
 
-	created, resp, err := client.Tags.Create(ctx, &kibana.Tag{Name: name, Description: "acceptance test", Color: "#FF0000"})
+	created, resp, err := client.Tags.Create(ctx, &kibana.Tag{Name: name, Description: "acceptance test", Color: "#FF0000"}, nil)
 	if err != nil {
 		t.Fatalf("Create() error = %v", err)
 	}
 	cleanup(t, func(ctx context.Context) error {
-		_, err := client.Tags.Delete(ctx, created.ID)
+		_, err := client.Tags.Delete(ctx, created.ID, nil)
 		if errors.Is(err, kibana.ErrNotFound) {
 			return nil
 		}
@@ -42,11 +42,11 @@ func TestAccTags(t *testing.T) {
 		t.Errorf("Create() = %+v (%d), want the new tag", created, resp.StatusCode)
 	}
 
-	if _, _, err := client.Tags.Create(ctx, &kibana.Tag{Name: name}); !errors.Is(err, kibana.ErrConflict) {
+	if _, _, err := client.Tags.Create(ctx, &kibana.Tag{Name: name}, nil); !errors.Is(err, kibana.ErrConflict) {
 		t.Errorf("Create(same name) error = %v, want ErrConflict", err)
 	}
 
-	got, _, err := client.Tags.Get(ctx, created.ID)
+	got, _, err := client.Tags.Get(ctx, created.ID, nil)
 	if err != nil {
 		t.Fatalf("Get() error = %v", err)
 	}
@@ -56,26 +56,26 @@ func TestAccTags(t *testing.T) {
 
 	// Read, modify, write: the color and description are kept.
 	got.Name = name + "-renamed"
-	updated, resp, err := client.Tags.Update(ctx, got.ID, got)
+	updated, resp, err := client.Tags.CreateOrUpdate(ctx, got.ID, got, nil)
 	if err != nil {
-		t.Fatalf("Update() error = %v", err)
+		t.Fatalf("CreateOrUpdate() error = %v", err)
 	}
 	if resp.StatusCode != http.StatusOK || updated.Name != got.Name || updated.Color != "#FF0000" || updated.Description != "acceptance test" {
-		t.Errorf("Update() = %+v (%d), want the renamed tag with its color and description", updated, resp.StatusCode)
+		t.Errorf("CreateOrUpdate() = %+v (%d), want the renamed tag with its color and description", updated, resp.StatusCode)
 	}
 
 	// Update creates a missing tag with the given ID.
 	newID := randName(t, "acc")
-	upserted, resp, err := client.Tags.Update(ctx, newID, &kibana.Tag{Name: newID})
+	upserted, resp, err := client.Tags.CreateOrUpdate(ctx, newID, &kibana.Tag{Name: newID}, nil)
 	if err != nil {
-		t.Fatalf("Update(new) error = %v", err)
+		t.Fatalf("CreateOrUpdate(new) error = %v", err)
 	}
 	cleanup(t, func(ctx context.Context) error {
-		_, err := client.Tags.Delete(ctx, newID)
+		_, err := client.Tags.Delete(ctx, newID, nil)
 		return err
 	})
 	if resp.StatusCode != http.StatusCreated || upserted.ID != newID || upserted.Color == "" {
-		t.Errorf("Update(new) = %+v (%d), want a created tag with a random color", upserted, resp.StatusCode)
+		t.Errorf("CreateOrUpdate(new) = %+v (%d), want a created tag with a random color", upserted, resp.StatusCode)
 	}
 
 	var ids []string
@@ -89,10 +89,10 @@ func TestAccTags(t *testing.T) {
 		t.Errorf("ListAll() = %v, want the 2 tags of the space", ids)
 	}
 
-	if _, err := client.Tags.Delete(ctx, created.ID); err != nil {
+	if _, err := client.Tags.Delete(ctx, created.ID, nil); err != nil {
 		t.Fatalf("Delete() error = %v", err)
 	}
-	if _, _, err := client.Tags.Get(ctx, created.ID); !errors.Is(err, kibana.ErrNotFound) {
+	if _, _, err := client.Tags.Get(ctx, created.ID, nil); !errors.Is(err, kibana.ErrNotFound) {
 		t.Errorf("Get(deleted) error = %v, want ErrNotFound", err)
 	}
 }

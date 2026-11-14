@@ -24,13 +24,15 @@ func TestRolesService_BulkCreateOrUpdate(t *testing.T) {
 		writeJSON(t, w, http.StatusOK, fixture(t, "roles/bulk.json"))
 	})
 
-	cluster := func(c string) kibana.RoleElasticsearch { return kibana.RoleElasticsearch{Cluster: []string{c}} }
+	cluster := func(c string) kibana.ElasticsearchPrivileges {
+		return kibana.ElasticsearchPrivileges{Cluster: []string{c}}
+	}
 	got, _, err := client.Roles.BulkCreateOrUpdate(context.Background(), map[string]*kibana.Role{
 		"probe-b-1":   {Elasticsearch: cluster("monitor")},
 		"probe-q-1":   {Elasticsearch: cluster("monitor"), Kibana: []kibana.KibanaPrivilege{{Base: []string{"read"}, Spaces: []string{"default"}}}},
 		"probe-q-2":   {Elasticsearch: cluster("manage")},
 		"probe-b-bad": {Elasticsearch: cluster("not_a_privilege")},
-	})
+	}, nil)
 	if err != nil {
 		t.Fatalf("BulkCreateOrUpdate() error = %v", err)
 	}
@@ -68,7 +70,7 @@ func TestRolesService_BulkCreateOrUpdate_readOnlyFields(t *testing.T) {
 		TransientMetadata: map[string]any{"enabled": true},
 		Kibana:            []kibana.KibanaPrivilege{{Feature: map[string][]string{"discover": {"read"}}, Spaces: []string{"default"}, Reserved: []string{"x"}}},
 	}}
-	if _, _, err := client.Roles.BulkCreateOrUpdate(context.Background(), roles); err != nil {
+	if _, _, err := client.Roles.BulkCreateOrUpdate(context.Background(), roles, nil); err != nil {
 		t.Fatalf("BulkCreateOrUpdate() error = %v", err)
 	}
 	if roles["r"].Kibana[0].Base != nil || roles["r"].Kibana[0].Reserved == nil {
@@ -86,7 +88,7 @@ func TestRolesService_BulkCreateOrUpdate_invalidArguments(t *testing.T) {
 		"no spaces":  {"r": {Kibana: []kibana.KibanaPrivilege{{Base: []string{"read"}}}}},
 	}
 	for name, roles := range cases {
-		_, _, err := client.Roles.BulkCreateOrUpdate(context.Background(), roles)
+		_, _, err := client.Roles.BulkCreateOrUpdate(context.Background(), roles, nil)
 		if err == nil {
 			t.Errorf("BulkCreateOrUpdate(%s): error = nil, want error", name)
 		}
@@ -95,7 +97,7 @@ func TestRolesService_BulkCreateOrUpdate_invalidArguments(t *testing.T) {
 	_, _, err := client.Roles.BulkCreateOrUpdate(context.Background(), map[string]*kibana.Role{
 		"good": {},
 		"bad":  {Kibana: []kibana.KibanaPrivilege{{Base: []string{"read"}}}},
-	})
+	}, nil)
 	if err == nil || !strings.HasPrefix(err.Error(), `kibana: role "bad": `) {
 		t.Errorf("error = %v, want it to name the role", err)
 	}

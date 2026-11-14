@@ -69,7 +69,7 @@ func ExampleSpacesService_Create() {
 		Description:      "Dashboards of the marketing team",
 		DisabledFeatures: []string{"dev_tools"},
 		Solution:         kibana.SpaceSolutionClassic,
-	})
+	}, nil)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -84,12 +84,12 @@ func ExampleSpacesService_Update() {
 	ctx := context.Background()
 
 	// Update replaces the whole space: read it, change it, write it back.
-	space, _, err := client.Spaces.Get(ctx, "marketing")
+	space, _, err := client.Spaces.Get(ctx, "marketing", nil)
 	if err != nil {
 		log.Fatal(err)
 	}
 	space.Description = "Campaign dashboards"
-	if _, _, err := client.Spaces.Update(ctx, space.ID, space); err != nil {
+	if _, _, err := client.Spaces.Update(ctx, space.ID, space, nil); err != nil {
 		log.Fatal(err)
 	}
 }
@@ -102,7 +102,7 @@ func ExampleRolesService_CreateOrUpdate() {
 
 	role := &kibana.Role{
 		Description: "Read logs, and use Discover and dashboards in the marketing space",
-		Elasticsearch: kibana.RoleElasticsearch{
+		Elasticsearch: kibana.ElasticsearchPrivileges{
 			Indices: []kibana.IndexPrivilege{{
 				Names:      []string{"logs-*"},
 				Privileges: []string{"read", "view_index_metadata"},
@@ -128,7 +128,7 @@ func ExampleErrorResponse() {
 		log.Fatal(err)
 	}
 
-	_, _, err = client.Spaces.Get(context.Background(), "does-not-exist")
+	_, _, err = client.Spaces.Get(context.Background(), "does-not-exist", nil)
 	switch {
 	case errors.Is(err, kibana.ErrNotFound):
 		fmt.Println("no such space")
@@ -177,7 +177,7 @@ func ExampleSpacesService_CopySavedObjects() {
 		Objects:           []kibana.SavedObjectRef{{Type: "dashboard", ID: "7adfa750-4c81-11e8-b3d7-01146121b73d"}},
 		IncludeReferences: true,
 		CreateNewCopies:   new(false),
-	})
+	}, nil)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -196,7 +196,7 @@ func ExampleRolesService_QueryAll() {
 
 	// Iterate over all roles whose name or description matches "analyst",
 	// fetching 50 roles per request.
-	for role, err := range client.Roles.QueryAll(context.Background(), &kibana.QueryRolesRequest{Query: "analyst", Size: 50}) {
+	for role, err := range client.Roles.QueryAll(context.Background(), &kibana.QueryRolesRequest{Query: "analyst", Size: 50}, nil) {
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -214,7 +214,7 @@ func ExampleUserSessionsService_Invalidate() {
 	result, _, err := client.UserSessions.Invalidate(context.Background(), &kibana.InvalidateSessionsRequest{
 		Match: kibana.SessionMatchQuery,
 		Query: &kibana.SessionQuery{Provider: kibana.SessionProvider{Type: "basic"}, Username: "jdoe"},
-	})
+	}, nil)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -252,10 +252,10 @@ func ExampleShortURLsService_Create() {
 	}
 
 	u, _, err := client.ShortURLs.Create(context.Background(), &kibana.CreateShortURLRequest{
-		LocatorID: kibana.LegacyShortURLLocator,
+		LocatorID: kibana.LegacyShortURLLocatorID,
 		Params:    map[string]any{"url": "/app/dashboards#/view/my-dashboard"},
 		Slug:      "my-dashboard",
-	})
+	}, nil)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -293,7 +293,7 @@ func ExampleSavedObjectsService_Export() {
 	_, err = client.SavedObjects.Export(context.Background(), &kibana.ExportSavedObjectsRequest{
 		Types:                 []string{"dashboard"},
 		IncludeReferencesDeep: true,
-	}, f)
+	}, f, nil)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -329,7 +329,7 @@ func ExampleSavedObjectsService_Get() {
 	}
 	ctx := context.Background()
 
-	obj, _, err := client.SavedObjects.Get(ctx, "dashboard", "my-dashboard")
+	obj, _, err := client.SavedObjects.Get(ctx, "dashboard", "my-dashboard", nil)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -402,7 +402,7 @@ func ExampleDataViewsService_CreateRuntimeField() {
 		Type:        "keyword",
 		Script:      &kibana.RuntimeFieldScript{Source: `emit(doc["status"].value >= 500 ? "error" : "ok")`},
 		CustomLabel: "Status class",
-	})
+	}, nil)
 	if err != nil {
 		log.Fatal(err)
 	}

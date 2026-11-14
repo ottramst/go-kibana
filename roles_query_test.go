@@ -24,9 +24,9 @@ func TestRolesService_Query(t *testing.T) {
 	got, _, err := client.Roles.Query(context.Background(), &kibana.QueryRolesRequest{
 		Query:   "probe-q",
 		Size:    2,
-		Sort:    &kibana.RoleSort{Field: "name", Direction: kibana.SortAsc},
+		Sort:    &kibana.RoleSort{Field: "name", Direction: kibana.SortDirectionAsc},
 		Filters: &kibana.QueryRolesFilters{ShowReservedRoles: true},
-	})
+	}, nil)
 	if err != nil {
 		t.Fatalf("Query() error = %v", err)
 	}
@@ -45,7 +45,7 @@ func TestRolesService_Query_nilRequest(t *testing.T) {
 		testJSONBody(t, r, `{}`)
 		writeJSON(t, w, http.StatusOK, []byte(`{"roles":[],"count":0,"total":0}`))
 	})
-	got, _, err := client.Roles.Query(context.Background(), nil)
+	got, _, err := client.Roles.Query(context.Background(), nil, nil)
 	if err != nil || got.Total != 0 {
 		t.Errorf("Query(nil) = %+v, %v", got, err)
 	}
@@ -82,7 +82,7 @@ func TestRolesService_QueryAll(t *testing.T) {
 
 	req := &kibana.QueryRolesRequest{Query: "x", Size: 2}
 	var names []string
-	for role, err := range client.Roles.QueryAll(context.Background(), req, kibana.WithHeader("X-Test", "yes")) {
+	for role, err := range client.Roles.QueryAll(context.Background(), req, nil, kibana.WithHeader("X-Test", "yes")) {
 		if err != nil {
 			t.Fatalf("QueryAll() error = %v", err)
 		}
@@ -95,7 +95,7 @@ func TestRolesService_QueryAll(t *testing.T) {
 		t.Fatalf("requests = %d, want 3", len(*requests))
 	}
 	for i, r := range *requests {
-		if r.From != i*2 || r.Size != 2 || r.Query != "x" || r.Sort == nil || r.Sort.Field != "name" || r.Sort.Direction != kibana.SortAsc {
+		if r.From != i*2 || r.Size != 2 || r.Query != "x" || r.Sort == nil || r.Sort.Field != "name" || r.Sort.Direction != kibana.SortDirectionAsc {
 			t.Errorf("request %d = %+v (sort %+v), want from %d, size 2, query x, sorted by name", i, r, r.Sort, i*2)
 		}
 	}
@@ -108,19 +108,19 @@ func TestRolesService_QueryAll_copiesRequest(t *testing.T) {
 	mux, client := setup(t)
 	requests := roleQueryServer(t, mux, []string{"a", "b", "c"}, -1)
 
-	sort := &kibana.RoleSort{Field: "name", Direction: kibana.SortAsc}
+	sort := &kibana.RoleSort{Field: "name", Direction: kibana.SortDirectionAsc}
 	filters := &kibana.QueryRolesFilters{}
-	for _, err := range client.Roles.QueryAll(context.Background(), &kibana.QueryRolesRequest{Size: 1, Sort: sort, Filters: filters}, kibana.WithHeader("X-Test", "yes")) {
+	for _, err := range client.Roles.QueryAll(context.Background(), &kibana.QueryRolesRequest{Size: 1, Sort: sort, Filters: filters}, nil, kibana.WithHeader("X-Test", "yes")) {
 		if err != nil {
 			t.Fatalf("QueryAll() error = %v", err)
 		}
 		// Changing the caller's values while iterating must not affect
 		// later pages.
-		sort.Direction = kibana.SortDesc
+		sort.Direction = kibana.SortDirectionDesc
 		filters.ShowReservedRoles = true
 	}
 	for i, r := range *requests {
-		if r.Sort.Direction != kibana.SortAsc || r.Filters == nil || r.Filters.ShowReservedRoles {
+		if r.Sort.Direction != kibana.SortDirectionAsc || r.Filters == nil || r.Filters.ShowReservedRoles {
 			t.Errorf("request %d = sort %+v, filters %+v; want the original values", i, r.Sort, r.Filters)
 		}
 	}
@@ -132,7 +132,7 @@ func TestRolesService_QueryAll_error(t *testing.T) {
 
 	var names []string
 	var gotErr error
-	for role, err := range client.Roles.QueryAll(context.Background(), &kibana.QueryRolesRequest{Size: 2}, kibana.WithHeader("X-Test", "yes")) {
+	for role, err := range client.Roles.QueryAll(context.Background(), &kibana.QueryRolesRequest{Size: 2}, nil, kibana.WithHeader("X-Test", "yes")) {
 		if err != nil {
 			gotErr = err
 			continue

@@ -46,7 +46,7 @@ func TestErrorResponse(t *testing.T) {
 				writeJSON(t, w, tt.status, []byte(tt.body))
 			})
 
-			_, resp, err := client.Spaces.Get(context.Background(), "x")
+			_, resp, err := client.Spaces.Get(context.Background(), "x", nil)
 			var errResp *kibana.ErrorResponse
 			if !errors.As(err, &errResp) {
 				t.Fatalf("error = %v (%T), want *kibana.ErrorResponse", err, err)
@@ -107,7 +107,7 @@ func TestErrorResponse_longTextBody(t *testing.T) {
 		_, _ = io.WriteString(w, body)
 	})
 
-	_, _, err := client.Spaces.Get(context.Background(), "x")
+	_, _, err := client.Spaces.Get(context.Background(), "x", nil)
 	var errResp *kibana.ErrorResponse
 	if !errors.As(err, &errResp) {
 		t.Fatalf("error = %v, want *kibana.ErrorResponse", err)
@@ -153,7 +153,7 @@ func TestErrorResponse_request(t *testing.T) {
 		w.Header().Set("X-Request-Id", "r1")
 		writeJSON(t, w, http.StatusNotFound, []byte(notFound))
 	})
-	_, resp, err := client.InSpace("x").Spaces.Get(context.Background(), "x")
+	_, resp, err := client.InSpace("x").Spaces.Get(context.Background(), "x", nil)
 	var errResp *kibana.ErrorResponse
 	if !errors.As(err, &errResp) {
 		t.Fatalf("error = %v, want *kibana.ErrorResponse", err)

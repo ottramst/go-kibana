@@ -15,7 +15,7 @@ func TestAccUserSessions(t *testing.T) {
 	got, _, err := client.UserSessions.Invalidate(ctx, &kibana.InvalidateSessionsRequest{
 		Match: kibana.SessionMatchQuery,
 		Query: &kibana.SessionQuery{Provider: kibana.SessionProvider{Type: "basic"}, Username: randName(t, "nobody")},
-	})
+	}, nil)
 	if errors.Is(err, kibana.ErrForbidden) {
 		t.Skip("invalidating sessions needs the superuser role")
 	}
@@ -29,7 +29,7 @@ func TestAccUserSessions(t *testing.T) {
 	// Invalidating all sessions logs everyone out, so only on the local
 	// compose stack.
 	if localStack() {
-		if _, _, err := client.UserSessions.Invalidate(ctx, &kibana.InvalidateSessionsRequest{Match: kibana.SessionMatchAll}); err != nil {
+		if _, _, err := client.UserSessions.Invalidate(ctx, &kibana.InvalidateSessionsRequest{Match: kibana.SessionMatchAll}, nil); err != nil {
 			t.Errorf("Invalidate(all) error = %v", err)
 		}
 	}

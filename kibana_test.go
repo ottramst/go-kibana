@@ -241,7 +241,7 @@ func TestClient_InSpace(t *testing.T) {
 	if got := client.Space(); got != kibana.DefaultSpace {
 		t.Errorf("original Space() = %q, want %q", got, kibana.DefaultSpace)
 	}
-	space, _, err := scoped.Spaces.Get(context.Background(), "marketing")
+	space, _, err := scoped.Spaces.Get(context.Background(), "marketing", nil)
 	if err != nil {
 		t.Fatalf("Spaces.Get() error = %v", err)
 	}
@@ -356,7 +356,7 @@ func TestWithHTTPClient(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, err := client.Spaces.Delete(context.Background(), "x"); err != nil {
+	if _, err := client.Spaces.Delete(context.Background(), "x", nil); err != nil {
 		t.Fatalf("Delete() error = %v", err)
 	}
 	if !called {
@@ -367,3 +367,25 @@ func TestWithHTTPClient(t *testing.T) {
 type roundTripFunc func(*http.Request) (*http.Response, error)
 
 func (f roundTripFunc) RoundTrip(r *http.Request) (*http.Response, error) { return f(r) }
+
+func TestAddQuery(t *testing.T) {
+	opt := &kibana.GetRoleOptions{ReplaceDeprecatedPrivileges: true}
+	tests := []struct {
+		path string
+		opt  any
+		want string
+	}{
+		{"/api/x", opt, "/api/x?replaceDeprecatedPrivileges=true"},
+		// A path that has a query gets the options appended to it.
+		{"/api/x?a=1", opt, "/api/x?a=1&replaceDeprecatedPrivileges=true"},
+		{"/api/x?a=1", (*kibana.GetRoleOptions)(nil), "/api/x?a=1"},
+		{"/api/x", nil, "/api/x"},
+		{"/api/x", &kibana.GetRoleOptions{}, "/api/x"},
+	}
+	for _, tt := range tests {
+		got, err := kibana.AddQuery(tt.path, tt.opt)
+		if err != nil || got != tt.want {
+			t.Errorf("addQuery(%q, %+v) = %q, %v; want %q", tt.path, tt.opt, got, err, tt.want)
+		}
+	}
+}

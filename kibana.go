@@ -368,8 +368,13 @@ func (c *Client) Do(req *http.Request, v any) (*Response, error) {
 	return response, nil
 }
 
-// do creates and sends a request in one step, for service methods.
-func (c *Client) do(ctx context.Context, method, path string, body, v any, opts []RequestOption) (*Response, error) {
+// do creates and sends a request in one step, for service methods. query is
+// the method's options; their url tags are added to the query string.
+func (c *Client) do(ctx context.Context, method, path string, body, v, query any, opts []RequestOption) (*Response, error) {
+	path, err := addQuery(path, query)
+	if err != nil {
+		return nil, err
+	}
 	req, err := c.NewRequest(ctx, method, path, body, opts...)
 	if err != nil {
 		return nil, err

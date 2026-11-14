@@ -98,12 +98,25 @@ type SubFeature struct {
 	PrivilegeGroups  []*SubFeaturePrivilegeGroup `json:"privilegeGroups,omitempty"`
 }
 
+// SubFeaturePrivilegeGroupType is how the privileges of a
+// [SubFeaturePrivilegeGroup] can be combined.
+type SubFeaturePrivilegeGroupType string
+
+// Sub-feature privilege group types. Kibana may send others.
+const (
+	// SubFeaturePrivilegeGroupTypeIndependent privileges can be granted in
+	// any combination.
+	SubFeaturePrivilegeGroupTypeIndependent SubFeaturePrivilegeGroupType = "independent"
+
+	// SubFeaturePrivilegeGroupTypeMutuallyExclusive privileges can be
+	// granted at most one at a time.
+	SubFeaturePrivilegeGroupTypeMutuallyExclusive SubFeaturePrivilegeGroupType = "mutually_exclusive"
+)
+
 // SubFeaturePrivilegeGroup is a group of sub-feature privileges.
 type SubFeaturePrivilegeGroup struct {
-	// GroupType is "independent" (any combination can be granted) or
-	// "mutually_exclusive" (at most one can be granted).
-	GroupType  string                 `json:"groupType"`
-	Privileges []*SubFeaturePrivilege `json:"privileges"`
+	GroupType  SubFeaturePrivilegeGroupType `json:"groupType"`
+	Privileges []*SubFeaturePrivilege       `json:"privileges"`
 }
 
 // SubFeaturePrivilege is a sub-feature privilege. Its ID is granted next to
@@ -124,6 +137,8 @@ type SubFeaturePrivilege struct {
 
 // ListFeaturesOptions are the options of [FeaturesService.List].
 type ListFeaturesOptions struct {
+	_ [0]func()
+
 	// IgnoreValidLicenses also returns the features that the current
 	// license does not allow.
 	IgnoreValidLicenses bool `url:"ignoreValidLicenses,omitempty"`
@@ -145,7 +160,7 @@ func (s *FeaturesService) List(ctx context.Context, opt *ListFeaturesOptions, op
 		return nil, nil, err
 	}
 	var features []*Feature
-	resp, err := s.client.do(ctx, http.MethodGet, path, nil, &features, opts)
+	resp, err := s.client.do(ctx, http.MethodGet, path, nil, &features, nil, opts)
 	if err != nil {
 		return nil, resp, err
 	}

@@ -107,7 +107,7 @@ func TestSavedObjectsService_Import_conflicts(t *testing.T) {
 	if got.Success || len(got.Errors) != 3 {
 		t.Fatalf("Import() = %+v, want 3 errors", got)
 	}
-	want := &kibana.ImportErrorDetail{Type: kibana.ImportErrorConflict, DestinationID: "e9fa6a65-eab7-499b-b2cb-4b9fcbcb7688"}
+	want := &kibana.ImportErrorDetail{Type: kibana.ImportErrorTypeConflict, DestinationID: "e9fa6a65-eab7-499b-b2cb-4b9fcbcb7688"}
 	if e := got.Errors[0]; e.ID != "probe-ip" || !reflect.DeepEqual(e.Error, want) {
 		t.Errorf("Errors[0] = %+v (%+v), want a conflict with %+v", e, e.Error, want)
 	}
@@ -196,7 +196,7 @@ func TestSavedObjectsService_ResolveImportErrors(t *testing.T) {
 			{Type: "dashboard", ID: "d", Overwrite: true, DestinationID: "d2", ReplaceReferences: []kibana.ImportReferenceReplacement{{Type: "index-pattern", From: "a", To: "b"}}},
 			{Type: "index-pattern", ID: "i", CreateNewCopy: true, IgnoreMissingReferences: true},
 		},
-	})
+	}, nil)
 	if err != nil {
 		t.Fatalf("ResolveImportErrors() error = %v", err)
 	}
@@ -221,7 +221,7 @@ func TestSavedObjectsService_importInvalidArguments(t *testing.T) {
 		}
 	}
 	retry := []kibana.ImportRetry{{Type: "dashboard", ID: "d"}}
-	if _, _, err := client.SavedObjects.ResolveImportErrors(ctx, nil, &kibana.ResolveImportErrorsRequest{Retries: retry}); err == nil {
+	if _, _, err := client.SavedObjects.ResolveImportErrors(ctx, nil, &kibana.ResolveImportErrorsRequest{Retries: retry}, nil); err == nil {
 		t.Error("ResolveImportErrors(nil reader) error = nil, want error")
 	}
 	for name, req := range map[string]*kibana.ResolveImportErrorsRequest{
@@ -230,7 +230,7 @@ func TestSavedObjectsService_importInvalidArguments(t *testing.T) {
 		"retry without":                {Retries: []kibana.ImportRetry{{Type: "dashboard"}}},
 		"new copies and compatibility": {Retries: retry, CreateNewCopies: true, CompatibilityMode: true},
 	} {
-		if _, _, err := client.SavedObjects.ResolveImportErrors(ctx, file, req); err == nil {
+		if _, _, err := client.SavedObjects.ResolveImportErrors(ctx, file, req, nil); err == nil {
 			t.Errorf("ResolveImportErrors(%s) error = nil, want error", name)
 		}
 	}
@@ -249,7 +249,7 @@ func TestSavedObjectsService_Export(t *testing.T) {
 	_, err := client.InSpace("x").SavedObjects.Export(context.Background(), &kibana.ExportSavedObjectsRequest{
 		Objects:               []kibana.SavedObjectRef{{Type: "dashboard", ID: "probe-dash"}},
 		IncludeReferencesDeep: true,
-	}, &buf)
+	}, &buf, nil)
 	if err != nil {
 		t.Fatalf("Export() error = %v", err)
 	}
@@ -269,7 +269,7 @@ func TestSavedObjectsService_Export_types(t *testing.T) {
 		Search:               "probe*",
 		HasReference:         []kibana.SavedObjectRef{{Type: "index-pattern", ID: "i"}},
 		ExcludeExportDetails: true,
-	}, io.Discard)
+	}, io.Discard, nil)
 	if err != nil {
 		t.Fatalf("Export() error = %v", err)
 	}
@@ -281,7 +281,7 @@ func TestSavedObjectsService_Export_missingObject(t *testing.T) {
 		writeJSON(t, w, http.StatusBadRequest, fixture(t, "savedobjects/export_missing.json"))
 	})
 	var buf bytes.Buffer
-	_, err := client.SavedObjects.Export(context.Background(), &kibana.ExportSavedObjectsRequest{Objects: []kibana.SavedObjectRef{{Type: "dashboard", ID: "probe-nope"}}}, &buf)
+	_, err := client.SavedObjects.Export(context.Background(), &kibana.ExportSavedObjectsRequest{Objects: []kibana.SavedObjectRef{{Type: "dashboard", ID: "probe-nope"}}}, &buf, nil)
 	var errResp *kibana.ErrorResponse
 	if !errors.As(err, &errResp) || !errors.Is(err, kibana.ErrBadRequest) || len(errResp.Attributes) == 0 {
 		t.Errorf("Export() error = %v, want ErrBadRequest with the missing objects", err)
@@ -301,11 +301,11 @@ func TestSavedObjectsService_Export_invalidArguments(t *testing.T) {
 		"types and objects": {Types: []string{"dashboard"}, Objects: obj},
 		"object without ID": {Objects: []kibana.SavedObjectRef{{Type: "dashboard"}}},
 	} {
-		if _, err := client.SavedObjects.Export(ctx, req, io.Discard); err == nil {
+		if _, err := client.SavedObjects.Export(ctx, req, io.Discard, nil); err == nil {
 			t.Errorf("Export(%s) error = nil, want error", name)
 		}
 	}
-	if _, err := client.SavedObjects.Export(ctx, &kibana.ExportSavedObjectsRequest{Objects: obj}, nil); err == nil {
+	if _, err := client.SavedObjects.Export(ctx, &kibana.ExportSavedObjectsRequest{Objects: obj}, nil, nil); err == nil {
 		t.Error("Export(nil writer) error = nil, want error")
 	}
 }

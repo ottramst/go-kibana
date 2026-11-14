@@ -18,7 +18,7 @@ func TestAccRoles(t *testing.T) {
 	role := &kibana.Role{
 		Description: "created by go-kibana acceptance tests",
 		Metadata:    map[string]any{"owner": "go-kibana"},
-		Elasticsearch: kibana.RoleElasticsearch{
+		Elasticsearch: kibana.ElasticsearchPrivileges{
 			Cluster: []string{"monitor"},
 			Indices: []kibana.IndexPrivilege{{
 				Names:         []string{"logs-*"},
@@ -35,7 +35,7 @@ func TestAccRoles(t *testing.T) {
 		t.Fatalf("CreateOrUpdate() error = %v", err)
 	}
 	cleanup(t, func(ctx context.Context) error {
-		if _, err := client.Roles.Delete(ctx, name); err != nil && !errors.Is(err, kibana.ErrNotFound) {
+		if _, err := client.Roles.Delete(ctx, name, nil); err != nil && !errors.Is(err, kibana.ErrNotFound) {
 			return err
 		}
 		return nil
@@ -78,7 +78,7 @@ func TestAccRoles(t *testing.T) {
 		t.Errorf("List() does not include %s", name)
 	}
 
-	if _, err := client.Roles.Delete(ctx, name); err != nil {
+	if _, err := client.Roles.Delete(ctx, name, nil); err != nil {
 		t.Fatalf("Delete() error = %v", err)
 	}
 	if _, _, err := client.Roles.Get(ctx, name, nil); !errors.Is(err, kibana.ErrNotFound) {

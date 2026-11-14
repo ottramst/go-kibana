@@ -83,7 +83,7 @@ func TestSpacesService_Get(t *testing.T) {
 		writeJSON(t, w, http.StatusOK, fixture(t, "spaces/get.json"))
 	})
 
-	space, _, err := client.Spaces.Get(context.Background(), "marketing")
+	space, _, err := client.Spaces.Get(context.Background(), "marketing", nil)
 	if err != nil {
 		t.Fatalf("Get() error = %v", err)
 	}
@@ -91,7 +91,7 @@ func TestSpacesService_Get(t *testing.T) {
 		t.Errorf("Get() = %+v", space)
 	}
 
-	_, resp, err := client.Spaces.Get(context.Background(), "missing")
+	_, resp, err := client.Spaces.Get(context.Background(), "missing", nil)
 	if !errors.Is(err, kibana.ErrNotFound) {
 		t.Errorf("Get(missing) error = %v, want ErrNotFound", err)
 	}
@@ -111,7 +111,7 @@ func TestSpacesService_Get_escapesID(t *testing.T) {
 		}
 		writeJSON(t, w, http.StatusOK, []byte(`{"id":"a/b?c","name":"x"}`))
 	})
-	if _, _, err := client.Spaces.Get(context.Background(), "a/b?c"); err != nil {
+	if _, _, err := client.Spaces.Get(context.Background(), "a/b?c", nil); err != nil {
 		t.Fatalf("Get() error = %v", err)
 	}
 }
@@ -135,7 +135,7 @@ func TestSpacesService_Create(t *testing.T) {
 		Solution:           kibana.SpaceSolutionClassic,
 		AuthorizedPurposes: map[string]bool{"any": true}, // read-only, must not be sent
 	}
-	space, _, err := client.Spaces.Create(context.Background(), in)
+	space, _, err := client.Spaces.Create(context.Background(), in, nil)
 	if err != nil {
 		t.Fatalf("Create() error = %v", err)
 	}
@@ -152,7 +152,7 @@ func TestSpacesService_Create_conflict(t *testing.T) {
 	mux.HandleFunc("POST /api/spaces/space", func(w http.ResponseWriter, _ *http.Request) {
 		writeJSON(t, w, http.StatusConflict, []byte(`{"statusCode":409,"error":"Conflict","message":"A space with the identifier marketing already exists."}`))
 	})
-	_, _, err := client.Spaces.Create(context.Background(), &kibana.Space{ID: "marketing", Name: "Marketing"})
+	_, _, err := client.Spaces.Create(context.Background(), &kibana.Space{ID: "marketing", Name: "Marketing"}, nil)
 	if !errors.Is(err, kibana.ErrConflict) {
 		t.Errorf("Create() error = %v, want ErrConflict", err)
 	}
@@ -167,7 +167,7 @@ func TestSpacesService_Update(t *testing.T) {
 	})
 
 	in := &kibana.Space{ID: "ignored", Name: "Marketing 2", Reserved: true, AuthorizedPurposes: map[string]bool{"any": true}}
-	if _, _, err := client.Spaces.Update(context.Background(), "marketing", in); err != nil {
+	if _, _, err := client.Spaces.Update(context.Background(), "marketing", in, nil); err != nil {
 		t.Fatalf("Update() error = %v", err)
 	}
 	if in.ID != "ignored" || !in.Reserved || in.AuthorizedPurposes == nil {
@@ -181,7 +181,7 @@ func TestSpacesService_Delete(t *testing.T) {
 		testHeader(t, r, "kbn-xsrf", "true")
 		w.WriteHeader(http.StatusNoContent)
 	})
-	resp, err := client.Spaces.Delete(context.Background(), "marketing")
+	resp, err := client.Spaces.Delete(context.Background(), "marketing", nil)
 	if err != nil {
 		t.Fatalf("Delete() error = %v", err)
 	}
@@ -194,11 +194,11 @@ func TestSpacesService_invalidArguments(t *testing.T) {
 	_, client := setup(t)
 	ctx := context.Background()
 	checks := map[string]error{}
-	_, _, checks["Get empty ID"] = client.Spaces.Get(ctx, "")
-	_, _, checks["Create nil"] = client.Spaces.Create(ctx, nil)
-	_, _, checks["Update empty ID"] = client.Spaces.Update(ctx, "", &kibana.Space{})
-	_, _, checks["Update nil"] = client.Spaces.Update(ctx, "x", nil)
-	_, checks["Delete empty ID"] = client.Spaces.Delete(ctx, "")
+	_, _, checks["Get empty ID"] = client.Spaces.Get(ctx, "", nil)
+	_, _, checks["Create nil"] = client.Spaces.Create(ctx, nil, nil)
+	_, _, checks["Update empty ID"] = client.Spaces.Update(ctx, "", &kibana.Space{}, nil)
+	_, _, checks["Update nil"] = client.Spaces.Update(ctx, "x", nil, nil)
+	_, checks["Delete empty ID"] = client.Spaces.Delete(ctx, "", nil)
 	for name, err := range checks {
 		if err == nil {
 			t.Errorf("%s: error = nil, want error", name)

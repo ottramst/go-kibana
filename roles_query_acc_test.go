@@ -18,7 +18,7 @@ func TestAccRolesQueryAndBulk(t *testing.T) {
 	cleanup(t, func(ctx context.Context) error {
 		var errs []error
 		for _, n := range append(names, prefix+"-bad") {
-			if _, err := client.Roles.Delete(ctx, n); err != nil && !errors.Is(err, kibana.ErrNotFound) {
+			if _, err := client.Roles.Delete(ctx, n, nil); err != nil && !errors.Is(err, kibana.ErrNotFound) {
 				errs = append(errs, err)
 			}
 		}
@@ -27,7 +27,7 @@ func TestAccRolesQueryAndBulk(t *testing.T) {
 
 	role := func(cluster string) *kibana.Role {
 		return &kibana.Role{
-			Elasticsearch: kibana.RoleElasticsearch{Cluster: []string{cluster}},
+			Elasticsearch: kibana.ElasticsearchPrivileges{Cluster: []string{cluster}},
 			Kibana:        []kibana.KibanaPrivilege{{Base: []string{"read"}, Spaces: []string{"default"}}},
 		}
 	}
@@ -35,7 +35,7 @@ func TestAccRolesQueryAndBulk(t *testing.T) {
 	// Create in bulk.
 	result, _, err := client.Roles.BulkCreateOrUpdate(ctx, map[string]*kibana.Role{
 		names[0]: role("monitor"), names[1]: role("monitor"), names[2]: role("monitor"),
-	})
+	}, nil)
 	if err != nil {
 		t.Fatalf("BulkCreateOrUpdate(create) error = %v", err)
 	}
@@ -47,7 +47,7 @@ func TestAccRolesQueryAndBulk(t *testing.T) {
 	// Unchanged, changed and invalid roles.
 	result, _, err = client.Roles.BulkCreateOrUpdate(ctx, map[string]*kibana.Role{
 		names[0]: role("monitor"), names[1]: role("manage"), prefix + "-bad": role("not_a_privilege"),
-	})
+	}, nil)
 	if err != nil {
 		t.Fatalf("BulkCreateOrUpdate(update) error = %v", err)
 	}
@@ -60,8 +60,8 @@ func TestAccRolesQueryAndBulk(t *testing.T) {
 
 	// One page.
 	page, _, err := client.Roles.Query(ctx, &kibana.QueryRolesRequest{
-		Query: prefix, Size: 2, Sort: &kibana.RoleSort{Field: "name", Direction: kibana.SortDesc},
-	})
+		Query: prefix, Size: 2, Sort: &kibana.RoleSort{Field: "name", Direction: kibana.SortDirectionDesc},
+	}, nil)
 	if err != nil {
 		t.Fatalf("Query() error = %v", err)
 	}
@@ -71,7 +71,7 @@ func TestAccRolesQueryAndBulk(t *testing.T) {
 
 	// All pages.
 	var all []string
-	for r, err := range client.Roles.QueryAll(ctx, &kibana.QueryRolesRequest{Query: prefix, Size: 2}) {
+	for r, err := range client.Roles.QueryAll(ctx, &kibana.QueryRolesRequest{Query: prefix, Size: 2}, nil) {
 		if err != nil {
 			t.Fatalf("QueryAll() error = %v", err)
 		}
@@ -82,7 +82,7 @@ func TestAccRolesQueryAndBulk(t *testing.T) {
 	}
 
 	// Built-in roles only with ShowReservedRoles.
-	reserved, _, err := client.Roles.Query(ctx, &kibana.QueryRolesRequest{Query: "superuser", Filters: &kibana.QueryRolesFilters{ShowReservedRoles: true}})
+	reserved, _, err := client.Roles.Query(ctx, &kibana.QueryRolesRequest{Query: "superuser", Filters: &kibana.QueryRolesFilters{ShowReservedRoles: true}}, nil)
 	if err != nil {
 		t.Fatalf("Query(reserved) error = %v", err)
 	}

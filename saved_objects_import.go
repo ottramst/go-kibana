@@ -45,25 +45,25 @@ type ImportErrorType string
 
 // Types of import errors.
 const (
-	// ImportErrorConflict: an object with the same ID or origin exists.
+	// ImportErrorTypeConflict: an object with the same ID or origin exists.
 	// Retry with Overwrite or CreateNewCopy.
-	ImportErrorConflict ImportErrorType = "conflict"
+	ImportErrorTypeConflict ImportErrorType = "conflict"
 
-	// ImportErrorAmbiguousConflict: several existing objects conflict with
+	// ImportErrorTypeAmbiguousConflict: several existing objects conflict with
 	// the object. Retry with Overwrite and the DestinationID of one of
 	// ImportErrorDetail.Destinations.
-	ImportErrorAmbiguousConflict ImportErrorType = "ambiguous_conflict"
+	ImportErrorTypeAmbiguousConflict ImportErrorType = "ambiguous_conflict"
 
-	// ImportErrorMissingReferences: objects the object references do not
+	// ImportErrorTypeMissingReferences: objects the object references do not
 	// exist. Retry with IgnoreMissingReferences, or with
 	// ImportRetry.ReplaceReferences.
-	ImportErrorMissingReferences ImportErrorType = "missing_references"
+	ImportErrorTypeMissingReferences ImportErrorType = "missing_references"
 
-	// ImportErrorUnsupportedType: objects of the type cannot be imported.
-	ImportErrorUnsupportedType ImportErrorType = "unsupported_type"
+	// ImportErrorTypeUnsupportedType: objects of the type cannot be imported.
+	ImportErrorTypeUnsupportedType ImportErrorType = "unsupported_type"
 
-	// ImportErrorUnknown: any other error.
-	ImportErrorUnknown ImportErrorType = "unknown"
+	// ImportErrorTypeUnknown: any other error.
+	ImportErrorTypeUnknown ImportErrorType = "unknown"
 )
 
 // ImportError is an object that was not imported or copied, or an error
@@ -138,9 +138,8 @@ type ImportErrorDestination struct {
 
 // ImportWarning is a warning about an import that succeeded.
 type ImportWarning struct {
-	// Type is "simple" or "action_required".
-	Type    string `json:"type"`
-	Message string `json:"message"`
+	Type    ImportWarningType `json:"type"`
+	Message string            `json:"message"`
 
 	// ActionPath and ButtonLabel link to a page that resolves an
 	// action_required warning.
@@ -148,8 +147,23 @@ type ImportWarning struct {
 	ButtonLabel string `json:"buttonLabel,omitempty"`
 }
 
+// ImportWarningType is the type of an [ImportWarning].
+type ImportWarningType string
+
+// Import warning types. Kibana may send others.
+const (
+	// ImportWarningTypeSimple is a warning to show.
+	ImportWarningTypeSimple ImportWarningType = "simple"
+
+	// ImportWarningTypeActionRequired needs an action, described by
+	// ImportWarning.ActionPath.
+	ImportWarningTypeActionRequired ImportWarningType = "action_required"
+)
+
 // ImportSavedObjectsOptions are the options of [SavedObjectsService.Import].
 type ImportSavedObjectsOptions struct {
+	_ [0]func()
+
 	// Overwrite overwrites existing objects instead of reporting
 	// conflicts. It cannot be combined with CreateNewCopies.
 	Overwrite bool `url:"overwrite,omitempty"`
@@ -192,7 +206,7 @@ func (s *SavedObjectsService) Import(ctx context.Context, r io.Reader, opt *Impo
 		return nil, nil, err
 	}
 	result := new(ImportSavedObjectsResult)
-	resp, err := s.uploadNDJSON(ctx, path, r, nil, result, opts)
+	resp, err := s.uploadNDJSON(ctx, path, r, nil, result, nil, opts)
 	if err != nil {
 		return nil, resp, err
 	}
@@ -235,6 +249,8 @@ type ImportReferenceReplacement struct {
 // ResolveImportErrorsRequest is the request of
 // [SavedObjectsService.ResolveImportErrors].
 type ResolveImportErrorsRequest struct {
+	_ [0]func()
+
 	// Retries lists the objects of the file to import. Objects of the file
 	// that are not listed are not imported. Required.
 	Retries []ImportRetry `url:"-"`
@@ -245,6 +261,11 @@ type ResolveImportErrorsRequest struct {
 	CompatibilityMode bool `url:"compatibilityMode,omitempty"`
 }
 
+// ResolveImportErrorsOptions are the options of [SavedObjectsService.ResolveImportErrors].
+type ResolveImportErrorsOptions struct {
+	_ [0]func()
+}
+
 // ResolveImportErrors imports saved objects from r into the client's space
 // again, resolving the errors of a previous [SavedObjectsService.Import],
 // for example by overwriting conflicting objects. r must be the same ndjson
@@ -253,7 +274,7 @@ type ResolveImportErrorsRequest struct {
 // Kibana API: POST /api/saved_objects/_resolve_import_errors
 //
 // Kibana API docs: https://www.elastic.co/docs/api/doc/kibana/operation/operation-post-saved-objects-resolve-import-errors
-func (s *SavedObjectsService) ResolveImportErrors(ctx context.Context, r io.Reader, req *ResolveImportErrorsRequest, opts ...RequestOption) (*ImportSavedObjectsResult, *Response, error) {
+func (s *SavedObjectsService) ResolveImportErrors(ctx context.Context, r io.Reader, req *ResolveImportErrorsRequest, opt *ResolveImportErrorsOptions, opts ...RequestOption) (*ImportSavedObjectsResult, *Response, error) {
 	if r == nil {
 		return nil, nil, errors.New("kibana: reader must not be nil")
 	}
@@ -280,7 +301,7 @@ func (s *SavedObjectsService) ResolveImportErrors(ctx context.Context, r io.Read
 		return nil, nil, err
 	}
 	result := new(ImportSavedObjectsResult)
-	resp, err := s.uploadNDJSON(ctx, path, r, map[string]string{"retries": string(retries)}, result, opts)
+	resp, err := s.uploadNDJSON(ctx, path, r, map[string]string{"retries": string(retries)}, result, opt, opts)
 	if err != nil {
 		return nil, resp, err
 	}
@@ -290,7 +311,11 @@ func (s *SavedObjectsService) ResolveImportErrors(ctx context.Context, r io.Read
 // uploadNDJSON posts r as the ndjson "file" of a multipart form, with the
 // given extra fields, and decodes the response into v. The form is streamed,
 // not buffered.
-func (s *SavedObjectsService) uploadNDJSON(ctx context.Context, path string, r io.Reader, fields map[string]string, v any, opts []RequestOption) (*Response, error) {
+func (s *SavedObjectsService) uploadNDJSON(ctx context.Context, path string, r io.Reader, fields map[string]string, v, query any, opts []RequestOption) (*Response, error) {
+	path, err := addQuery(path, query)
+	if err != nil {
+		return nil, err
+	}
 	pr, pw := io.Pipe()
 	mw := multipart.NewWriter(pw)
 	// The Content-Type comes first, so that the caller's options can

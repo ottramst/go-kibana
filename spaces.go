@@ -91,6 +91,8 @@ const (
 
 // ListSpacesOptions are the options for [SpacesService.List].
 type ListSpacesOptions struct {
+	_ [0]func()
+
 	// Purpose restricts the list to the spaces the user is authorized to use
 	// for that purpose. Kibana defaults to SpacePurposeAny. Cannot be combined
 	// with IncludeAuthorizedPurposes.
@@ -113,11 +115,16 @@ func (s *SpacesService) List(ctx context.Context, opt *ListSpacesOptions, opts .
 		return nil, nil, err
 	}
 	var spaces []*Space
-	resp, err := s.client.do(ctx, http.MethodGet, path, nil, &spaces, opts)
+	resp, err := s.client.do(ctx, http.MethodGet, path, nil, &spaces, nil, opts)
 	if err != nil {
 		return nil, resp, err
 	}
 	return spaces, resp, nil
+}
+
+// GetSpaceOptions are the options of [SpacesService.Get].
+type GetSpaceOptions struct {
+	_ [0]func()
 }
 
 // Get returns the space with the given ID.
@@ -125,16 +132,21 @@ func (s *SpacesService) List(ctx context.Context, opt *ListSpacesOptions, opts .
 // Kibana API: GET /api/spaces/space/{id}
 //
 // Kibana API docs: https://www.elastic.co/docs/api/doc/kibana/operation/operation-get-spaces-space-id
-func (s *SpacesService) Get(ctx context.Context, id string, opts ...RequestOption) (*Space, *Response, error) {
+func (s *SpacesService) Get(ctx context.Context, id string, opt *GetSpaceOptions, opts ...RequestOption) (*Space, *Response, error) {
 	if err := requireID("space ID", id); err != nil {
 		return nil, nil, err
 	}
 	space := new(Space)
-	resp, err := s.client.do(ctx, http.MethodGet, pathf("/api/spaces/space/%s", id), nil, space, opts)
+	resp, err := s.client.do(ctx, http.MethodGet, pathf("/api/spaces/space/%s", id), nil, space, opt, opts)
 	if err != nil {
 		return nil, resp, err
 	}
 	return space, resp, nil
+}
+
+// CreateSpaceOptions are the options of [SpacesService.Create].
+type CreateSpaceOptions struct {
+	_ [0]func()
 }
 
 // Create creates a space. ID and Name are required.
@@ -142,16 +154,21 @@ func (s *SpacesService) Get(ctx context.Context, id string, opts ...RequestOptio
 // Kibana API: POST /api/spaces/space
 //
 // Kibana API docs: https://www.elastic.co/docs/api/doc/kibana/operation/operation-post-spaces-space
-func (s *SpacesService) Create(ctx context.Context, space *Space, opts ...RequestOption) (*Space, *Response, error) {
+func (s *SpacesService) Create(ctx context.Context, space *Space, opt *CreateSpaceOptions, opts ...RequestOption) (*Space, *Response, error) {
 	if space == nil {
 		return nil, nil, errors.New("kibana: space must not be nil")
 	}
 	created := new(Space)
-	resp, err := s.client.do(ctx, http.MethodPost, "/api/spaces/space", space.writable(), created, opts)
+	resp, err := s.client.do(ctx, http.MethodPost, "/api/spaces/space", space.writable(), created, opt, opts)
 	if err != nil {
 		return nil, resp, err
 	}
 	return created, resp, nil
+}
+
+// UpdateSpaceOptions are the options of [SpacesService.Update].
+type UpdateSpaceOptions struct {
+	_ [0]func()
 }
 
 // Update replaces the space with the given ID: an empty Description,
@@ -164,7 +181,7 @@ func (s *SpacesService) Create(ctx context.Context, space *Space, opts ...Reques
 // Kibana API: PUT /api/spaces/space/{id}
 //
 // Kibana API docs: https://www.elastic.co/docs/api/doc/kibana/operation/operation-put-spaces-space-id
-func (s *SpacesService) Update(ctx context.Context, id string, space *Space, opts ...RequestOption) (*Space, *Response, error) {
+func (s *SpacesService) Update(ctx context.Context, id string, space *Space, opt *UpdateSpaceOptions, opts ...RequestOption) (*Space, *Response, error) {
 	if err := requireID("space ID", id); err != nil {
 		return nil, nil, err
 	}
@@ -174,11 +191,16 @@ func (s *SpacesService) Update(ctx context.Context, id string, space *Space, opt
 	body := space.writable()
 	body.ID = id
 	updated := new(Space)
-	resp, err := s.client.do(ctx, http.MethodPut, pathf("/api/spaces/space/%s", id), body, updated, opts)
+	resp, err := s.client.do(ctx, http.MethodPut, pathf("/api/spaces/space/%s", id), body, updated, opt, opts)
 	if err != nil {
 		return nil, resp, err
 	}
 	return updated, resp, nil
+}
+
+// DeleteSpaceOptions are the options of [SpacesService.Delete].
+type DeleteSpaceOptions struct {
+	_ [0]func()
 }
 
 // Delete deletes the space with the given ID, and permanently deletes all
@@ -187,9 +209,9 @@ func (s *SpacesService) Update(ctx context.Context, id string, space *Space, opt
 // Kibana API: DELETE /api/spaces/space/{id}
 //
 // Kibana API docs: https://www.elastic.co/docs/api/doc/kibana/operation/operation-delete-spaces-space-id
-func (s *SpacesService) Delete(ctx context.Context, id string, opts ...RequestOption) (*Response, error) {
+func (s *SpacesService) Delete(ctx context.Context, id string, opt *DeleteSpaceOptions, opts ...RequestOption) (*Response, error) {
 	if err := requireID("space ID", id); err != nil {
 		return nil, err
 	}
-	return s.client.do(ctx, http.MethodDelete, pathf("/api/spaces/space/%s", id), nil, nil, opts)
+	return s.client.do(ctx, http.MethodDelete, pathf("/api/spaces/space/%s", id), nil, nil, opt, opts)
 }

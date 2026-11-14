@@ -40,7 +40,7 @@ func TestAccSavedObjectsCRUD(t *testing.T) {
 	}
 
 	// A copy of an object that was read, with a generated ID.
-	got, _, err := client.SavedObjects.Get(ctx, "visualization", vis.ID)
+	got, _, err := client.SavedObjects.Get(ctx, "visualization", vis.ID, nil)
 	if err != nil {
 		t.Fatalf("Get() error = %v", err)
 	}
@@ -61,7 +61,7 @@ func TestAccSavedObjectsCRUD(t *testing.T) {
 	if _, _, err := client.SavedObjects.Update(ctx, got, nil); err != nil {
 		t.Fatalf("Update() error = %v", err)
 	}
-	after, _, err := client.SavedObjects.Get(ctx, "visualization", vis.ID)
+	after, _, err := client.SavedObjects.Get(ctx, "visualization", vis.ID, nil)
 	if err != nil {
 		t.Fatalf("Get(updated) error = %v", err)
 	}
@@ -86,7 +86,7 @@ func TestAccSavedObjectsCRUD(t *testing.T) {
 	if _, _, err := client.SavedObjects.Update(ctx, after, nil); err != nil {
 		t.Fatalf("Update(no references) error = %v", err)
 	}
-	if after, _, err = client.SavedObjects.Get(ctx, "visualization", vis.ID); err != nil {
+	if after, _, err = client.SavedObjects.Get(ctx, "visualization", vis.ID, nil); err != nil {
 		t.Fatalf("Get(updated) error = %v", err)
 	}
 	if len(after.References) != 0 {
@@ -101,14 +101,14 @@ func TestAccSavedObjectsCRUD(t *testing.T) {
 	if _, _, err := client.SavedObjects.Update(ctx, missing, &kibana.UpdateSavedObjectOptions{Upsert: missing.Attributes}); err != nil {
 		t.Errorf("Update(upsert) error = %v", err)
 	}
-	if _, _, err := client.SavedObjects.Get(ctx, "index-pattern", missing.ID); err != nil {
+	if _, _, err := client.SavedObjects.Get(ctx, "index-pattern", missing.ID, nil); err != nil {
 		t.Errorf("Get(upserted) error = %v", err)
 	}
 
 	if _, err := client.SavedObjects.Delete(ctx, "visualization", vis.ID, nil); err != nil {
 		t.Fatalf("Delete() error = %v", err)
 	}
-	if _, _, err := client.SavedObjects.Get(ctx, "visualization", vis.ID); !errors.Is(err, kibana.ErrNotFound) {
+	if _, _, err := client.SavedObjects.Get(ctx, "visualization", vis.ID, nil); !errors.Is(err, kibana.ErrNotFound) {
 		t.Errorf("Get(deleted) error = %v, want ErrNotFound", err)
 	}
 	if _, err := client.SavedObjects.Delete(ctx, "visualization", vis.ID, nil); !errors.Is(err, kibana.ErrNotFound) {
@@ -137,9 +137,9 @@ func TestAccSavedObjectsBulk(t *testing.T) {
 		t.Errorf("BulkCreate(again) = %+v, %v; want a conflict", again, err)
 	}
 
-	got, _, err := client.SavedObjects.BulkGet(ctx, []kibana.BulkGetSavedObjectsRequest{
+	got, _, err := client.SavedObjects.BulkGet(ctx, []kibana.BulkGetSavedObjectsItem{
 		{Type: "index-pattern", ID: id1}, {Type: "index-pattern", ID: missing},
-	})
+	}, nil)
 	if err != nil {
 		t.Fatalf("BulkGet() error = %v", err)
 	}
@@ -151,7 +151,7 @@ func TestAccSavedObjectsBulk(t *testing.T) {
 	updated, _, err := client.SavedObjects.BulkUpdate(ctx, []*kibana.SavedObject{
 		got[0],
 		{Type: "index-pattern", ID: missing, Attributes: json.RawMessage(`{"title":"x"}`)},
-	})
+	}, nil)
 	if err != nil {
 		t.Fatalf("BulkUpdate() error = %v", err)
 	}
@@ -159,8 +159,8 @@ func TestAccSavedObjectsBulk(t *testing.T) {
 		t.Errorf("BulkUpdate() = %+v, want the update and a missing object", updated)
 	}
 
-	resolved, _, err := client.SavedObjects.BulkResolve(ctx, []kibana.SavedObjectRef{{Type: "index-pattern", ID: id2}})
-	if err != nil || len(resolved) != 1 || resolved[0].Outcome != kibana.ResolveExactMatch || resolved[0].SavedObject.ID != id2 {
+	resolved, _, err := client.SavedObjects.BulkResolve(ctx, []kibana.SavedObjectRef{{Type: "index-pattern", ID: id2}}, nil)
+	if err != nil || len(resolved) != 1 || resolved[0].Outcome != kibana.ResolveOutcomeExactMatch || resolved[0].SavedObject.ID != id2 {
 		t.Errorf("BulkResolve() = %+v, %v; want an exact match", resolved, err)
 	}
 

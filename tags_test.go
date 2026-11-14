@@ -23,7 +23,7 @@ func TestTagsService_Get(t *testing.T) {
 		writeJSON(t, w, http.StatusOK, fixture(t, "tags/create.json"))
 	})
 
-	got, _, err := client.Tags.Get(context.Background(), "fab28ebf-63c5-4d90-94c4-4ac294dae221")
+	got, _, err := client.Tags.Get(context.Background(), "fab28ebf-63c5-4d90-94c4-4ac294dae221", nil)
 	if err != nil {
 		t.Fatalf("Get() error = %v", err)
 	}
@@ -50,7 +50,7 @@ func TestTagsService_Create(t *testing.T) {
 	})
 	tag := &kibana.Tag{ID: "ignored", Name: "probe-tag-1", Description: "d1", Color: "#FF0000", Meta: kibana.TagMeta{Version: "v"}}
 	before := *tag
-	got, resp, err := client.InSpace("x").Tags.Create(context.Background(), tag)
+	got, resp, err := client.InSpace("x").Tags.Create(context.Background(), tag, nil)
 	if err != nil {
 		t.Fatalf("Create() error = %v", err)
 	}
@@ -69,7 +69,7 @@ func TestTagsService_Create_emptyFields(t *testing.T) {
 		testJSONBody(t, r, `{"name":"n","description":""}`)
 		writeJSON(t, w, http.StatusCreated, fixture(t, "tags/create.json"))
 	})
-	if _, _, err := client.Tags.Create(context.Background(), &kibana.Tag{Name: "n"}); err != nil {
+	if _, _, err := client.Tags.Create(context.Background(), &kibana.Tag{Name: "n"}, nil); err != nil {
 		t.Fatalf("Create() error = %v", err)
 	}
 }
@@ -89,14 +89,14 @@ func TestTagsService_Create_errors(t *testing.T) {
 			mux.HandleFunc("POST /api/tags", func(w http.ResponseWriter, _ *http.Request) {
 				writeJSON(t, w, tt.status, fixture(t, tt.fixture))
 			})
-			if _, _, err := client.Tags.Create(context.Background(), &kibana.Tag{Name: "n"}); !errors.Is(err, tt.want) {
+			if _, _, err := client.Tags.Create(context.Background(), &kibana.Tag{Name: "n"}, nil); !errors.Is(err, tt.want) {
 				t.Errorf("Create() error = %v, want %v", err, tt.want)
 			}
 		})
 	}
 }
 
-func TestTagsService_Update(t *testing.T) {
+func TestTagsService_CreateOrUpdate(t *testing.T) {
 	tests := []struct {
 		fixture string
 		status  int
@@ -115,18 +115,18 @@ func TestTagsService_Update(t *testing.T) {
 				testJSONBody(t, r, `{"name":"probe-tag-1b","description":"","color":"#01d6fe"}`)
 				writeJSON(t, w, tt.status, fixture(t, tt.fixture))
 			})
-			got, resp, err := client.Tags.Update(context.Background(), "a/b?", &kibana.Tag{Name: "probe-tag-1b", Color: "#01d6fe"})
+			got, resp, err := client.Tags.CreateOrUpdate(context.Background(), "a/b?", &kibana.Tag{Name: "probe-tag-1b", Color: "#01d6fe"}, nil)
 			if err != nil {
-				t.Fatalf("Update() error = %v", err)
+				t.Fatalf("CreateOrUpdate() error = %v", err)
 			}
 			if resp.StatusCode != tt.status || got.Name == "" || got.Meta.UpdatedAt.IsZero() {
-				t.Errorf("Update() = %+v (%d), want the tag with status %d", got, resp.StatusCode, tt.status)
+				t.Errorf("CreateOrUpdate() = %+v (%d), want the tag with status %d", got, resp.StatusCode, tt.status)
 			}
 		})
 	}
 }
 
-func TestTagsService_Update_readModifyWrite(t *testing.T) {
+func TestTagsService_CreateOrUpdate_readModifyWrite(t *testing.T) {
 	mux, client := setup(t)
 	mux.HandleFunc("GET /api/tags/{id}", func(w http.ResponseWriter, _ *http.Request) {
 		writeJSON(t, w, http.StatusOK, fixture(t, "tags/create.json"))
@@ -137,14 +137,14 @@ func TestTagsService_Update_readModifyWrite(t *testing.T) {
 		writeJSON(t, w, http.StatusOK, fixture(t, "tags/put_nodesc.json"))
 	})
 	ctx := context.Background()
-	tag, _, err := client.Tags.Get(ctx, "fab28ebf-63c5-4d90-94c4-4ac294dae221")
+	tag, _, err := client.Tags.Get(ctx, "fab28ebf-63c5-4d90-94c4-4ac294dae221", nil)
 	if err != nil {
 		t.Fatal(err)
 	}
 	tag.Name = "renamed"
-	got, _, err := client.Tags.Update(ctx, tag.ID, tag)
+	got, _, err := client.Tags.CreateOrUpdate(ctx, tag.ID, tag, nil)
 	if err != nil {
-		t.Fatalf("Update() error = %v", err)
+		t.Fatalf("CreateOrUpdate() error = %v", err)
 	}
 	// Kibana leaves created_at out of the update response.
 	if !got.Meta.CreatedAt.IsZero() {
@@ -158,7 +158,7 @@ func TestTagsService_Delete(t *testing.T) {
 		testHeader(t, r, "kbn-xsrf", "true")
 		w.WriteHeader(http.StatusNoContent)
 	})
-	if _, err := client.Tags.Delete(context.Background(), "t1"); err != nil {
+	if _, err := client.Tags.Delete(context.Background(), "t1", nil); err != nil {
 		t.Errorf("Delete() error = %v", err)
 	}
 }
@@ -175,10 +175,10 @@ func TestTagsService_notFound(t *testing.T) {
 		writeJSON(t, w, http.StatusNotFound, fixture(t, "tags/list_8.19.json"))
 	})
 	ctx := context.Background()
-	if _, _, err := client.Tags.Get(ctx, "nope"); !errors.Is(err, kibana.ErrNotFound) {
+	if _, _, err := client.Tags.Get(ctx, "nope", nil); !errors.Is(err, kibana.ErrNotFound) {
 		t.Errorf("Get() error = %v, want ErrNotFound", err)
 	}
-	if _, err := client.Tags.Delete(ctx, "nope"); !errors.Is(err, kibana.ErrNotFound) {
+	if _, err := client.Tags.Delete(ctx, "nope", nil); !errors.Is(err, kibana.ErrNotFound) {
 		t.Errorf("Delete() error = %v, want ErrNotFound", err)
 	}
 	if _, _, err := client.Tags.List(ctx, nil); !errors.Is(err, kibana.ErrNotFound) {
@@ -302,21 +302,21 @@ func TestTagsService_invalidArguments(t *testing.T) {
 	_, client := setup(t)
 	ctx := context.Background()
 	for name, tag := range map[string]*kibana.Tag{"nil tag": nil, "no name": {Color: "#000000"}} {
-		if _, _, err := client.Tags.Create(ctx, tag); err == nil {
+		if _, _, err := client.Tags.Create(ctx, tag, nil); err == nil {
 			t.Errorf("Create(%s) error = nil, want error", name)
 		}
-		if _, _, err := client.Tags.Update(ctx, "t", tag); err == nil {
-			t.Errorf("Update(%s) error = nil, want error", name)
+		if _, _, err := client.Tags.CreateOrUpdate(ctx, "t", tag, nil); err == nil {
+			t.Errorf("CreateOrUpdate(%s) error = nil, want error", name)
 		}
 	}
 	for _, id := range []string{"", ".", ".."} {
-		if _, _, err := client.Tags.Get(ctx, id); err == nil {
+		if _, _, err := client.Tags.Get(ctx, id, nil); err == nil {
 			t.Errorf("Get(%q) error = nil, want error", id)
 		}
-		if _, _, err := client.Tags.Update(ctx, id, &kibana.Tag{Name: "n"}); err == nil {
-			t.Errorf("Update(%q) error = nil, want error", id)
+		if _, _, err := client.Tags.CreateOrUpdate(ctx, id, &kibana.Tag{Name: "n"}, nil); err == nil {
+			t.Errorf("CreateOrUpdate(%q) error = nil, want error", id)
 		}
-		if _, err := client.Tags.Delete(ctx, id); err == nil {
+		if _, err := client.Tags.Delete(ctx, id, nil); err == nil {
 			t.Errorf("Delete(%q) error = nil, want error", id)
 		}
 	}

@@ -26,7 +26,7 @@ func TestDataViewsService_UpdateFieldsMetadata(t *testing.T) {
 		"host":   {CustomLabel: new("H"), CustomDescription: new("desc"), Count: new(5)},
 		"status": {Format: &kibana.DataViewFieldFormat{ID: "bytes"}},
 		"msg":    {CustomLabel: new(""), CustomDescription: new(""), Count: new(0), Format: &kibana.DataViewFieldFormat{}},
-	})
+	}, nil)
 	if err != nil {
 		t.Fatalf("UpdateFieldsMetadata() error = %v", err)
 	}
@@ -41,7 +41,7 @@ func TestDataViewsService_UpdateFieldsMetadata_errors(t *testing.T) {
 		writeJSON(t, w, http.StatusBadRequest, fixture(t, "dataviews/fm_long.json"))
 	})
 	ctx := context.Background()
-	if _, _, err := client.DataViews.UpdateFieldsMetadata(ctx, "v", map[string]kibana.DataViewFieldMetadata{"host": {CustomLabel: new("x")}}); !errors.Is(err, kibana.ErrBadRequest) {
+	if _, _, err := client.DataViews.UpdateFieldsMetadata(ctx, "v", map[string]kibana.DataViewFieldMetadata{"host": {CustomLabel: new("x")}}, nil); !errors.Is(err, kibana.ErrBadRequest) {
 		t.Errorf("UpdateFieldsMetadata() error = %v, want ErrBadRequest", err)
 	}
 	for name, fields := range map[string]map[string]kibana.DataViewFieldMetadata{
@@ -49,11 +49,11 @@ func TestDataViewsService_UpdateFieldsMetadata_errors(t *testing.T) {
 		"empty name":       {"": {CustomLabel: new("x")}},
 		"long description": {"host": {CustomDescription: new(strings.Repeat("é", 301))}},
 	} {
-		if _, _, err := client.DataViews.UpdateFieldsMetadata(ctx, "v", fields); err == nil {
+		if _, _, err := client.DataViews.UpdateFieldsMetadata(ctx, "v", fields, nil); err == nil {
 			t.Errorf("UpdateFieldsMetadata(%s) error = nil, want error", name)
 		}
 	}
-	if _, _, err := client.DataViews.UpdateFieldsMetadata(ctx, "", map[string]kibana.DataViewFieldMetadata{"host": {}}); err == nil {
+	if _, _, err := client.DataViews.UpdateFieldsMetadata(ctx, "", map[string]kibana.DataViewFieldMetadata{"host": {}}, nil); err == nil {
 		t.Error("UpdateFieldsMetadata(no view) error = nil, want error")
 	}
 	// 300 characters, not bytes, are allowed.
@@ -61,7 +61,7 @@ func TestDataViewsService_UpdateFieldsMetadata_errors(t *testing.T) {
 	mux2.HandleFunc("POST /api/data_views/data_view/{viewId}/fields", func(w http.ResponseWriter, _ *http.Request) {
 		writeJSON(t, w, http.StatusOK, fixture(t, "dataviews/fields_metadata.json"))
 	})
-	if _, _, err := client2.DataViews.UpdateFieldsMetadata(ctx, "v", map[string]kibana.DataViewFieldMetadata{"host": {CustomDescription: new(strings.Repeat("é", 300))}}); err != nil {
+	if _, _, err := client2.DataViews.UpdateFieldsMetadata(ctx, "v", map[string]kibana.DataViewFieldMetadata{"host": {CustomDescription: new(strings.Repeat("é", 300))}}, nil); err != nil {
 		t.Errorf("UpdateFieldsMetadata(300 characters) error = %v", err)
 	}
 }
@@ -72,10 +72,10 @@ func TestDataViewsService_CreateRuntimeField(t *testing.T) {
 		call   func(*kibana.DataViewsService, *kibana.RuntimeField) (*kibana.RuntimeFieldResult, *kibana.Response, error)
 	}{
 		{"POST", func(s *kibana.DataViewsService, rf *kibana.RuntimeField) (*kibana.RuntimeFieldResult, *kibana.Response, error) {
-			return s.CreateRuntimeField(context.Background(), "probe-dv-2", "rt2", rf)
+			return s.CreateRuntimeField(context.Background(), "probe-dv-2", "rt2", rf, nil)
 		}},
 		{"PUT", func(s *kibana.DataViewsService, rf *kibana.RuntimeField) (*kibana.RuntimeFieldResult, *kibana.Response, error) {
-			return s.CreateOrUpdateRuntimeField(context.Background(), "probe-dv-2", "rt2", rf)
+			return s.CreateOrUpdateRuntimeField(context.Background(), "probe-dv-2", "rt2", rf, nil)
 		}},
 	}
 	for _, tt := range tests {
@@ -108,7 +108,7 @@ func TestDataViewsService_CreateRuntimeField_composite(t *testing.T) {
 		Type:   "composite",
 		Script: &kibana.RuntimeFieldScript{Source: `emit("a", "x"); emit("b", 1)`},
 		Fields: map[string]kibana.RuntimeSubField{"a": {Type: "keyword", CustomLabel: "A"}, "b": {Type: "long"}},
-	})
+	}, nil)
 	if err != nil {
 		t.Fatalf("CreateRuntimeField() error = %v", err)
 	}
@@ -130,7 +130,7 @@ func TestDataViewsService_GetRuntimeField(t *testing.T) {
 		}
 		writeJSON(t, w, http.StatusOK, fixture(t, "dataviews/rf_get_extras.json"))
 	})
-	got, _, err := client.DataViews.GetRuntimeField(context.Background(), "v/1", "f?1")
+	got, _, err := client.DataViews.GetRuntimeField(context.Background(), "v/1", "f?1", nil)
 	if err != nil {
 		t.Fatalf("GetRuntimeField() error = %v", err)
 	}
@@ -146,7 +146,7 @@ func TestDataViewsService_UpdateRuntimeField(t *testing.T) {
 		testJSONBody(t, r, `{"runtimeField":{"type":"long"}}`)
 		writeJSON(t, w, http.StatusOK, fixture(t, "dataviews/rf_update_type.json"))
 	})
-	got, _, err := client.DataViews.UpdateRuntimeField(context.Background(), "probe-dv-2", "rt2", &kibana.RuntimeField{Type: "long"})
+	got, _, err := client.DataViews.UpdateRuntimeField(context.Background(), "probe-dv-2", "rt2", &kibana.RuntimeField{Type: "long"}, nil)
 	if err != nil {
 		t.Fatalf("UpdateRuntimeField() error = %v", err)
 	}
@@ -162,7 +162,7 @@ func TestDataViewsService_DeleteRuntimeField(t *testing.T) {
 		// Kibana answers 200 without a body.
 		w.WriteHeader(http.StatusOK)
 	})
-	if _, err := client.DataViews.DeleteRuntimeField(context.Background(), "probe-dv-2", "rt3"); err != nil {
+	if _, err := client.DataViews.DeleteRuntimeField(context.Background(), "probe-dv-2", "rt3", nil); err != nil {
 		t.Errorf("DeleteRuntimeField() error = %v", err)
 	}
 }
@@ -189,16 +189,16 @@ func TestDataViewsService_runtimeFieldErrors(t *testing.T) {
 			})
 			ctx := context.Background()
 			rf := &kibana.RuntimeField{Type: "keyword"}
-			if _, _, err := client.DataViews.CreateRuntimeField(ctx, "v", "f", rf); !errors.Is(err, tt.want) {
+			if _, _, err := client.DataViews.CreateRuntimeField(ctx, "v", "f", rf, nil); !errors.Is(err, tt.want) {
 				t.Errorf("CreateRuntimeField() error = %v, want %v", err, tt.want)
 			}
-			if _, _, err := client.DataViews.GetRuntimeField(ctx, "v", "f"); !errors.Is(err, tt.want) {
+			if _, _, err := client.DataViews.GetRuntimeField(ctx, "v", "f", nil); !errors.Is(err, tt.want) {
 				t.Errorf("GetRuntimeField() error = %v, want %v", err, tt.want)
 			}
-			if _, _, err := client.DataViews.UpdateRuntimeField(ctx, "v", "f", rf); !errors.Is(err, tt.want) {
+			if _, _, err := client.DataViews.UpdateRuntimeField(ctx, "v", "f", rf, nil); !errors.Is(err, tt.want) {
 				t.Errorf("UpdateRuntimeField() error = %v, want %v", err, tt.want)
 			}
-			if _, err := client.DataViews.DeleteRuntimeField(ctx, "v", "f"); !errors.Is(err, tt.want) {
+			if _, err := client.DataViews.DeleteRuntimeField(ctx, "v", "f", nil); !errors.Is(err, tt.want) {
 				t.Errorf("DeleteRuntimeField() error = %v, want %v", err, tt.want)
 			}
 		})
@@ -210,28 +210,28 @@ func TestDataViewsService_runtimeFieldInvalidArguments(t *testing.T) {
 	ctx := context.Background()
 	rf := &kibana.RuntimeField{Type: "keyword"}
 	for _, args := range [][2]string{{"", "f"}, {"v", ""}, {"..", "f"}, {"v", "."}} {
-		if _, _, err := client.DataViews.CreateRuntimeField(ctx, args[0], args[1], rf); err == nil {
+		if _, _, err := client.DataViews.CreateRuntimeField(ctx, args[0], args[1], rf, nil); err == nil {
 			t.Errorf("CreateRuntimeField(%q, %q) error = nil, want error", args[0], args[1])
 		}
-		if _, _, err := client.DataViews.GetRuntimeField(ctx, args[0], args[1]); err == nil {
+		if _, _, err := client.DataViews.GetRuntimeField(ctx, args[0], args[1], nil); err == nil {
 			t.Errorf("GetRuntimeField(%q, %q) error = nil, want error", args[0], args[1])
 		}
-		if _, _, err := client.DataViews.UpdateRuntimeField(ctx, args[0], args[1], rf); err == nil {
+		if _, _, err := client.DataViews.UpdateRuntimeField(ctx, args[0], args[1], rf, nil); err == nil {
 			t.Errorf("UpdateRuntimeField(%q, %q) error = nil, want error", args[0], args[1])
 		}
-		if _, err := client.DataViews.DeleteRuntimeField(ctx, args[0], args[1]); err == nil {
+		if _, err := client.DataViews.DeleteRuntimeField(ctx, args[0], args[1], nil); err == nil {
 			t.Errorf("DeleteRuntimeField(%q, %q) error = nil, want error", args[0], args[1])
 		}
 	}
 	for name, rf := range map[string]*kibana.RuntimeField{"nil": nil, "no type": {Script: &kibana.RuntimeFieldScript{Source: "emit(1)"}}} {
-		if _, _, err := client.DataViews.CreateRuntimeField(ctx, "v", "f", rf); err == nil {
+		if _, _, err := client.DataViews.CreateRuntimeField(ctx, "v", "f", rf, nil); err == nil {
 			t.Errorf("CreateRuntimeField(%s) error = nil, want error", name)
 		}
-		if _, _, err := client.DataViews.CreateOrUpdateRuntimeField(ctx, "v", "f", rf); err == nil {
+		if _, _, err := client.DataViews.CreateOrUpdateRuntimeField(ctx, "v", "f", rf, nil); err == nil {
 			t.Errorf("CreateOrUpdateRuntimeField(%s) error = nil, want error", name)
 		}
 	}
-	if _, _, err := client.DataViews.UpdateRuntimeField(ctx, "v", "f", nil); err == nil {
+	if _, _, err := client.DataViews.UpdateRuntimeField(ctx, "v", "f", nil, nil); err == nil {
 		t.Error("UpdateRuntimeField(nil) error = nil, want error")
 	}
 }
@@ -288,9 +288,9 @@ func TestDataViewsService_SwapReferences(t *testing.T) {
 				err error
 			)
 			if tt.preview {
-				got, _, err = svc.PreviewSwapReferences(context.Background(), tt.req)
+				got, _, err = svc.PreviewSwapReferences(context.Background(), tt.req, nil)
 			} else {
-				got, _, err = svc.SwapReferences(context.Background(), tt.req)
+				got, _, err = svc.SwapReferences(context.Background(), tt.req, nil)
 			}
 			if err != nil {
 				t.Fatalf("error = %v", err)
@@ -309,7 +309,7 @@ func TestDataViewsService_SwapReferences_errors(t *testing.T) {
 		writeJSON(t, w, http.StatusBadRequest, fixture(t, "dataviews/swap_missing_target.json"))
 	})
 	ctx := context.Background()
-	if _, _, err := client.DataViews.SwapReferences(ctx, &kibana.SwapReferencesRequest{FromID: "a", ToID: "gone"}); !errors.Is(err, kibana.ErrBadRequest) {
+	if _, _, err := client.DataViews.SwapReferences(ctx, &kibana.SwapReferencesRequest{FromID: "a", ToID: "gone"}, nil); !errors.Is(err, kibana.ErrBadRequest) {
 		t.Errorf("SwapReferences() error = %v, want ErrBadRequest", err)
 	}
 	for name, req := range map[string]*kibana.SwapReferencesRequest{
@@ -320,10 +320,10 @@ func TestDataViewsService_SwapReferences_errors(t *testing.T) {
 		// Left out, it would mean all saved objects.
 		"empty, non-nil for IDs": {FromID: "a", ToID: "b", ForID: []string{}, Delete: true},
 	} {
-		if _, _, err := client.DataViews.SwapReferences(ctx, req); err == nil {
+		if _, _, err := client.DataViews.SwapReferences(ctx, req, nil); err == nil {
 			t.Errorf("SwapReferences(%s) error = nil, want error", name)
 		}
-		if _, _, err := client.DataViews.PreviewSwapReferences(ctx, req); err == nil {
+		if _, _, err := client.DataViews.PreviewSwapReferences(ctx, req, nil); err == nil {
 			t.Errorf("PreviewSwapReferences(%s) error = nil, want error", name)
 		}
 	}

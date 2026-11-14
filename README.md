@@ -91,18 +91,18 @@ space, _, err := client.Spaces.Create(ctx, &kibana.Space{
 	ID:               "marketing",
 	Name:             "Marketing",
 	DisabledFeatures: []string{"dev_tools"},
-})
+}, nil)
 if err != nil {
 	return err
 }
 
 // Update replaces the whole object: read it, change it, write it back.
-space, _, err = client.Spaces.Get(ctx, "marketing")
+space, _, err = client.Spaces.Get(ctx, "marketing", nil)
 if err != nil {
 	return err
 }
 space.Description = "Campaign dashboards"
-space, _, err = client.Spaces.Update(ctx, space.ID, space)
+space, _, err = client.Spaces.Update(ctx, space.ID, space, nil)
 ```
 
 Empty text fields are sent too, so setting `space.Description = ""` clears the description (likewise
@@ -115,7 +115,7 @@ list, which Kibana would otherwise treat as all spaces:
 
 ```go
 _, err := client.Roles.CreateOrUpdate(ctx, "marketing_analyst", &kibana.Role{
-	Elasticsearch: kibana.RoleElasticsearch{
+	Elasticsearch: kibana.ElasticsearchPrivileges{
 		Indices: []kibana.IndexPrivilege{{Names: []string{"logs-*"}, Privileges: []string{"read"}}},
 	},
 	Kibana: []kibana.KibanaPrivilege{{
@@ -141,7 +141,7 @@ scoped, err := kibana.NewClient(kibanaURL, kibana.WithAPIKey(apiKey), kibana.Wit
 ### Errors
 
 ```go
-_, _, err := client.Spaces.Get(ctx, "marketing")
+_, _, err := client.Spaces.Get(ctx, "marketing", nil)
 if errors.Is(err, kibana.ErrNotFound) {
 	// the space does not exist
 }

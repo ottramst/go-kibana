@@ -164,11 +164,11 @@ func TestSavedObjectsService_Resolve(t *testing.T) {
 		}
 		writeJSON(t, w, http.StatusOK, fixture(t, "savedobjects/so_resolve.json"))
 	})
-	got, _, err := client.SavedObjects.Resolve(context.Background(), "index-pattern", "a/b?")
+	got, _, err := client.SavedObjects.Resolve(context.Background(), "index-pattern", "a/b?", nil)
 	if err != nil {
 		t.Fatalf("Resolve() error = %v", err)
 	}
-	if got.Outcome != kibana.ResolveExactMatch || got.SavedObject == nil || got.SavedObject.ID != "probe-ip" || got.AliasTargetID != "" {
+	if got.Outcome != kibana.ResolveOutcomeExactMatch || got.SavedObject == nil || got.SavedObject.ID != "probe-ip" || got.AliasTargetID != "" {
 		t.Errorf("Resolve() = %+v, want an exact match of probe-ip", got)
 	}
 }
@@ -180,11 +180,11 @@ func TestSavedObjectsService_Resolve_aliasMatch(t *testing.T) {
 		// written by hand, in the format of Kibana's resolve response.
 		writeJSON(t, w, http.StatusOK, []byte(`{"saved_object":{"id":"new","type":"dashboard","attributes":{}},"outcome":"aliasMatch","alias_target_id":"new","alias_purpose":"savedObjectConversion"}`))
 	})
-	got, _, err := client.SavedObjects.Resolve(context.Background(), "dashboard", "old")
+	got, _, err := client.SavedObjects.Resolve(context.Background(), "dashboard", "old", nil)
 	if err != nil {
 		t.Fatalf("Resolve() error = %v", err)
 	}
-	if got.Outcome != kibana.ResolveAliasMatch || got.AliasTargetID != "new" || got.AliasPurpose != "savedObjectConversion" {
+	if got.Outcome != kibana.ResolveOutcomeAliasMatch || got.AliasTargetID != "new" || got.AliasPurpose != "savedObjectConversion" {
 		t.Errorf("Resolve() = %+v, want an alias match", got)
 	}
 }
@@ -195,11 +195,11 @@ func TestSavedObjectsService_Resolve_errors(t *testing.T) {
 		writeJSON(t, w, http.StatusNotFound, fixture(t, "savedobjects/so_resolve_missing.json"))
 	})
 	ctx := context.Background()
-	if _, _, err := client.SavedObjects.Resolve(ctx, "index-pattern", "probe-nope"); !errors.Is(err, kibana.ErrNotFound) {
+	if _, _, err := client.SavedObjects.Resolve(ctx, "index-pattern", "probe-nope", nil); !errors.Is(err, kibana.ErrNotFound) {
 		t.Errorf("Resolve() error = %v, want ErrNotFound", err)
 	}
 	for _, args := range [][2]string{{"", "i"}, {"t", ""}, {"..", "i"}, {"t", "."}} {
-		if _, _, err := client.SavedObjects.Resolve(ctx, args[0], args[1]); err == nil {
+		if _, _, err := client.SavedObjects.Resolve(ctx, args[0], args[1], nil); err == nil {
 			t.Errorf("Resolve(%q, %q) error = nil, want error", args[0], args[1])
 		}
 	}

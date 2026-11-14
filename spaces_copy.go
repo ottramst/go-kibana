@@ -9,6 +9,8 @@ import (
 
 // CopySavedObjectsRequest is the request of [SpacesService.CopySavedObjects].
 type CopySavedObjectsRequest struct {
+	_ [0]func()
+
 	// Spaces lists the IDs of the spaces to copy the objects into. Kibana
 	// does not check that they exist: copying into a space that does not
 	// exist succeeds and creates objects that no space shows.
@@ -38,6 +40,8 @@ type CopySavedObjectsRequest struct {
 // ResolveCopySavedObjectsErrorsRequest is the request of
 // [SpacesService.ResolveCopySavedObjectsErrors].
 type ResolveCopySavedObjectsErrorsRequest struct {
+	_ [0]func()
+
 	// Objects lists the objects that were copied.
 	Objects []SavedObjectRef `json:"objects"`
 
@@ -45,13 +49,13 @@ type ResolveCopySavedObjectsErrorsRequest struct {
 	// every object to copy into a space, including the objects that were
 	// copied successfully before: objects that are not listed are not
 	// copied.
-	Retries map[string][]CopyRetry `json:"retries"`
+	Retries map[string][]CopySavedObjectsRetry `json:"retries"`
 
 	// IncludeReferences also copies the objects the objects reference.
 	IncludeReferences bool `json:"includeReferences,omitempty"`
 
 	// CreateNewCopies creates the copies with new IDs. Kibana defaults to
-	// true when it is nil, and then ignores CopyRetry.Overwrite. Set it to
+	// true when it is nil, and then ignores CopySavedObjectsRetry.Overwrite. Set it to
 	// new(false) to overwrite objects.
 	CreateNewCopies *bool `json:"createNewCopies,omitempty"`
 
@@ -61,8 +65,8 @@ type ResolveCopySavedObjectsErrorsRequest struct {
 	CompatibilityMode bool `json:"compatibilityMode,omitempty"`
 }
 
-// CopyRetry is an object to copy again with [SpacesService.ResolveCopySavedObjectsErrors].
-type CopyRetry struct {
+// CopySavedObjectsRetry is an object to copy again with [SpacesService.ResolveCopySavedObjectsErrors].
+type CopySavedObjectsRetry struct {
 	Type string `json:"type"`
 	ID   string `json:"id"`
 
@@ -81,50 +85,6 @@ type CopyRetry struct {
 	IgnoreMissingReferences bool `json:"ignoreMissingReferences,omitempty"`
 }
 
-// CopySavedObjectsResult is the result of copying saved objects into one
-// space. Kibana copies objects between spaces by importing them, so it has
-// the same form as the result of an import.
-//
-// Deprecated: Use [ImportSavedObjectsResult].
-type CopySavedObjectsResult = ImportSavedObjectsResult
-
-// CopySavedObjectsSuccess is an object that was copied.
-//
-// Deprecated: Use [ImportSuccess].
-type CopySavedObjectsSuccess = ImportSuccess
-
-// CopyErrorType is the type of a [CopyErrorDetail].
-//
-// Deprecated: Use [ImportErrorType].
-type CopyErrorType = ImportErrorType
-
-// Types of copy errors.
-//
-// Deprecated: Use the ImportError constants, such as [ImportErrorConflict].
-const (
-	CopyErrorConflict          = ImportErrorConflict
-	CopyErrorAmbiguousConflict = ImportErrorAmbiguousConflict
-	CopyErrorMissingReferences = ImportErrorMissingReferences
-	CopyErrorUnsupportedType   = ImportErrorUnsupportedType
-	CopyErrorUnknown           = ImportErrorUnknown
-)
-
-// CopySavedObjectsError is an object that was not copied, or an error that
-// stopped the copy into a space.
-//
-// Deprecated: Use [ImportError].
-type CopySavedObjectsError = ImportError
-
-// CopyErrorDetail describes why an object was not copied.
-//
-// Deprecated: Use [ImportErrorDetail].
-type CopyErrorDetail = ImportErrorDetail
-
-// CopyErrorDestination is one of the objects of an ambiguous conflict.
-//
-// Deprecated: Use [ImportErrorDestination].
-type CopyErrorDestination = ImportErrorDestination
-
 // validateCopyModes returns an error for option combinations Kibana rejects
 // or silently ignores.
 func validateCopyModes(overwrite, compatibilityMode bool, createNewCopies *bool) error {
@@ -132,6 +92,11 @@ func validateCopyModes(overwrite, compatibilityMode bool, createNewCopies *bool)
 		return errors.New("kibana: Overwrite and CompatibilityMode require CreateNewCopies to be new(false); Kibana creates new copies by default")
 	}
 	return nil
+}
+
+// CopySavedObjectsOptions are the options of [SpacesService.CopySavedObjects].
+type CopySavedObjectsOptions struct {
+	_ [0]func()
 }
 
 // CopySavedObjects copies saved objects from the client's space into other
@@ -146,7 +111,7 @@ func validateCopyModes(overwrite, compatibilityMode bool, createNewCopies *bool)
 // Kibana API: POST /api/spaces/_copy_saved_objects
 //
 // Kibana API docs: https://www.elastic.co/docs/api/doc/kibana/operation/operation-post-spaces-copy-saved-objects
-func (s *SpacesService) CopySavedObjects(ctx context.Context, req *CopySavedObjectsRequest, opts ...RequestOption) (map[string]*ImportSavedObjectsResult, *Response, error) {
+func (s *SpacesService) CopySavedObjects(ctx context.Context, req *CopySavedObjectsRequest, opt *CopySavedObjectsOptions, opts ...RequestOption) (map[string]*ImportSavedObjectsResult, *Response, error) {
 	if req == nil {
 		return nil, nil, errors.New("kibana: request must not be nil")
 	}
@@ -165,11 +130,16 @@ func (s *SpacesService) CopySavedObjects(ctx context.Context, req *CopySavedObje
 		return nil, nil, err
 	}
 	var result map[string]*ImportSavedObjectsResult
-	resp, err := s.client.do(ctx, http.MethodPost, "/api/spaces/_copy_saved_objects", req, &result, opts)
+	resp, err := s.client.do(ctx, http.MethodPost, "/api/spaces/_copy_saved_objects", req, &result, opt, opts)
 	if err != nil {
 		return nil, resp, err
 	}
 	return result, resp, nil
+}
+
+// ResolveCopySavedObjectsErrorsOptions are the options of [SpacesService.ResolveCopySavedObjectsErrors].
+type ResolveCopySavedObjectsErrorsOptions struct {
+	_ [0]func()
 }
 
 // ResolveCopySavedObjectsErrors copies saved objects from the client's space
@@ -182,7 +152,7 @@ func (s *SpacesService) CopySavedObjects(ctx context.Context, req *CopySavedObje
 // Kibana API: POST /api/spaces/_resolve_copy_saved_objects_errors
 //
 // Kibana API docs: https://www.elastic.co/docs/api/doc/kibana/operation/operation-post-spaces-resolve-copy-saved-objects-errors
-func (s *SpacesService) ResolveCopySavedObjectsErrors(ctx context.Context, req *ResolveCopySavedObjectsErrorsRequest, opts ...RequestOption) (map[string]*ImportSavedObjectsResult, *Response, error) {
+func (s *SpacesService) ResolveCopySavedObjectsErrors(ctx context.Context, req *ResolveCopySavedObjectsErrorsRequest, opt *ResolveCopySavedObjectsErrorsOptions, opts ...RequestOption) (map[string]*ImportSavedObjectsResult, *Response, error) {
 	if req == nil {
 		return nil, nil, errors.New("kibana: request must not be nil")
 	}
@@ -210,7 +180,7 @@ func (s *SpacesService) ResolveCopySavedObjectsErrors(ctx context.Context, req *
 		return nil, nil, err
 	}
 	var result map[string]*ImportSavedObjectsResult
-	resp, err := s.client.do(ctx, http.MethodPost, "/api/spaces/_resolve_copy_saved_objects_errors", req, &result, opts)
+	resp, err := s.client.do(ctx, http.MethodPost, "/api/spaces/_resolve_copy_saved_objects_errors", req, &result, opt, opts)
 	if err != nil {
 		return nil, resp, err
 	}

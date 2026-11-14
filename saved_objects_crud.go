@@ -115,6 +115,8 @@ func newSavedObjectWrite(obj *SavedObject) (*savedObjectWrite, error) {
 
 // CreateSavedObjectOptions are the options of [SavedObjectsService.Create].
 type CreateSavedObjectOptions struct {
+	_ [0]func()
+
 	// Overwrite replaces an object with the same ID instead of failing
 	// with [ErrConflict].
 	Overwrite bool `url:"overwrite,omitempty"`
@@ -157,11 +159,16 @@ func (s *SavedObjectsService) Create(ctx context.Context, obj *SavedObject, opt 
 		return nil, nil, err
 	}
 	created := new(SavedObject)
-	resp, err := s.client.do(ctx, http.MethodPost, path, body, created, opts)
+	resp, err := s.client.do(ctx, http.MethodPost, path, body, created, nil, opts)
 	if err != nil {
 		return nil, resp, err
 	}
 	return created, resp, nil
+}
+
+// GetSavedObjectOptions are the options of [SavedObjectsService.Get].
+type GetSavedObjectOptions struct {
+	_ [0]func()
 }
 
 // Get returns a saved object of the client's space.
@@ -173,7 +180,7 @@ func (s *SavedObjectsService) Create(ctx context.Context, obj *SavedObject, opt 
 // Kibana API: GET /api/saved_objects/{type}/{id}
 //
 // Kibana API docs: https://www.elastic.co/docs/api/doc/kibana/operation/operation-get-saved-objects-type-id
-func (s *SavedObjectsService) Get(ctx context.Context, objType, id string, opts ...RequestOption) (*SavedObject, *Response, error) {
+func (s *SavedObjectsService) Get(ctx context.Context, objType, id string, opt *GetSavedObjectOptions, opts ...RequestOption) (*SavedObject, *Response, error) {
 	if err := requireID("saved object type", objType); err != nil {
 		return nil, nil, err
 	}
@@ -181,7 +188,7 @@ func (s *SavedObjectsService) Get(ctx context.Context, objType, id string, opts 
 		return nil, nil, err
 	}
 	obj := new(SavedObject)
-	resp, err := s.client.do(ctx, http.MethodGet, pathf("/api/saved_objects/%s/%s", objType, id), nil, obj, opts)
+	resp, err := s.client.do(ctx, http.MethodGet, pathf("/api/saved_objects/%s/%s", objType, id), nil, obj, opt, opts)
 	if err != nil {
 		return nil, resp, err
 	}
@@ -190,10 +197,12 @@ func (s *SavedObjectsService) Get(ctx context.Context, objType, id string, opts 
 
 // UpdateSavedObjectOptions are the options of [SavedObjectsService.Update].
 type UpdateSavedObjectOptions struct {
+	_ [0]func()
+
 	// Upsert holds the attributes to create the object with if it does not
 	// exist. Without it, updating a missing object fails with
 	// [ErrNotFound].
-	Upsert json.RawMessage
+	Upsert json.RawMessage `url:"-"`
 }
 
 // Update updates a saved object of the client's space. obj.Attributes are
@@ -227,16 +236,17 @@ func (s *SavedObjectsService) Update(ctx context.Context, obj *SavedObject, opt 
 		body.Upsert = opt.Upsert
 	}
 	updated := new(SavedObject)
-	resp, err := s.client.do(ctx, http.MethodPut, pathf("/api/saved_objects/%s/%s", obj.Type, obj.ID), body, updated, opts)
+	resp, err := s.client.do(ctx, http.MethodPut, pathf("/api/saved_objects/%s/%s", obj.Type, obj.ID), body, updated, opt, opts)
 	if err != nil {
 		return nil, resp, err
 	}
 	return updated, resp, nil
 }
 
-// DeleteSavedObjectOptions are the options of [SavedObjectsService.Delete]
-// and [SavedObjectsService.BulkDelete].
+// DeleteSavedObjectOptions are the options of [SavedObjectsService.Delete].
 type DeleteSavedObjectOptions struct {
+	_ [0]func()
+
 	// Force deletes objects that are shared with several spaces, which
 	// Kibana refuses otherwise. They are deleted from all their spaces.
 	Force bool `url:"force,omitempty"`
@@ -261,5 +271,5 @@ func (s *SavedObjectsService) Delete(ctx context.Context, objType, id string, op
 	if err != nil {
 		return nil, err
 	}
-	return s.client.do(ctx, http.MethodDelete, path, nil, nil, opts)
+	return s.client.do(ctx, http.MethodDelete, path, nil, nil, nil, opts)
 }

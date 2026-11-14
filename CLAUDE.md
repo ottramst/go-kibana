@@ -54,7 +54,7 @@ The stack runs with security enabled and a trial license, on ports bound to 127.
   - `v == nil` drains the body; an `io.Writer` gets the raw body (for ndjson exports).
   - Anything else is JSON-decoded. An empty body (204) is success and leaves `v` untouched. Data after the JSON value is an error.
   - The body is always drained and closed.
-- Service methods call the unexported `c.do(ctx, method, path, body, v, opts)`.
+- Service methods call the unexported `c.do(ctx, method, path, body, v, opt, opts)`, which encodes `opt` like `addQuery`.
 - Helpers:
   - `pathf("/api/x/%s", id)` escapes each segment with `url.PathEscape`. Never `fmt.Sprintf` a path.
   - `addQuery(path, opt)` encodes `url:"..."` struct tags with go-querystring, for any HTTP method.
@@ -62,7 +62,7 @@ The stack runs with security enabled and a trial license, on ports bound to 127.
   - `requireID(name, v)` rejects empty, `.` and `..` path parameters before sending.
 - `ErrorResponse{Method, URL (without credentials), Header, StatusCode, StatusText (the "error" field), Message, Attributes, Body}`. The format of `Error()` is not part of the API. `Is()` maps 400/401/403/404/409/429/503 to `ErrBadRequest`/`ErrUnauthorized`/`ErrForbidden`/`ErrNotFound`/`ErrConflict`/`ErrTooManyRequests`/`ErrServiceUnavailable`. Fields of unexpected types are skipped. Bodies that are not a JSON object, such as proxy pages, become `Message`, cut to 512 bytes; `Body` keeps the whole body (up to 1 MiB).
 
-**Service conventions** (`spaces.go` is the template). These are the v1 API rules; changes that break them need a new major version after v1.0.0. The v1.0.0 milestone PRs (#43) bring the existing code in line with them, so until v1.0.0 some code still differs (e.g. methods without `opt`); `docs/upgrading-to-v1.md` tracks every change.
+**Service conventions** (`spaces.go` is the template). These are the v1 API rules; changes that break them need a new major version after v1.0.0. The v1.0.0 milestone PRs (#43) bring the existing code in line with them, so until v1.0.0 some code still differs (e.g. bodies passed as bare slices or maps); `docs/upgrading-to-v1.md` tracks every change.
 - **Names:**
   - Methods: `List`, `Get`, `Create`, `Update`, `Delete`. A PUT that creates or replaces (an upsert) is `CreateOrUpdate`. Other operations are named after the endpoint, e.g. `CopySavedObjects` or `Query`.
   - Iterators are the single-page method plus `All` (`QueryAll`, `ListAll`, `FindAll`). They return `iter.Seq2[*T, error]` and are built on the internal paginators in `pagination.go`: lazy, restartable, yield an error once and stop, and stop on an empty page.
@@ -128,7 +128,7 @@ The stack runs with security enabled and a trial license, on ports bound to 127.
   - `/api/tags` only exists in 9.5+ (experimental). Data views v2 is 9.6+.
 - Saved objects import and export (same on 8.19.25 and 9.5.6):
   - Export returns `application/ndjson`: one object per line, then a details line `{exportedCount, missingRefCount, missingReferences, excludedObjectsCount, excludedObjects}` unless `excludeExportDetails`. `type` and `objects` together are a 400, as is neither. A missing object is a 400 whose `attributes.objects` lists it. `search` and `hasReference` work on 8.19 too, although only the 9.5 spec has them.
-  - Import is `multipart/form-data` with a `file` part whose filename must end in `.ndjson` (400 otherwise); the details line is ignored. Chunked uploads work, so the client streams the form through `io.Pipe`. It returns 200 when objects fail, with `success: false` and `errors[]` in the same format as copy-to-space (hence the shared `Import*` types, and the deprecated `Copy*` aliases), plus `warnings`. `createNewCopies` with `overwrite` is a 400.
+  - Import is `multipart/form-data` with a `file` part whose filename must end in `.ndjson` (400 otherwise); the details line is ignored. Chunked uploads work, so the client streams the form through `io.Pipe`. It returns 200 when objects fail, with `success: false` and `errors[]` in the same format as copy-to-space (hence the shared `Import*` types), plus `warnings`. `createNewCopies` with `overwrite` is a 400.
   - `_resolve_import_errors` takes the same file plus a `retries` form field holding a JSON array; without it, 400. Index patterns imported into another space get a new `destinationId`, as with copy.
   - `_rotate_key` needs `xpack.encryptedSavedObjects.keyRotation.decryptionOnlyKeys` (400 otherwise; the compose stack sets one), returns `{total, successful, failed}`, and 429 while another rotation runs. `successful + failed` can be less than `total` (skipped objects), and `failed` is occasionally 1 for Kibana's own objects (seen in CI on 9.5.6). `batch_size` over 10000 is a 400.
 - Saved objects CRUD and bulk (deprecated since 8.7; same on 8.19.25 and 9.5.6):

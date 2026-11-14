@@ -23,6 +23,8 @@ const (
 // FindSavedObjectsOptions are the options of [SavedObjectsService.Find] and
 // [SavedObjectsService.FindAll].
 type FindSavedObjectsOptions struct {
+	_ [0]func()
+
 	// Types lists the types of the objects to find. Required.
 	Types []string `url:"type"`
 
@@ -132,7 +134,7 @@ func (s *SavedObjectsService) Find(ctx context.Context, opt *FindSavedObjectsOpt
 		return nil, nil, err
 	}
 	result := new(FindSavedObjectsResult)
-	resp, err := s.client.do(ctx, http.MethodGet, path, nil, result, opts)
+	resp, err := s.client.do(ctx, http.MethodGet, path, nil, result, nil, opts)
 	if err != nil {
 		return nil, resp, err
 	}
@@ -172,6 +174,11 @@ func (s *SavedObjectsService) FindAll(ctx context.Context, opt *FindSavedObjects
 	})
 }
 
+// ResolveSavedObjectOptions are the options of [SavedObjectsService.Resolve].
+type ResolveSavedObjectOptions struct {
+	_ [0]func()
+}
+
 // Resolve returns a saved object of the client's space by its ID, or by a
 // legacy URL alias of it: objects that got a new ID when Kibana 8.0 made
 // object IDs unique across spaces, or when they were imported, can still be
@@ -182,7 +189,7 @@ func (s *SavedObjectsService) FindAll(ctx context.Context, opt *FindSavedObjects
 // Kibana API: GET /api/saved_objects/resolve/{type}/{id}
 //
 // Kibana API docs: https://www.elastic.co/docs/api/doc/kibana/operation/operation-get-saved-objects-resolve-type-id
-func (s *SavedObjectsService) Resolve(ctx context.Context, objType, id string, opts ...RequestOption) (*ResolvedSavedObject, *Response, error) {
+func (s *SavedObjectsService) Resolve(ctx context.Context, objType, id string, opt *ResolveSavedObjectOptions, opts ...RequestOption) (*ResolvedSavedObject, *Response, error) {
 	if err := requireID("saved object type", objType); err != nil {
 		return nil, nil, err
 	}
@@ -190,7 +197,7 @@ func (s *SavedObjectsService) Resolve(ctx context.Context, objType, id string, o
 		return nil, nil, err
 	}
 	result := new(ResolvedSavedObject)
-	resp, err := s.client.do(ctx, http.MethodGet, pathf("/api/saved_objects/resolve/%s/%s", objType, id), nil, result, opts)
+	resp, err := s.client.do(ctx, http.MethodGet, pathf("/api/saved_objects/resolve/%s/%s", objType, id), nil, result, opt, opts)
 	if err != nil {
 		return nil, resp, err
 	}

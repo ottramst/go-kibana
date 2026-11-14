@@ -17,10 +17,10 @@ import (
 // Kibana API docs: https://www.elastic.co/docs/api/doc/kibana/group/endpoint-short-url
 type ShortURLsService service
 
-// LegacyShortURLLocator is the ID of the locator that redirects to a Kibana
+// LegacyShortURLLocatorID is the ID of the locator that redirects to a Kibana
 // URL path, given as the "url" parameter, e.g.
 // {"url": "/app/dashboards#/view/<id>"}.
-const LegacyShortURLLocator = "LEGACY_SHORT_URL_LOCATOR"
+const LegacyShortURLLocatorID = "LEGACY_SHORT_URL_LOCATOR"
 
 // ShortURL is a Kibana short URL. It is opened at /goto/{Slug}.
 type ShortURL struct {
@@ -109,13 +109,15 @@ func toEpochMillis(t time.Time) int64 {
 
 // CreateShortURLRequest is the request of [ShortURLsService.Create].
 type CreateShortURLRequest struct {
-	// LocatorID is the ID of the locator, such as LegacyShortURLLocator or
+	_ [0]func()
+
+	// LocatorID is the ID of the locator, such as LegacyShortURLLocatorID or
 	// "DASHBOARD_APP_LOCATOR". Required. Kibana answers 409 Conflict for an
 	// unknown locator.
 	LocatorID string `json:"locatorId"`
 
 	// Params are the locator parameters. Kibana does not validate them,
-	// except that the "url" of LegacyShortURLLocator must be a Kibana path:
+	// except that the "url" of LegacyShortURLLocatorID must be a Kibana path:
 	// external URLs are a 400 Bad Request.
 	Params map[string]any `json:"params"`
 
@@ -126,12 +128,17 @@ type CreateShortURLRequest struct {
 	Slug string `json:"slug,omitempty"`
 }
 
+// CreateShortURLOptions are the options of [ShortURLsService.Create].
+type CreateShortURLOptions struct {
+	_ [0]func()
+}
+
 // Create creates a short URL in the client's space.
 //
 // Kibana API: POST /api/short_url
 //
 // Kibana API docs: https://www.elastic.co/docs/api/doc/kibana/operation/operation-post-url
-func (s *ShortURLsService) Create(ctx context.Context, req *CreateShortURLRequest, opts ...RequestOption) (*ShortURL, *Response, error) {
+func (s *ShortURLsService) Create(ctx context.Context, req *CreateShortURLRequest, opt *CreateShortURLOptions, opts ...RequestOption) (*ShortURL, *Response, error) {
 	if req == nil {
 		return nil, nil, errors.New("kibana: request must not be nil")
 	}
@@ -144,11 +151,16 @@ func (s *ShortURLsService) Create(ctx context.Context, req *CreateShortURLReques
 		body.Params = map[string]any{}
 	}
 	u := new(ShortURL)
-	resp, err := s.client.do(ctx, http.MethodPost, "/api/short_url", &body, u, opts)
+	resp, err := s.client.do(ctx, http.MethodPost, "/api/short_url", &body, u, opt, opts)
 	if err != nil {
 		return nil, resp, err
 	}
 	return u, resp, nil
+}
+
+// GetShortURLOptions are the options of [ShortURLsService.Get].
+type GetShortURLOptions struct {
+	_ [0]func()
 }
 
 // Get returns a short URL by its ID. Unlike [ShortURLsService.Resolve], it
@@ -157,16 +169,21 @@ func (s *ShortURLsService) Create(ctx context.Context, req *CreateShortURLReques
 // Kibana API: GET /api/short_url/{id}
 //
 // Kibana API docs: https://www.elastic.co/docs/api/doc/kibana/operation/operation-get-url
-func (s *ShortURLsService) Get(ctx context.Context, id string, opts ...RequestOption) (*ShortURL, *Response, error) {
+func (s *ShortURLsService) Get(ctx context.Context, id string, opt *GetShortURLOptions, opts ...RequestOption) (*ShortURL, *Response, error) {
 	if err := requireID("short URL ID", id); err != nil {
 		return nil, nil, err
 	}
 	u := new(ShortURL)
-	resp, err := s.client.do(ctx, http.MethodGet, pathf("/api/short_url/%s", id), nil, u, opts)
+	resp, err := s.client.do(ctx, http.MethodGet, pathf("/api/short_url/%s", id), nil, u, opt, opts)
 	if err != nil {
 		return nil, resp, err
 	}
 	return u, resp, nil
+}
+
+// ResolveShortURLOptions are the options of [ShortURLsService.Resolve].
+type ResolveShortURLOptions struct {
+	_ [0]func()
 }
 
 // Resolve returns a short URL by its slug, which must have 4 to 128
@@ -179,16 +196,21 @@ func (s *ShortURLsService) Get(ctx context.Context, id string, opts ...RequestOp
 // Kibana API: GET /api/short_url/_slug/{slug}
 //
 // Kibana API docs: https://www.elastic.co/docs/api/doc/kibana/operation/operation-resolve-url
-func (s *ShortURLsService) Resolve(ctx context.Context, slug string, opts ...RequestOption) (*ShortURL, *Response, error) {
+func (s *ShortURLsService) Resolve(ctx context.Context, slug string, opt *ResolveShortURLOptions, opts ...RequestOption) (*ShortURL, *Response, error) {
 	if err := requireID("short URL slug", slug); err != nil {
 		return nil, nil, err
 	}
 	u := new(ShortURL)
-	resp, err := s.client.do(ctx, http.MethodGet, pathf("/api/short_url/_slug/%s", slug), nil, u, opts)
+	resp, err := s.client.do(ctx, http.MethodGet, pathf("/api/short_url/_slug/%s", slug), nil, u, opt, opts)
 	if err != nil {
 		return nil, resp, err
 	}
 	return u, resp, nil
+}
+
+// DeleteShortURLOptions are the options of [ShortURLsService.Delete].
+type DeleteShortURLOptions struct {
+	_ [0]func()
 }
 
 // Delete deletes a short URL by its ID.
@@ -196,9 +218,9 @@ func (s *ShortURLsService) Resolve(ctx context.Context, slug string, opts ...Req
 // Kibana API: DELETE /api/short_url/{id}
 //
 // Kibana API docs: https://www.elastic.co/docs/api/doc/kibana/operation/operation-delete-url
-func (s *ShortURLsService) Delete(ctx context.Context, id string, opts ...RequestOption) (*Response, error) {
+func (s *ShortURLsService) Delete(ctx context.Context, id string, opt *DeleteShortURLOptions, opts ...RequestOption) (*Response, error) {
 	if err := requireID("short URL ID", id); err != nil {
 		return nil, err
 	}
-	return s.client.do(ctx, http.MethodDelete, pathf("/api/short_url/%s", id), nil, nil, opts)
+	return s.client.do(ctx, http.MethodDelete, pathf("/api/short_url/%s", id), nil, nil, opt, opts)
 }

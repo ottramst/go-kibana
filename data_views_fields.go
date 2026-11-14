@@ -57,6 +57,11 @@ func emptyAsNull[T comparable](v, zero T) any {
 	return v
 }
 
+// UpdateFieldsMetadataOptions are the options of [DataViewsService.UpdateFieldsMetadata].
+type UpdateFieldsMetadataOptions struct {
+	_ [0]func()
+}
+
 // UpdateFieldsMetadata changes the custom labels, descriptions, popularity
 // and formats of fields of a data view of the client's space. fields maps
 // field names to the changes; the fields do not need to exist in the
@@ -65,7 +70,7 @@ func emptyAsNull[T comparable](v, zero T) any {
 // Kibana API: POST /api/data_views/data_view/{viewId}/fields
 //
 // Kibana API docs: https://www.elastic.co/docs/api/doc/kibana/operation/operation-updatefieldsmetadatadefault
-func (s *DataViewsService) UpdateFieldsMetadata(ctx context.Context, viewID string, fields map[string]DataViewFieldMetadata, opts ...RequestOption) (*DataView, *Response, error) {
+func (s *DataViewsService) UpdateFieldsMetadata(ctx context.Context, viewID string, fields map[string]DataViewFieldMetadata, opt *UpdateFieldsMetadataOptions, opts ...RequestOption) (*DataView, *Response, error) {
 	if err := requireID("data view ID", viewID); err != nil {
 		return nil, nil, err
 	}
@@ -83,7 +88,7 @@ func (s *DataViewsService) UpdateFieldsMetadata(ctx context.Context, viewID stri
 	body := struct {
 		Fields map[string]DataViewFieldMetadata `json:"fields"`
 	}{fields}
-	return s.dataView(ctx, http.MethodPost, pathf("/api/data_views/data_view/%s/fields", viewID), body, opts)
+	return s.dataView(ctx, http.MethodPost, pathf("/api/data_views/data_view/%s/fields", viewID), body, opt, opts)
 }
 
 // RuntimeFieldResult is the result of the runtime field methods of
@@ -102,6 +107,11 @@ type runtimeFieldRequest struct {
 	RuntimeField *RuntimeField `json:"runtimeField"`
 }
 
+// CreateRuntimeFieldOptions are the options of [DataViewsService.CreateRuntimeField].
+type CreateRuntimeFieldOptions struct {
+	_ [0]func()
+}
+
 // CreateRuntimeField adds a runtime field to a data view of the client's
 // space. It fails with [ErrBadRequest] if the data view already has a field
 // with that name, including a mapped field.
@@ -112,8 +122,13 @@ type runtimeFieldRequest struct {
 // Kibana API: POST /api/data_views/data_view/{viewId}/runtime_field
 //
 // Kibana API docs: https://www.elastic.co/docs/api/doc/kibana/operation/operation-createruntimefielddefault
-func (s *DataViewsService) CreateRuntimeField(ctx context.Context, viewID, name string, rf *RuntimeField, opts ...RequestOption) (*RuntimeFieldResult, *Response, error) {
-	return s.putRuntimeField(ctx, http.MethodPost, viewID, name, rf, opts)
+func (s *DataViewsService) CreateRuntimeField(ctx context.Context, viewID, name string, rf *RuntimeField, opt *CreateRuntimeFieldOptions, opts ...RequestOption) (*RuntimeFieldResult, *Response, error) {
+	return s.putRuntimeField(ctx, http.MethodPost, viewID, name, rf, opt, opts)
+}
+
+// CreateOrUpdateRuntimeFieldOptions are the options of [DataViewsService.CreateOrUpdateRuntimeField].
+type CreateOrUpdateRuntimeFieldOptions struct {
+	_ [0]func()
 }
 
 // CreateOrUpdateRuntimeField adds a runtime field to a data view of the
@@ -122,11 +137,11 @@ func (s *DataViewsService) CreateRuntimeField(ctx context.Context, viewID, name 
 // Kibana API: PUT /api/data_views/data_view/{viewId}/runtime_field
 //
 // Kibana API docs: https://www.elastic.co/docs/api/doc/kibana/operation/operation-createupdateruntimefielddefault
-func (s *DataViewsService) CreateOrUpdateRuntimeField(ctx context.Context, viewID, name string, rf *RuntimeField, opts ...RequestOption) (*RuntimeFieldResult, *Response, error) {
-	return s.putRuntimeField(ctx, http.MethodPut, viewID, name, rf, opts)
+func (s *DataViewsService) CreateOrUpdateRuntimeField(ctx context.Context, viewID, name string, rf *RuntimeField, opt *CreateOrUpdateRuntimeFieldOptions, opts ...RequestOption) (*RuntimeFieldResult, *Response, error) {
+	return s.putRuntimeField(ctx, http.MethodPut, viewID, name, rf, opt, opts)
 }
 
-func (s *DataViewsService) putRuntimeField(ctx context.Context, method, viewID, name string, rf *RuntimeField, opts []RequestOption) (*RuntimeFieldResult, *Response, error) {
+func (s *DataViewsService) putRuntimeField(ctx context.Context, method, viewID, name string, rf *RuntimeField, query any, opts []RequestOption) (*RuntimeFieldResult, *Response, error) {
 	if err := requireID("data view ID", viewID); err != nil {
 		return nil, nil, err
 	}
@@ -136,7 +151,12 @@ func (s *DataViewsService) putRuntimeField(ctx context.Context, method, viewID, 
 	if rf == nil || rf.Type == "" {
 		return nil, nil, errors.New("kibana: runtime field must have a Type")
 	}
-	return s.runtimeField(ctx, method, pathf("/api/data_views/data_view/%s/runtime_field", viewID), &runtimeFieldRequest{Name: name, RuntimeField: rf}, opts)
+	return s.runtimeField(ctx, method, pathf("/api/data_views/data_view/%s/runtime_field", viewID), &runtimeFieldRequest{Name: name, RuntimeField: rf}, query, opts)
+}
+
+// GetRuntimeFieldOptions are the options of [DataViewsService.GetRuntimeField].
+type GetRuntimeFieldOptions struct {
+	_ [0]func()
 }
 
 // GetRuntimeField returns a runtime field of a data view of the client's
@@ -146,12 +166,17 @@ func (s *DataViewsService) putRuntimeField(ctx context.Context, method, viewID, 
 // Kibana API: GET /api/data_views/data_view/{viewId}/runtime_field/{fieldName}
 //
 // Kibana API docs: https://www.elastic.co/docs/api/doc/kibana/operation/operation-getruntimefielddefault
-func (s *DataViewsService) GetRuntimeField(ctx context.Context, viewID, name string, opts ...RequestOption) (*RuntimeFieldResult, *Response, error) {
+func (s *DataViewsService) GetRuntimeField(ctx context.Context, viewID, name string, opt *GetRuntimeFieldOptions, opts ...RequestOption) (*RuntimeFieldResult, *Response, error) {
 	path, err := runtimeFieldPath(viewID, name)
 	if err != nil {
 		return nil, nil, err
 	}
-	return s.runtimeField(ctx, http.MethodGet, path, nil, opts)
+	return s.runtimeField(ctx, http.MethodGet, path, nil, opt, opts)
+}
+
+// UpdateRuntimeFieldOptions are the options of [DataViewsService.UpdateRuntimeField].
+type UpdateRuntimeFieldOptions struct {
+	_ [0]func()
 }
 
 // UpdateRuntimeField changes a runtime field of a data view of the client's
@@ -161,7 +186,7 @@ func (s *DataViewsService) GetRuntimeField(ctx context.Context, viewID, name str
 // Kibana API: POST /api/data_views/data_view/{viewId}/runtime_field/{fieldName}
 //
 // Kibana API docs: https://www.elastic.co/docs/api/doc/kibana/operation/operation-updateruntimefielddefault
-func (s *DataViewsService) UpdateRuntimeField(ctx context.Context, viewID, name string, rf *RuntimeField, opts ...RequestOption) (*RuntimeFieldResult, *Response, error) {
+func (s *DataViewsService) UpdateRuntimeField(ctx context.Context, viewID, name string, rf *RuntimeField, opt *UpdateRuntimeFieldOptions, opts ...RequestOption) (*RuntimeFieldResult, *Response, error) {
 	path, err := runtimeFieldPath(viewID, name)
 	if err != nil {
 		return nil, nil, err
@@ -169,7 +194,12 @@ func (s *DataViewsService) UpdateRuntimeField(ctx context.Context, viewID, name 
 	if rf == nil {
 		return nil, nil, errors.New("kibana: runtime field must not be nil")
 	}
-	return s.runtimeField(ctx, http.MethodPost, path, &runtimeFieldRequest{RuntimeField: rf}, opts)
+	return s.runtimeField(ctx, http.MethodPost, path, &runtimeFieldRequest{RuntimeField: rf}, opt, opts)
+}
+
+// DeleteRuntimeFieldOptions are the options of [DataViewsService.DeleteRuntimeField].
+type DeleteRuntimeFieldOptions struct {
+	_ [0]func()
 }
 
 // DeleteRuntimeField deletes a runtime field of a data view of the client's
@@ -178,12 +208,12 @@ func (s *DataViewsService) UpdateRuntimeField(ctx context.Context, viewID, name 
 // Kibana API: DELETE /api/data_views/data_view/{viewId}/runtime_field/{fieldName}
 //
 // Kibana API docs: https://www.elastic.co/docs/api/doc/kibana/operation/operation-deleteruntimefielddefault
-func (s *DataViewsService) DeleteRuntimeField(ctx context.Context, viewID, name string, opts ...RequestOption) (*Response, error) {
+func (s *DataViewsService) DeleteRuntimeField(ctx context.Context, viewID, name string, opt *DeleteRuntimeFieldOptions, opts ...RequestOption) (*Response, error) {
 	path, err := runtimeFieldPath(viewID, name)
 	if err != nil {
 		return nil, err
 	}
-	return s.client.do(ctx, http.MethodDelete, path, nil, nil, opts)
+	return s.client.do(ctx, http.MethodDelete, path, nil, nil, opt, opts)
 }
 
 // runtimeFieldPath returns the path of a runtime field.
@@ -198,9 +228,9 @@ func runtimeFieldPath(viewID, name string) (string, error) {
 }
 
 // runtimeField sends a request whose response is a [RuntimeFieldResult].
-func (s *DataViewsService) runtimeField(ctx context.Context, method, path string, body any, opts []RequestOption) (*RuntimeFieldResult, *Response, error) {
+func (s *DataViewsService) runtimeField(ctx context.Context, method, path string, body, query any, opts []RequestOption) (*RuntimeFieldResult, *Response, error) {
 	result := new(RuntimeFieldResult)
-	resp, err := s.client.do(ctx, method, path, body, result, opts)
+	resp, err := s.client.do(ctx, method, path, body, result, query, opts)
 	if err != nil {
 		return nil, resp, err
 	}
@@ -210,6 +240,8 @@ func (s *DataViewsService) runtimeField(ctx context.Context, method, path string
 // SwapReferencesRequest is the request of [DataViewsService.SwapReferences]
 // and [DataViewsService.PreviewSwapReferences].
 type SwapReferencesRequest struct {
+	_ [0]func()
+
 	// FromID is the ID of the object the saved objects reference now.
 	// Required.
 	FromID string `json:"fromId"`
@@ -255,6 +287,17 @@ type SwapReferencesDeleteStatus struct {
 	RemainingRefs int `json:"remainingRefs"`
 }
 
+// SwapReferencesOptions are the options of [DataViewsService.SwapReferences].
+type SwapReferencesOptions struct {
+	_ [0]func()
+}
+
+// PreviewSwapReferencesOptions are the options of
+// [DataViewsService.PreviewSwapReferences].
+type PreviewSwapReferencesOptions struct {
+	_ [0]func()
+}
+
 // SwapReferences changes the references of the saved objects of the
 // client's space from one data view, or other object, to another, e.g.
 // to point the visualizations of a data view to its replacement.
@@ -262,8 +305,8 @@ type SwapReferencesDeleteStatus struct {
 // Kibana API: POST /api/data_views/swap_references
 //
 // Kibana API docs: https://www.elastic.co/docs/api/doc/kibana/operation/operation-swapdataviewsdefault
-func (s *DataViewsService) SwapReferences(ctx context.Context, req *SwapReferencesRequest, opts ...RequestOption) (*SwapReferencesResult, *Response, error) {
-	return s.swapReferences(ctx, "/api/data_views/swap_references", req, opts)
+func (s *DataViewsService) SwapReferences(ctx context.Context, req *SwapReferencesRequest, opt *SwapReferencesOptions, opts ...RequestOption) (*SwapReferencesResult, *Response, error) {
+	return s.swapReferences(ctx, "/api/data_views/swap_references", req, opt, opts)
 }
 
 // PreviewSwapReferences returns the saved objects whose references
@@ -273,11 +316,11 @@ func (s *DataViewsService) SwapReferences(ctx context.Context, req *SwapReferenc
 // Kibana API: POST /api/data_views/swap_references/_preview
 //
 // Kibana API docs: https://www.elastic.co/docs/api/doc/kibana/operation/operation-previewswapdataviewsdefault
-func (s *DataViewsService) PreviewSwapReferences(ctx context.Context, req *SwapReferencesRequest, opts ...RequestOption) (*SwapReferencesResult, *Response, error) {
-	return s.swapReferences(ctx, "/api/data_views/swap_references/_preview", req, opts)
+func (s *DataViewsService) PreviewSwapReferences(ctx context.Context, req *SwapReferencesRequest, opt *PreviewSwapReferencesOptions, opts ...RequestOption) (*SwapReferencesResult, *Response, error) {
+	return s.swapReferences(ctx, "/api/data_views/swap_references/_preview", req, opt, opts)
 }
 
-func (s *DataViewsService) swapReferences(ctx context.Context, path string, req *SwapReferencesRequest, opts []RequestOption) (*SwapReferencesResult, *Response, error) {
+func (s *DataViewsService) swapReferences(ctx context.Context, path string, req *SwapReferencesRequest, query any, opts []RequestOption) (*SwapReferencesResult, *Response, error) {
 	if req == nil {
 		return nil, nil, errors.New("kibana: request must not be nil")
 	}
@@ -293,7 +336,7 @@ func (s *DataViewsService) swapReferences(ctx context.Context, path string, req 
 		}
 	}
 	result := new(SwapReferencesResult)
-	resp, err := s.client.do(ctx, http.MethodPost, path, req, result, opts)
+	resp, err := s.client.do(ctx, http.MethodPost, path, req, result, query, opts)
 	if err != nil {
 		return nil, resp, err
 	}

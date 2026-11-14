@@ -6,6 +6,15 @@ BREAKING CHANGES:
 * `ErrorResponse` no longer has a `Response` field; it has `Method`, `URL` (without credentials) and `Header` instead. The format of `Error()` is not part of the API ([#43](https://github.com/ottramst/go-kibana/issues/43))
 * `CheckResponse` is no longer exported; `Do` returns the `*ErrorResponse` ([#43](https://github.com/ottramst/go-kibana/issues/43))
 * status: `Get` takes `*GetStatusOptions`, and returns no status with the error on a 503: use `StatusFromError`. `Status.Status` (`StatusInfo`) is now `Status.Health` (`StatusHealth`), and the `Status*` level constants are `StatusLevel*` ([#43](https://github.com/ottramst/go-kibana/issues/43))
+* Every method takes a nil-able options struct before the request options, so that options can be added without breaking callers: pass `nil`. The new options types are named after the method, e.g. `GetSpaceOptions`, `DeleteRoleOptions` or `ListDataViewsOptions`; iterators share the options of their single-page method ([#43](https://github.com/ottramst/go-kibana/issues/43))
+* Options and `…Request` structs have an unexported field: they can no longer be compared with `==`, and literals must name their fields ([#43](https://github.com/ottramst/go-kibana/issues/43))
+* tags: `Update` is now `CreateOrUpdate`, since it creates missing tags; `TagList` is `ListTagsResult` ([#43](https://github.com/ottramst/go-kibana/issues/43))
+* roles: `BulkRolesResult` is `BulkCreateOrUpdateRolesResult`, `RoleElasticsearch` is `ElasticsearchPrivileges`, and `SortAsc`/`SortDesc` are `SortDirectionAsc`/`SortDirectionDesc` ([#43](https://github.com/ottramst/go-kibana/issues/43))
+* spaces: the deprecated `Copy*` aliases of the import result types are removed; `CopyRetry` is `CopySavedObjectsRetry`, and `ShareableReference.InboundReferences` holds `SavedObjectReference`s (`InboundReference` is removed) ([#43](https://github.com/ottramst/go-kibana/issues/43))
+* saved objects: the `ImportError*` constants are `ImportErrorType*`, the `Resolve*` outcome constants are `ResolveOutcome*`, `BulkGetSavedObjectsRequest` is `BulkGetSavedObjectsItem`, and `BulkDelete` takes `BulkDeleteSavedObjectsOptions` ([#43](https://github.com/ottramst/go-kibana/issues/43))
+* Task Manager: the health constants are `TaskManagerHealthStatus*` ([#43](https://github.com/ottramst/go-kibana/issues/43))
+* short URLs: `LegacyShortURLLocator` is `LegacyShortURLLocatorID` ([#43](https://github.com/ottramst/go-kibana/issues/43))
+* `RuntimeField.Type`, `ImportWarning.Type`, `SubFeaturePrivilegeGroup.GroupType` and `ResolvedSavedObject.AliasPurpose` have named string types (`RuntimeFieldType`, `ImportWarningType`, `SubFeaturePrivilegeGroupType`, `ResolveAliasPurpose`) with constants ([#43](https://github.com/ottramst/go-kibana/issues/43))
 
 FEATURES:
 

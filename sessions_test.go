@@ -20,7 +20,7 @@ func TestUserSessionsService_Invalidate(t *testing.T) {
 	got, _, err := client.UserSessions.Invalidate(context.Background(), &kibana.InvalidateSessionsRequest{
 		Match: kibana.SessionMatchQuery,
 		Query: &kibana.SessionQuery{Provider: kibana.SessionProvider{Type: "basic"}, Username: "probe-nobody"},
-	})
+	}, nil)
 	if err != nil {
 		t.Fatalf("Invalidate() error = %v", err)
 	}
@@ -36,7 +36,7 @@ func TestUserSessionsService_Invalidate_all(t *testing.T) {
 		writeJSON(t, w, http.StatusOK, []byte(`{"total":3}`))
 	})
 	// The service is available on scoped clients too.
-	got, _, err := client.InSpace("x").UserSessions.Invalidate(context.Background(), &kibana.InvalidateSessionsRequest{Match: kibana.SessionMatchAll})
+	got, _, err := client.InSpace("x").UserSessions.Invalidate(context.Background(), &kibana.InvalidateSessionsRequest{Match: kibana.SessionMatchAll}, nil)
 	if err != nil || got.Total != 3 {
 		t.Errorf("Invalidate(all) = %+v, %v; want total 3", got, err)
 	}
@@ -47,7 +47,7 @@ func TestUserSessionsService_Invalidate_forbidden(t *testing.T) {
 	mux.HandleFunc("POST /api/security/session/_invalidate", func(w http.ResponseWriter, _ *http.Request) {
 		writeJSON(t, w, http.StatusForbidden, []byte(`{"statusCode":403,"error":"Forbidden","message":"Forbidden"}`))
 	})
-	_, _, err := client.UserSessions.Invalidate(context.Background(), &kibana.InvalidateSessionsRequest{Match: kibana.SessionMatchAll})
+	_, _, err := client.UserSessions.Invalidate(context.Background(), &kibana.InvalidateSessionsRequest{Match: kibana.SessionMatchAll}, nil)
 	if !errors.Is(err, kibana.ErrForbidden) {
 		t.Errorf("Invalidate() error = %v, want ErrForbidden", err)
 	}
@@ -65,7 +65,7 @@ func TestUserSessionsService_Invalidate_invalidArguments(t *testing.T) {
 		"query without type":  {Match: kibana.SessionMatchQuery, Query: &kibana.SessionQuery{Username: "u"}},
 	}
 	for name, req := range cases {
-		if _, _, err := client.UserSessions.Invalidate(context.Background(), req); err == nil {
+		if _, _, err := client.UserSessions.Invalidate(context.Background(), req, nil); err == nil {
 			t.Errorf("Invalidate(%s): error = nil, want error", name)
 		}
 	}

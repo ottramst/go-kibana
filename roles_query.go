@@ -11,13 +11,15 @@ type SortDirection string
 
 // Sort directions.
 const (
-	SortAsc  SortDirection = "asc"
-	SortDesc SortDirection = "desc"
+	SortDirectionAsc  SortDirection = "asc"
+	SortDirectionDesc SortDirection = "desc"
 )
 
 // QueryRolesRequest is the request of [RolesService.Query] and
 // [RolesService.QueryAll].
 type QueryRolesRequest struct {
+	_ [0]func()
+
 	// Query is a free-text query on the role name and description.
 	Query string `json:"query,omitempty"`
 
@@ -59,6 +61,11 @@ type QueryRolesResult struct {
 	Total int `json:"total"`
 }
 
+// QueryRolesOptions are the options of [RolesService.Query] and [RolesService.QueryAll].
+type QueryRolesOptions struct {
+	_ [0]func()
+}
+
 // Query returns a page of the roles that match the request. A nil request
 // returns the first page of all roles except the built-in ones. Use
 // [RolesService.QueryAll] to iterate over all pages.
@@ -66,12 +73,12 @@ type QueryRolesResult struct {
 // Kibana API: POST /api/security/role/_query
 //
 // Kibana API docs: https://www.elastic.co/docs/api/doc/kibana/operation/operation-post-security-role-query
-func (s *RolesService) Query(ctx context.Context, req *QueryRolesRequest, opts ...RequestOption) (*QueryRolesResult, *Response, error) {
+func (s *RolesService) Query(ctx context.Context, req *QueryRolesRequest, opt *QueryRolesOptions, opts ...RequestOption) (*QueryRolesResult, *Response, error) {
 	if req == nil {
 		req = &QueryRolesRequest{}
 	}
 	result := new(QueryRolesResult)
-	resp, err := s.client.do(ctx, http.MethodPost, "/api/security/role/_query", req, result, opts)
+	resp, err := s.client.do(ctx, http.MethodPost, "/api/security/role/_query", req, result, opt, opts)
 	if err != nil {
 		return nil, resp, err
 	}
@@ -86,13 +93,13 @@ func (s *RolesService) Query(ctx context.Context, req *QueryRolesRequest, opts .
 // plus the page size exceeds 10,000, the iterator yields an [ErrBadRequest]
 // error.
 //
-//	for role, err := range client.Roles.QueryAll(ctx, nil) {
+//	for role, err := range client.Roles.QueryAll(ctx, nil, nil) {
 //		if err != nil {
 //			return err
 //		}
 //		fmt.Println(role.Name)
 //	}
-func (s *RolesService) QueryAll(ctx context.Context, req *QueryRolesRequest, opts ...RequestOption) iter.Seq2[*Role, error] {
+func (s *RolesService) QueryAll(ctx context.Context, req *QueryRolesRequest, opt *QueryRolesOptions, opts ...RequestOption) iter.Seq2[*Role, error] {
 	// Copy the request, including what it points to, so that changes by
 	// the caller don't affect later pages.
 	base := QueryRolesRequest{}
@@ -100,7 +107,7 @@ func (s *RolesService) QueryAll(ctx context.Context, req *QueryRolesRequest, opt
 		base = *req
 	}
 	if base.Sort == nil {
-		base.Sort = &RoleSort{Field: "name", Direction: SortAsc}
+		base.Sort = &RoleSort{Field: "name", Direction: SortDirectionAsc}
 	} else {
 		sort := *base.Sort
 		base.Sort = &sort
@@ -112,7 +119,7 @@ func (s *RolesService) QueryAll(ctx context.Context, req *QueryRolesRequest, opt
 	return paginate(ctx, base.From, base.Size, func(ctx context.Context, from, size int) ([]*Role, int, error) {
 		page := base
 		page.From, page.Size = from, size
-		result, _, err := s.Query(ctx, &page, opts...)
+		result, _, err := s.Query(ctx, &page, opt, opts...)
 		if err != nil {
 			return nil, 0, err
 		}

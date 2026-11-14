@@ -18,11 +18,11 @@ func TestTaskManagerService_Health(t *testing.T) {
 		writeJSON(t, w, http.StatusOK, fixture(t, "taskmanager/health.json"))
 	})
 
-	got, _, err := client.TaskManager.Health(context.Background())
+	got, _, err := client.TaskManager.Health(context.Background(), nil)
 	if err != nil {
 		t.Fatalf("Health() error = %v", err)
 	}
-	if got.ID != "bbd371be-a630-404f-9152-945ef42c7c65" || got.Status != kibana.TaskManagerHealthOK {
+	if got.ID != "bbd371be-a630-404f-9152-945ef42c7c65" || got.Status != kibana.TaskManagerHealthStatusOK {
 		t.Errorf("Health() = %s, %s; want the instance ID and OK", got.ID, got.Status)
 	}
 	if want := time.Date(2026, 11, 12, 16, 43, 27, 296e6, time.UTC); !got.Timestamp.Equal(want) {
@@ -33,7 +33,7 @@ func TestTaskManagerService_Health(t *testing.T) {
 	}
 	for _, section := range []string{"configuration", "runtime", "workload", "capacity_estimation"} {
 		stat, ok := got.Stats[section]
-		if !ok || stat.Status != kibana.TaskManagerHealthOK || stat.Timestamp.IsZero() || len(stat.Value) == 0 {
+		if !ok || stat.Status != kibana.TaskManagerHealthStatusOK || stat.Timestamp.IsZero() || len(stat.Value) == 0 {
 			t.Errorf("Stats[%s] = %+v, want OK with a timestamp and value", section, stat)
 		}
 	}
@@ -55,7 +55,7 @@ func TestTaskManagerService_Health_spaceAndErrors(t *testing.T) {
 	mux.HandleFunc("GET /s/x/api/task_manager/_health", func(w http.ResponseWriter, _ *http.Request) {
 		writeJSON(t, w, http.StatusUnauthorized, []byte(`{"statusCode":401,"error":"Unauthorized","message":"Unauthorized"}`))
 	})
-	got, _, err := client.InSpace("x").TaskManager.Health(context.Background())
+	got, _, err := client.InSpace("x").TaskManager.Health(context.Background(), nil)
 	if !errors.Is(err, kibana.ErrUnauthorized) || got != nil {
 		t.Errorf("Health() = %v, %v; want nil, ErrUnauthorized", got, err)
 	}
@@ -66,11 +66,11 @@ func TestTaskManagerService_Health_reason(t *testing.T) {
 	mux.HandleFunc("GET /api/task_manager/_health", func(w http.ResponseWriter, _ *http.Request) {
 		writeJSON(t, w, http.StatusOK, []byte(`{"id":"k","timestamp":"2026-11-12T16:43:27.296Z","status":"error","reason":"setting [workload] is error","last_update":"2026-11-12T16:43:25.224Z","stats":{}}`))
 	})
-	got, _, err := client.TaskManager.Health(context.Background())
+	got, _, err := client.TaskManager.Health(context.Background(), nil)
 	if err != nil {
 		t.Fatalf("Health() error = %v", err)
 	}
-	if got.Status != kibana.TaskManagerHealthError || got.Reason != "setting [workload] is error" {
+	if got.Status != kibana.TaskManagerHealthStatusError || got.Reason != "setting [workload] is error" {
 		t.Errorf("Health() = %s (%q), want error with the reason", got.Status, got.Reason)
 	}
 }
