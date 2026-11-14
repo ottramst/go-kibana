@@ -183,6 +183,7 @@ type GetRoleOptions struct {
 // List returns all roles.
 //
 // Kibana API: GET /api/security/role
+//
 // Kibana API docs: https://www.elastic.co/docs/api/doc/kibana/operation/operation-get-security-role
 func (s *RolesService) List(ctx context.Context, opt *ListRolesOptions, opts ...RequestOption) ([]*Role, *Response, error) {
 	path, err := addQuery("/api/security/role", opt)
@@ -200,6 +201,7 @@ func (s *RolesService) List(ctx context.Context, opt *ListRolesOptions, opts ...
 // Get returns the role with the given name.
 //
 // Kibana API: GET /api/security/role/{name}
+//
 // Kibana API docs: https://www.elastic.co/docs/api/doc/kibana/operation/operation-get-security-role-name
 func (s *RolesService) Get(ctx context.Context, name string, opt *GetRoleOptions, opts ...RequestOption) (*Role, *Response, error) {
 	if err := requireID("role name", name); err != nil {
@@ -229,6 +231,7 @@ type CreateOrUpdateRoleOptions struct {
 // must list at least one space.
 //
 // Kibana API: PUT /api/security/role/{name}
+//
 // Kibana API docs: https://www.elastic.co/docs/api/doc/kibana/operation/operation-put-security-role-name
 func (s *RolesService) CreateOrUpdate(ctx context.Context, name string, role *Role, opt *CreateOrUpdateRoleOptions, opts ...RequestOption) (*Response, error) {
 	if err := requireID("role name", name); err != nil {
@@ -252,6 +255,7 @@ func (s *RolesService) CreateOrUpdate(ctx context.Context, name string, role *Ro
 // Delete deletes the role with the given name.
 //
 // Kibana API: DELETE /api/security/role/{name}
+//
 // Kibana API docs: https://www.elastic.co/docs/api/doc/kibana/operation/operation-delete-security-role-name
 func (s *RolesService) Delete(ctx context.Context, name string, opts ...RequestOption) (*Response, error) {
 	if err := requireID("role name", name); err != nil {

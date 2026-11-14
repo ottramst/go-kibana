@@ -47,6 +47,7 @@ type RotateKeyResult struct {
 // another rotation is running. The endpoint is in technical preview.
 //
 // Kibana API: POST /api/encrypted_saved_objects/_rotate_key
+//
 // Kibana API docs: https://www.elastic.co/docs/api/doc/kibana/operation/operation-rotateencryptionkey
 func (s *EncryptedSavedObjectsService) RotateKey(ctx context.Context, opt *RotateKeyOptions, opts ...RequestOption) (*RotateKeyResult, *Response, error) {
 	path, err := addQuery("/api/encrypted_saved_objects/_rotate_key", opt)

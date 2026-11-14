@@ -62,21 +62,33 @@ The stack runs with security enabled and a trial license, on ports bound to 127.
   - `requireID(name, v)` rejects empty, `.` and `..` path parameters before sending.
 - `ErrorResponse{StatusCode, StatusText (the "error" field), Message, Attributes, Body}`. `Is()` maps 400/401/403/404/409/429 to `ErrBadRequest`/`ErrUnauthorized`/`ErrForbidden`/`ErrNotFound`/`ErrConflict`/`ErrTooManyRequests`. Fields of unexpected types are skipped. Bodies that are not a JSON object, such as proxy pages, become `Message`, cut to 512 bytes; `Body` keeps the whole body (up to 1 MiB).
 
-**Service conventions** (`spaces.go` is the template):
-- Method names: `List`, `Get`, `Create`, `Update`, `Delete`. Other operations are named after the endpoint, e.g. `CopySavedObjects` or `Query`.
-- Signatures: `(ctx, ids..., body/options, ...RequestOption) (*T, *Response, error)`, or `(*Response, error)` when Kibana returns no body.
-- Every method's doc comment ends with two lines that `tools/coverage` parses:
+**Service conventions** (`spaces.go` is the template). These are the v1 API rules; changes that break them need a new major version after v1.0.0.
+- **Names:**
+  - Methods: `List`, `Get`, `Create`, `Update`, `Delete`. A PUT that creates or replaces (an upsert) is `CreateOrUpdate`. Other operations are named after the endpoint, e.g. `CopySavedObjects` or `Query`.
+  - Iterators are the single-page method plus `All` (`QueryAll`, `ListAll`, `FindAll`). They return `iter.Seq2[*T, error]` and are built on the internal paginators in `pagination.go`: lazy, restartable, yield an error once and stop, and stop on an empty page.
+  - Options types are `<Method><Noun>Options` (`ListSpacesOptions`, `GetRoleOptions`); an iterator shares the options of its single-page method. Body types are `…Request`, items of JSON-array bodies are `…Item`, and results are `<Verb><Noun>Result`. Types shared by several methods are named after the main one (`ImportSavedObjectsResult`, `RuntimeFieldResult`).
+  - Constants are `<TypeName><MeaningfulName>`, e.g. `SessionMatchAll` or `TaskManagerHealthStatusWarning` for `"warn"`.
+- **Signatures:** `(ctx, ids..., [stream], [domain object | *XRequest], opt *XOptions, opts ...RequestOption)`, returning `(*T, *Response, error)`, or `(*Response, error)` when Kibana returns no body. No method returns a result together with a non-nil error.
+  - Every method has a nil-able `opt`, even if the options struct is still empty, so that query parameters can be added later without breaking callers.
+  - Options hold query parameters (`url:"..."`), and flags that Kibana takes in the body next to the domain object (`url:"-"`, e.g. `CreateDataViewOptions.Override`). `…Request` structs hold only body fields.
+  - A JSON object body is passed as a domain object (`*Space`, `*Role`) or a `…Request` struct, never as a bare slice or map. JSON-array bodies (the saved objects bulk endpoints) take slices.
+  - Every Options and `…Request` struct has an unexported `_ [0]func()` field, which makes it non-comparable, so that adding a slice or map field later is not a breaking change.
+- **Results:** envelopes around a resource or collection are unwrapped (`{"data_view": {...}}` returns `*DataView`). Scalar results and results with metadata are a `*<Verb><Noun>Result`. Returned collections are `[]*T` (or a `map[string]*T` keyed by Kibana); collections inside structs hold values. Exception: `BulkRoleError` has a value receiver, so the values of `map[string]BulkRoleError` are errors.
+- **Annotations:** every method's doc comment ends with lines that `tools/coverage` parses, as separate paragraphs, so that pkg.go.dev doesn't join them:
   ```go
   // Kibana API: GET /api/spaces/space/{id}
+  //
   // Kibana API docs: https://www.elastic.co/docs/api/doc/kibana/operation/operation-<operationId lowercased>
   ```
-  The annotation path must match the spec exactly, including the `{param}` names.
-- Prefer one type for reads and writes, so read → modify → write works, and strip read-only fields in an unexported conversion: `Space.writable()`, `newRolePayload()`. Never mutate the caller's value.
-- Fields use plain values. Use `omitempty` only where Kibana rejects the empty value (e.g. `Space.Color`) or the field must not be sent; otherwise send it, so that `""` clears it: Kibana's PUT endpoints keep fields that are left out (see the Spaces quirks). Use pointers only when the zero value means something different from "not set". There are no `String()`/`Bool()` helpers; Go 1.26 has `new(expr)`.
+  The annotation path must match the spec exactly, including the `{param}` names. A method that calls several endpoints has one `Kibana API:` paragraph each. The docs link keeps the spec's operationId as is, including typos (`createdataviewdefaultw`).
+- **Types:**
+  - Prefer one type for reads and writes, so read → modify → write works, and strip read-only fields in an unexported conversion: `Space.writable()`, `newRolePayload()`. Never mutate the caller's value.
+  - Fields use plain values. Use `omitempty` only where Kibana rejects the empty value (e.g. `Space.Color`) or the field must not be sent; otherwise send it, so that `""` clears it: Kibana's PUT endpoints keep fields that are left out (see the Spaces quirks). Use pointers only when the zero value means something different from "not set". There are no `String()`/`Bool()` helpers; Go 1.26 has `new(expr)`.
+  - Free-form JSON is `json.RawMessage` when it round-trips or callers decode it into their own types (`SavedObject.Attributes`, `DataViewFieldFormat.Params`), and `map[string]any` only for small values that are only written (`CreateShortURLRequest.Params`).
+  - Enum-like strings have a named string type with constants. The constants are not exhaustive: Kibana may send other values, which still decode.
+  - `SavedObjectRef{Type, ID}` is embedded in result types that identify an object (e.g. `ImportSuccess`), not in input types. It must not gain fields or methods, which would change every type that embeds it.
 - Reject inputs that Kibana would silently widen, such as a role privilege without spaces.
-- Options structs (`ListSpacesOptions`, `CreateOrUpdateRoleOptions`) hold query parameters, are pointers, and may be nil. They may also hold flags that Kibana takes in the body next to the domain object, tagged `url:"-"` (`CreateSavedObjectOptions.InitialNamespaces`, `CreateDataViewOptions.Override`). Request bodies that are not a domain object (such as `Space` or `Role`) use a `…Request` struct (e.g. `CopySavedObjectsRequest`).
-- Paginated endpoints get an iterator variant returning `iter.Seq2[*T, error]` (e.g. `RolesService.QueryAll`) next to the single-page method, built on the internal offset paginator `paginate` (`pagination.go`): lazy, restartable, yields an error once and stops, and stops on an empty page.
-- Deprecated endpoints (saved objects CRUD/bulk/find) get a `// Deprecated:` paragraph naming the replacement.
+- Deprecated endpoints (saved objects CRUD/bulk/find) get a `// Deprecated:` paragraph naming the replacement, or saying that there is none.
 
 **Kibana API quirks** (verified against 8.19.25 and 9.5.6):
 - Kibana rejects state-changing requests without `kbn-xsrf`. Since 9.0, internal APIs (`/internal/...`) also need `x-elastic-internal-origin`. Never call internal APIs. Don't send `elastic-api-version` by default; stateful Kibana defaults to the oldest version.

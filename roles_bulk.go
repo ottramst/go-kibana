@@ -51,6 +51,7 @@ func (e BulkRoleError) Error() string {
 // succeeds. Kibana does not validate Kibana feature names.
 //
 // Kibana API: POST /api/security/roles
+//
 // Kibana API docs: https://www.elastic.co/docs/api/doc/kibana/operation/operation-post-security-roles
 func (s *RolesService) BulkCreateOrUpdate(ctx context.Context, roles map[string]*Role, opts ...RequestOption) (*BulkRolesResult, *Response, error) {
 	if len(roles) == 0 {

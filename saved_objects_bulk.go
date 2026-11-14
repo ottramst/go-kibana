@@ -28,6 +28,7 @@ type BulkCreateSavedObjectsOptions struct {
 // [SavedObjectsService.Import].
 //
 // Kibana API: POST /api/saved_objects/_bulk_create
+//
 // Kibana API docs: https://www.elastic.co/docs/api/doc/kibana/operation/operation-post-saved-objects-bulk-create
 func (s *SavedObjectsService) BulkCreate(ctx context.Context, objs []*SavedObject, opt *BulkCreateSavedObjectsOptions, opts ...RequestOption) ([]*SavedObject, *Response, error) {
 	body, err := bulkWrites(objs, false)
@@ -65,6 +66,7 @@ type BulkGetSavedObjectsRequest struct {
 // [SavedObjectsService.Export].
 //
 // Kibana API: POST /api/saved_objects/_bulk_get
+//
 // Kibana API docs: https://www.elastic.co/docs/api/doc/kibana/operation/operation-post-saved-objects-bulk-get
 func (s *SavedObjectsService) BulkGet(ctx context.Context, reqs []BulkGetSavedObjectsRequest, opts ...RequestOption) ([]*SavedObject, *Response, error) {
 	if len(reqs) == 0 {
@@ -94,6 +96,7 @@ func (s *SavedObjectsService) BulkGet(ctx context.Context, reqs []BulkGetSavedOb
 // [SavedObjectsService.Import].
 //
 // Kibana API: PUT /api/saved_objects/_bulk_update
+//
 // Kibana API docs: https://www.elastic.co/docs/api/doc/kibana/operation/operation-put-saved-objects-bulk-update
 func (s *SavedObjectsService) BulkUpdate(ctx context.Context, objs []*SavedObject, opts ...RequestOption) ([]*SavedObject, *Response, error) {
 	body, err := bulkWrites(objs, true)
@@ -159,6 +162,7 @@ type BulkDeleteStatus struct {
 // API of the object type where there is one, such as data views.
 //
 // Kibana API: POST /api/saved_objects/_bulk_delete
+//
 // Kibana API docs: https://www.elastic.co/docs/api/doc/kibana/operation/operation-post-saved-objects-bulk-delete
 func (s *SavedObjectsService) BulkDelete(ctx context.Context, refs []SavedObjectRef, opt *DeleteSavedObjectOptions, opts ...RequestOption) ([]*BulkDeleteStatus, *Response, error) {
 	if err := validateRefs(refs); err != nil {
@@ -221,6 +225,7 @@ type ResolvedSavedObject struct {
 // no replacement.
 //
 // Kibana API: POST /api/saved_objects/_bulk_resolve
+//
 // Kibana API docs: https://www.elastic.co/docs/api/doc/kibana/operation/operation-post-saved-objects-bulk-resolve
 func (s *SavedObjectsService) BulkResolve(ctx context.Context, refs []SavedObjectRef, opts ...RequestOption) ([]*ResolvedSavedObject, *Response, error) {
 	if err := validateRefs(refs); err != nil {

@@ -43,6 +43,7 @@ type InboundReference struct {
 // client's space; use [Client.InSpace] for another space.
 //
 // Kibana API: POST /api/spaces/_get_shareable_references
+//
 // Kibana API docs: https://www.elastic.co/docs/api/doc/kibana/operation/operation-post-spaces-get-shareable-references
 func (s *SpacesService) GetShareableReferences(ctx context.Context, objects []SavedObjectRef, opts ...RequestOption) ([]*ShareableReference, *Response, error) {
 	if err := validateRefs(objects); err != nil {
@@ -97,6 +98,7 @@ type ObjectSpaces struct {
 // [ObjectSpaces.Error]; the call itself still succeeds.
 //
 // Kibana API: POST /api/spaces/_update_objects_spaces
+//
 // Kibana API docs: https://www.elastic.co/docs/api/doc/kibana/operation/operation-post-spaces-update-objects-spaces
 func (s *SpacesService) UpdateObjectsSpaces(ctx context.Context, req *UpdateObjectsSpacesRequest, opts ...RequestOption) ([]*ObjectSpaces, *Response, error) {
 	if req == nil {

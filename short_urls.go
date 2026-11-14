@@ -129,6 +129,7 @@ type CreateShortURLRequest struct {
 // Create creates a short URL in the client's space.
 //
 // Kibana API: POST /api/short_url
+//
 // Kibana API docs: https://www.elastic.co/docs/api/doc/kibana/operation/operation-post-url
 func (s *ShortURLsService) Create(ctx context.Context, req *CreateShortURLRequest, opts ...RequestOption) (*ShortURL, *Response, error) {
 	if req == nil {
@@ -154,6 +155,7 @@ func (s *ShortURLsService) Create(ctx context.Context, req *CreateShortURLReques
 // does not change the access fields.
 //
 // Kibana API: GET /api/short_url/{id}
+//
 // Kibana API docs: https://www.elastic.co/docs/api/doc/kibana/operation/operation-get-url
 func (s *ShortURLsService) Get(ctx context.Context, id string, opts ...RequestOption) (*ShortURL, *Response, error) {
 	if err := requireID("short URL ID", id); err != nil {
@@ -175,6 +177,7 @@ func (s *ShortURLsService) Get(ctx context.Context, id string, opts ...RequestOp
 // was before.
 //
 // Kibana API: GET /api/short_url/_slug/{slug}
+//
 // Kibana API docs: https://www.elastic.co/docs/api/doc/kibana/operation/operation-resolve-url
 func (s *ShortURLsService) Resolve(ctx context.Context, slug string, opts ...RequestOption) (*ShortURL, *Response, error) {
 	if err := requireID("short URL slug", slug); err != nil {
@@ -191,6 +194,7 @@ func (s *ShortURLsService) Resolve(ctx context.Context, slug string, opts ...Req
 // Delete deletes a short URL by its ID.
 //
 // Kibana API: DELETE /api/short_url/{id}
+//
 // Kibana API docs: https://www.elastic.co/docs/api/doc/kibana/operation/operation-delete-url
 func (s *ShortURLsService) Delete(ctx context.Context, id string, opts ...RequestOption) (*Response, error) {
 	if err := requireID("short URL ID", id); err != nil {

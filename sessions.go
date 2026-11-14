@@ -66,6 +66,7 @@ type InvalidateSessionsResult struct {
 // the superuser role and fails with [ErrForbidden] otherwise.
 //
 // Kibana API: POST /api/security/session/_invalidate
+//
 // Kibana API docs: https://www.elastic.co/docs/api/doc/kibana/operation/operation-post-security-session-invalidate
 func (s *UserSessionsService) Invalidate(ctx context.Context, req *InvalidateSessionsRequest, opts ...RequestOption) (*InvalidateSessionsResult, *Response, error) {
 	if req == nil {

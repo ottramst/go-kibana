@@ -144,6 +144,7 @@ func validateCopyModes(overwrite, compatibilityMode bool, createNewCopies *bool)
 // The call fails with [ErrNotFound] if one of the objects does not exist.
 //
 // Kibana API: POST /api/spaces/_copy_saved_objects
+//
 // Kibana API docs: https://www.elastic.co/docs/api/doc/kibana/operation/operation-post-spaces-copy-saved-objects
 func (s *SpacesService) CopySavedObjects(ctx context.Context, req *CopySavedObjectsRequest, opts ...RequestOption) (map[string]*ImportSavedObjectsResult, *Response, error) {
 	if req == nil {
@@ -179,6 +180,7 @@ func (s *SpacesService) CopySavedObjects(ctx context.Context, req *CopySavedObje
 // The result has the same form as the result of CopySavedObjects.
 //
 // Kibana API: POST /api/spaces/_resolve_copy_saved_objects_errors
+//
 // Kibana API docs: https://www.elastic.co/docs/api/doc/kibana/operation/operation-post-spaces-resolve-copy-saved-objects-errors
 func (s *SpacesService) ResolveCopySavedObjectsErrors(ctx context.Context, req *ResolveCopySavedObjectsErrorsRequest, opts ...RequestOption) (map[string]*ImportSavedObjectsResult, *Response, error) {
 	if req == nil {

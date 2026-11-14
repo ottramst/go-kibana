@@ -47,6 +47,37 @@ func writeRepo(t *testing.T, goSrc string) string {
 	return root
 }
 
+func TestRun_separatedAnnotations(t *testing.T) {
+	// Blank comment lines between the annotations, so that godoc renders
+	// them as separate paragraphs, and two annotations on one method.
+	root := writeRepo(t, `package kibana
+
+// Create creates a thing.
+//
+// Kibana API: POST /api/things
+//
+// Kibana API: PUT /api/things/{id}
+//
+// Kibana API docs: https://example.com
+func (s *ThingsService) Create() {}
+`)
+	if err := run(root, ".cache/specs", []string{"v1"}, "COVERAGE.md"); err != nil {
+		t.Fatalf("run() error = %v", err)
+	}
+	data, err := os.ReadFile(filepath.Join(root, "COVERAGE.md"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, want := range []string{
+		"| POST | `/api/things` | ✅ | `ThingsService.Create` | deprecated |",
+		"| PUT | `/api/things/{id}` | ✅ | `ThingsService.Create` | a \\| b |",
+	} {
+		if !strings.Contains(string(data), want) {
+			t.Errorf("COVERAGE.md does not contain %q:\n%s", want, data)
+		}
+	}
+}
+
 func TestRun(t *testing.T) {
 	root := writeRepo(t, `package kibana
 

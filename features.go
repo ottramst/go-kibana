@@ -137,6 +137,7 @@ type ListFeaturesOptions struct {
 // specification, but Kibana 8.19 serves it with the same shape.
 //
 // Kibana API: GET /api/features
+//
 // Kibana API docs: https://www.elastic.co/docs/api/doc/kibana/operation/operation-get-features
 func (s *FeaturesService) List(ctx context.Context, opt *ListFeaturesOptions, opts ...RequestOption) ([]*Feature, *Response, error) {
 	path, err := addQuery("/api/features", opt)

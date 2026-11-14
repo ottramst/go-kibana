@@ -248,6 +248,7 @@ type CreateDataViewOptions struct {
 // List returns the data views of the client's space.
 //
 // Kibana API: GET /api/data_views
+//
 // Kibana API docs: https://www.elastic.co/docs/api/doc/kibana/operation/operation-getalldataviewsdefault
 func (s *DataViewsService) List(ctx context.Context, opts ...RequestOption) ([]*DataViewSummary, *Response, error) {
 	var result dataViewEnvelope[[]*DataViewSummary]
@@ -261,6 +262,7 @@ func (s *DataViewsService) List(ctx context.Context, opts ...RequestOption) ([]*
 // Get returns a data view of the client's space.
 //
 // Kibana API: GET /api/data_views/data_view/{viewId}
+//
 // Kibana API docs: https://www.elastic.co/docs/api/doc/kibana/operation/operation-getdataviewdefault
 func (s *DataViewsService) Get(ctx context.Context, id string, opts ...RequestOption) (*DataView, *Response, error) {
 	if err := requireID("data view ID", id); err != nil {
@@ -277,6 +279,7 @@ func (s *DataViewsService) Get(ctx context.Context, id string, opts ...RequestOp
 // The first data view of a space becomes its default data view.
 //
 // Kibana API: POST /api/data_views/data_view
+//
 // Kibana API docs: https://www.elastic.co/docs/api/doc/kibana/operation/operation-createdataviewdefaultw
 func (s *DataViewsService) Create(ctx context.Context, dv *DataView, opt *CreateDataViewOptions, opts ...RequestOption) (*DataView, *Response, error) {
 	if dv == nil {
@@ -325,6 +328,7 @@ type UpdateDataViewOptions struct {
 //     Change field attributes with [DataViewsService.UpdateFieldsMetadata].
 //
 // Kibana API: POST /api/data_views/data_view/{viewId}
+//
 // Kibana API docs: https://www.elastic.co/docs/api/doc/kibana/operation/operation-updatedataviewdefault
 func (s *DataViewsService) Update(ctx context.Context, id string, dv *DataView, opt *UpdateDataViewOptions, opts ...RequestOption) (*DataView, *Response, error) {
 	if err := requireID("data view ID", id); err != nil {
@@ -354,6 +358,7 @@ func (s *DataViewsService) Update(ctx context.Context, id string, dv *DataView, 
 // data view is deleted keeps the deleted ID as its default.
 //
 // Kibana API: DELETE /api/data_views/data_view/{viewId}
+//
 // Kibana API docs: https://www.elastic.co/docs/api/doc/kibana/operation/operation-deletedataviewdefault
 func (s *DataViewsService) Delete(ctx context.Context, id string, opts ...RequestOption) (*Response, error) {
 	if err := requireID("data view ID", id); err != nil {
@@ -377,6 +382,7 @@ func (s *DataViewsService) dataView(ctx context.Context, method, path string, bo
 // because the ID may belong to a data view that was deleted.
 //
 // Kibana API: GET /api/data_views/default
+//
 // Kibana API docs: https://www.elastic.co/docs/api/doc/kibana/operation/operation-getdefaultdataviewdefault
 func (s *DataViewsService) GetDefault(ctx context.Context, opts ...RequestOption) (string, *Response, error) {
 	var result struct {
@@ -396,6 +402,7 @@ func (s *DataViewsService) GetDefault(ctx context.Context, opts ...RequestOption
 // already has a default data view.
 //
 // Kibana API: POST /api/data_views/default
+//
 // Kibana API docs: https://www.elastic.co/docs/api/doc/kibana/operation/operation-setdefaultdatailviewdefault
 func (s *DataViewsService) SetDefault(ctx context.Context, id string, opts ...RequestOption) (*Response, error) {
 	body := struct {
