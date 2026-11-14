@@ -155,7 +155,9 @@ func TestSavedObjectsService_Update(t *testing.T) {
 func TestSavedObjectsService_Update_upsertAndReferences(t *testing.T) {
 	mux, client := setup(t)
 	mux.HandleFunc("PUT /api/saved_objects/{type}/{id}", func(w http.ResponseWriter, r *http.Request) {
-		// Empty references are sent, to remove them.
+		// Empty references are sent, to remove them. Upsert goes in the
+		// body, not the query.
+		testQuery(t, r, "")
 		testJSONBody(t, r, `{"attributes":{"title":"u-*"},"references":[],"upsert":{"title":"u-*"}}`)
 		writeJSON(t, w, http.StatusOK, fixture(t, "savedobjects/so_update_upsert.json"))
 	})
