@@ -150,8 +150,9 @@ func (s *DataViewsService) GetRuntimeField(ctx context.Context, viewID, name str
 	return s.runtimeField(ctx, http.MethodGet, path, nil, opts)
 }
 
-// UpdateRuntimeField changes the type or script of a runtime field of a data
-// view of the client's space. Fields of rf that are not set are kept.
+// UpdateRuntimeField changes a runtime field of a data view of the client's
+// space: its type, script or metadata. Fields of rf that are not set are
+// kept.
 //
 // Kibana API: POST /api/data_views/data_view/{viewId}/runtime_field/{fieldName}
 // Kibana API docs: https://www.elastic.co/docs/api/doc/kibana/operation/operation-updateruntimefielddefault
@@ -214,8 +215,9 @@ type SwapReferencesRequest struct {
 	// It must exist. Required.
 	ToID string `json:"toId"`
 
-	// ForID limits the change to the saved objects with these IDs. It is
-	// not sent when empty, which means all saved objects.
+	// ForID limits the change to the saved objects with these IDs. Nil
+	// means all saved objects; an empty, non-nil slice is rejected, so that
+	// an empty list of IDs does not change every saved object.
 	ForID []string `json:"forId,omitempty"`
 
 	// ForType limits the change to the saved objects of this type.
@@ -273,6 +275,9 @@ func (s *DataViewsService) swapReferences(ctx context.Context, path string, req 
 	}
 	if req.FromID == "" || req.ToID == "" {
 		return nil, nil, errors.New("kibana: FromID and ToID must not be empty")
+	}
+	if req.ForID != nil && len(req.ForID) == 0 {
+		return nil, nil, errors.New("kibana: ForID must not be empty; use nil for all saved objects")
 	}
 	for i, id := range req.ForID {
 		if id == "" {

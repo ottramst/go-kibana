@@ -109,10 +109,12 @@ type RuntimeField struct {
 	// the script.
 	Fields map[string]RuntimeSubField `json:"fields,omitempty"`
 
-	// CustomLabel, CustomDescription, Popularity and Format are only used by
-	// [DataViewsService.CreateRuntimeField] and
-	// [DataViewsService.CreateOrUpdateRuntimeField], which store them as the
-	// field's metadata. Kibana does not return them here.
+	// CustomLabel, CustomDescription, Popularity and Format are the field's
+	// metadata. The runtime field methods, such as
+	// [DataViewsService.CreateRuntimeField], store them in
+	// DataView.FieldAttrs and FieldFormats, and do not return them here. In
+	// DataView.RuntimeFieldMap, Kibana stores and returns them with the
+	// runtime field.
 	CustomLabel       string               `json:"customLabel,omitempty"`
 	CustomDescription string               `json:"customDescription,omitempty"`
 	Popularity        int                  `json:"popularity,omitempty"`
@@ -125,9 +127,16 @@ type RuntimeFieldScript struct {
 	Source string `json:"source"`
 }
 
-// RuntimeSubField is a subfield of a composite runtime field.
+// RuntimeSubField is a subfield of a composite runtime field. Its metadata
+// is stored like that of a [RuntimeField], under the name
+// "<field>.<subfield>".
 type RuntimeSubField struct {
 	Type string `json:"type"`
+
+	CustomLabel       string               `json:"customLabel,omitempty"`
+	CustomDescription string               `json:"customDescription,omitempty"`
+	Popularity        int                  `json:"popularity,omitempty"`
+	Format            *DataViewFieldFormat `json:"format,omitempty"`
 }
 
 // DataViewField is the specification of a field of a data view, as Kibana

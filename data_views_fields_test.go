@@ -101,13 +101,13 @@ func TestDataViewsService_CreateRuntimeField(t *testing.T) {
 func TestDataViewsService_CreateRuntimeField_composite(t *testing.T) {
 	mux, client := setup(t)
 	mux.HandleFunc("POST /api/data_views/data_view/{viewId}/runtime_field", func(w http.ResponseWriter, r *http.Request) {
-		testJSONBody(t, r, `{"name":"comp","runtimeField":{"type":"composite","script":{"source":"emit(\"a\", \"x\"); emit(\"b\", 1)"},"fields":{"a":{"type":"keyword"},"b":{"type":"long"}}}}`)
+		testJSONBody(t, r, `{"name":"comp","runtimeField":{"type":"composite","script":{"source":"emit(\"a\", \"x\"); emit(\"b\", 1)"},"fields":{"a":{"type":"keyword","customLabel":"A"},"b":{"type":"long"}}}}`)
 		writeJSON(t, w, http.StatusOK, fixture(t, "dataviews/rf_create_composite.json"))
 	})
 	got, _, err := client.DataViews.CreateRuntimeField(context.Background(), "probe-dv-2", "comp", &kibana.RuntimeField{
 		Type:   "composite",
 		Script: &kibana.RuntimeFieldScript{Source: `emit("a", "x"); emit("b", 1)`},
-		Fields: map[string]kibana.RuntimeSubField{"a": {Type: "keyword"}, "b": {Type: "long"}},
+		Fields: map[string]kibana.RuntimeSubField{"a": {Type: "keyword", CustomLabel: "A"}, "b": {Type: "long"}},
 	})
 	if err != nil {
 		t.Fatalf("CreateRuntimeField() error = %v", err)
@@ -250,6 +250,12 @@ func TestDataViewsService_SwapReferences(t *testing.T) {
 			want: &kibana.SwapReferencesResult{Result: []kibana.SavedObjectRef{{Type: "visualization", ID: "probe-vis1"}, {Type: "visualization", ID: "probe-vis2"}}},
 		},
 		{
+			path: "/api/data_views/swap_references", fixture: "dataviews/swap_forid_string.json",
+			body: `{"fromId":"a","toId":"b","forId":["probe-vis1"]}`,
+			req:  &kibana.SwapReferencesRequest{FromID: "a", ToID: "b", ForID: []string{"probe-vis1"}},
+			want: &kibana.SwapReferencesResult{Result: []kibana.SavedObjectRef{{Type: "visualization", ID: "probe-vis1"}}},
+		},
+		{
 			path: "/api/data_views/swap_references", fixture: "dataviews/swap_delete_remaining_refs.json",
 			body: `{"fromId":"a","fromType":"index-pattern","toId":"b","forId":["probe-vis3"],"forType":"visualization","delete":true}`,
 			req:  &kibana.SwapReferencesRequest{FromID: "a", FromType: "index-pattern", ToID: "b", ForID: []string{"probe-vis3"}, ForType: "visualization", Delete: true},
@@ -300,7 +306,7 @@ func TestDataViewsService_SwapReferences_errors(t *testing.T) {
 	mux, client := setup(t)
 	mux.HandleFunc("POST /api/data_views/swap_references", func(w http.ResponseWriter, _ *http.Request) {
 		// The target must exist.
-		writeJSON(t, w, http.StatusBadRequest, fixture(t, "dataviews/swap_delete_all.json"))
+		writeJSON(t, w, http.StatusBadRequest, fixture(t, "dataviews/swap_missing_target.json"))
 	})
 	ctx := context.Background()
 	if _, _, err := client.DataViews.SwapReferences(ctx, &kibana.SwapReferencesRequest{FromID: "a", ToID: "gone"}); !errors.Is(err, kibana.ErrBadRequest) {
@@ -311,6 +317,8 @@ func TestDataViewsService_SwapReferences_errors(t *testing.T) {
 		"no from":      {ToID: "b"},
 		"no to":        {FromID: "a"},
 		"empty for ID": {FromID: "a", ToID: "b", ForID: []string{""}},
+		// Left out, it would mean all saved objects.
+		"empty, non-nil for IDs": {FromID: "a", ToID: "b", ForID: []string{}, Delete: true},
 	} {
 		if _, _, err := client.DataViews.SwapReferences(ctx, req); err == nil {
 			t.Errorf("SwapReferences(%s) error = nil, want error", name)
