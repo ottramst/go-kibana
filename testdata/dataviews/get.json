@@ -1,0 +1,117 @@
+{
+  "data_view": {
+    "id": "probe-dv-2",
+    "version": "WzE2LDFd",
+    "title": "probe-logs-1",
+    "timeFieldName": "@timestamp",
+    "sourceFilters": [
+      {
+        "value": "msg"
+      }
+    ],
+    "fieldFormats": {
+      "status": {
+        "id": "number",
+        "params": {
+          "pattern": "0,0"
+        }
+      }
+    },
+    "runtimeFieldMap": {
+      "rt1": {
+        "type": "keyword",
+        "script": {
+          "source": "emit(\"x\")"
+        }
+      }
+    },
+    "fieldAttrs": {
+      "host": {
+        "customLabel": "Host",
+        "count": 3
+      }
+    },
+    "allowNoIndex": false,
+    "name": "Probe logs",
+    "allowHidden": false,
+    "fields": {
+      "@timestamp": {
+        "count": 0,
+        "name": "@timestamp",
+        "type": "date",
+        "esTypes": [
+          "date"
+        ],
+        "scripted": false,
+        "searchable": true,
+        "aggregatable": true,
+        "readFromDocValues": true,
+        "format": {
+          "id": "date"
+        },
+        "shortDotsEnable": false
+      },
+      "host": {
+        "count": 3,
+        "name": "host",
+        "type": "string",
+        "esTypes": [
+          "keyword"
+        ],
+        "scripted": false,
+        "searchable": true,
+        "aggregatable": true,
+        "readFromDocValues": true,
+        "format": {
+          "id": "string"
+        },
+        "customLabel": "Host",
+        "shortDotsEnable": false
+      },
+      "rt1": {
+        "count": 0,
+        "name": "rt1",
+        "type": "string",
+        "esTypes": [
+          "keyword"
+        ],
+        "scripted": false,
+        "searchable": true,
+        "aggregatable": true,
+        "readFromDocValues": false,
+        "format": {
+          "id": "string"
+        },
+        "shortDotsEnable": false,
+        "runtimeField": {
+          "type": "keyword",
+          "script": {
+            "source": "emit(\"x\")"
+          }
+        }
+      },
+      "status": {
+        "count": 0,
+        "name": "status",
+        "type": "number",
+        "esTypes": [
+          "long"
+        ],
+        "scripted": false,
+        "searchable": true,
+        "aggregatable": true,
+        "readFromDocValues": true,
+        "format": {
+          "id": "number",
+          "params": {
+            "pattern": "0,0"
+          }
+        },
+        "shortDotsEnable": false
+      }
+    },
+    "namespaces": [
+      "probe-dv"
+    ]
+  }
+}

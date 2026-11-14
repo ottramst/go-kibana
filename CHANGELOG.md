@@ -1,3 +1,9 @@
+## Unreleased
+
+FEATURES:
+
+* New `DataViews` service: `List`, `Get`, `Create`, `Update` and `Delete` data views, and `GetDefault` and `SetDefault` for the default data view of a space ([#37](https://github.com/ottramst/go-kibana/issues/37), [#38](https://github.com/ottramst/go-kibana/issues/38))
+
 ## v0.4.0
 
 FEATURES:

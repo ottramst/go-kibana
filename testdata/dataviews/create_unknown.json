@@ -1,0 +1,5 @@
+{
+  "statusCode": 400,
+  "error": "Bad Request",
+  "message": "[request body.data_view.bogus]: Additional properties are not allowed ('bogus' was unexpected)"
+}

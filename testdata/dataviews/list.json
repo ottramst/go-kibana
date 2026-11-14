@@ -1,0 +1,77 @@
+{
+  "data_view": [
+    {
+      "id": "ce8566b7-f14a-4b3b-81cf-6f3101b373a5",
+      "namespaces": [
+        "probe-dv"
+      ],
+      "title": "probe-logs-*",
+      "name": "probe-logs-*",
+      "managed": false
+    },
+    {
+      "id": "1be88588-2c73-44d3-8770-bba04f4744c7",
+      "namespaces": [
+        "probe-dv"
+      ],
+      "title": "probe-logs-1",
+      "name": "Another name",
+      "managed": false
+    },
+    {
+      "id": "probe-dv-noidx",
+      "namespaces": [
+        "probe-dv"
+      ],
+      "title": "nothing-matches-*",
+      "name": "nothing-matches-*",
+      "managed": false
+    },
+    {
+      "id": "probe-dv-noidx2",
+      "namespaces": [
+        "probe-dv"
+      ],
+      "title": "nothing-matches2-*",
+      "name": "nothing-matches2-*",
+      "managed": false
+    },
+    {
+      "id": "1b4d9204-0251-49ce-ad2d-e025189a72c7",
+      "namespaces": [
+        "probe-dv"
+      ],
+      "title": "ens-*",
+      "name": "ens-*",
+      "managed": false
+    },
+    {
+      "id": "bc64b0fd-8e8e-49c4-b2c9-b811c6f450d5",
+      "namespaces": [
+        "probe-dv"
+      ],
+      "title": "ec-*",
+      "name": "ec-*",
+      "managed": false
+    },
+    {
+      "id": "probe-dv-ovr",
+      "namespaces": [
+        "probe-dv"
+      ],
+      "title": "probe-logs-1",
+      "name": "probe-logs-1",
+      "managed": false
+    },
+    {
+      "id": "probe-dv-2",
+      "namespaces": [
+        "probe-dv"
+      ],
+      "title": "probe-logs-1",
+      "name": "Probe logs",
+      "timeFieldName": "@timestamp",
+      "managed": false
+    }
+  ]
+}

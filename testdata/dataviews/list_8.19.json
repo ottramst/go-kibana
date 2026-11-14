@@ -1,0 +1,68 @@
+{
+  "data_view": [
+    {
+      "id": "d5368c54-5035-401a-8fa6-14cbb8d4d67e",
+      "namespaces": [
+        "probe-dv"
+      ],
+      "title": "probe-logs-*",
+      "name": "probe-logs-*"
+    },
+    {
+      "id": "6134c26d-a442-4cfc-8826-4d896887dde6",
+      "namespaces": [
+        "probe-dv"
+      ],
+      "title": "probe-logs-1",
+      "name": "Another name"
+    },
+    {
+      "id": "probe-dv-noidx2",
+      "namespaces": [
+        "probe-dv"
+      ],
+      "title": "nothing-matches2-*",
+      "name": "nothing-matches2-*"
+    },
+    {
+      "id": "probe-dv-noidx",
+      "namespaces": [
+        "probe-dv"
+      ],
+      "title": "nothing-matches-*",
+      "name": "nothing-matches-*"
+    },
+    {
+      "id": "68ab98b0-5ffd-48d1-acef-48ac142c30f3",
+      "namespaces": [
+        "probe-dv"
+      ],
+      "title": "ens-*",
+      "name": "ens-*"
+    },
+    {
+      "id": "4eaa6dad-9720-4377-b635-f293dd6c63af",
+      "namespaces": [
+        "probe-dv"
+      ],
+      "title": "ec-*",
+      "name": "ec-*"
+    },
+    {
+      "id": "probe-dv-ovr",
+      "namespaces": [
+        "probe-dv"
+      ],
+      "title": "probe-logs-1",
+      "name": "probe-logs-1"
+    },
+    {
+      "id": "probe-dv-2",
+      "namespaces": [
+        "probe-dv"
+      ],
+      "title": "probe-logs-1",
+      "name": "Probe logs"
+    }
+  ]
+}
