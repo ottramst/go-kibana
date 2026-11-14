@@ -19,16 +19,16 @@ type StatusLevel string
 
 // Status levels, from best to worst.
 const (
-	StatusAvailable   StatusLevel = "available"
-	StatusDegraded    StatusLevel = "degraded"
-	StatusUnavailable StatusLevel = "unavailable"
-	StatusCritical    StatusLevel = "critical"
+	StatusLevelAvailable   StatusLevel = "available"
+	StatusLevelDegraded    StatusLevel = "degraded"
+	StatusLevelUnavailable StatusLevel = "unavailable"
+	StatusLevelCritical    StatusLevel = "critical"
 )
 
 // Status is the status of a Kibana instance.
 //
 // Kibana redacts the status of unauthenticated callers and, since 9.5, of
-// callers without the "monitor" cluster privilege: only Status.Overall.Level
+// callers without the "monitor" cluster privilege: only Health.Overall.Level
 // is set, and the other fields are empty, including Version.Number.
 type Status struct {
 	// Name is the Kibana server name.
@@ -37,7 +37,9 @@ type Status struct {
 	// UUID is the unique ID of the Kibana instance.
 	UUID    string        `json:"uuid"`
 	Version StatusVersion `json:"version"`
-	Status  StatusInfo    `json:"status"`
+
+	// Health is the overall status and the status of each service.
+	Health StatusHealth `json:"status"`
 
 	// Metrics are the process, OS and request metrics of the instance, as
 	// returned by Kibana.
@@ -55,9 +57,9 @@ type StatusVersion struct {
 	BuildDate     time.Time `json:"build_date,omitzero"`
 }
 
-// StatusInfo is the overall status of a Kibana instance and the status of
+// StatusHealth is the overall status of a Kibana instance and the status of
 // its services.
-type StatusInfo struct {
+type StatusHealth struct {
 	Overall ServiceStatus `json:"overall"`
 
 	// Core maps core services, such as "elasticsearch" and "savedObjects",
@@ -85,29 +87,46 @@ type ServiceStatus struct {
 //
 // Kibana answers 503 Service Unavailable when a core service, such as
 // Elasticsearch or saved objects, is unavailable or critical. Get then
-// returns the decoded status together with an [*ErrorResponse] whose
-// StatusCode is 503, so the caller can see which services are affected. The
-// status is nil if the body is not a status, e.g. from a proxy.
+// returns an error that matches [ErrServiceUnavailable];
+// [StatusFromError] returns the status Kibana sent with it, to see which
+// services are affected.
 //
 // A degraded Kibana, or one with unavailable plugins, answers 200 OK, so a
 // nil error does not mean that Kibana is healthy: check
-// Status.Overall.Level.
+// Health.Overall.Level.
 //
 // Kibana API: GET /api/status
 //
 // Kibana API docs: https://www.elastic.co/docs/api/doc/kibana/operation/operation-get-status
-func (s *StatusService) Get(ctx context.Context, opts ...RequestOption) (*Status, *Response, error) {
-	status := new(Status)
-	resp, err := s.client.do(ctx, http.MethodGet, "/api/status", nil, status, opts)
+func (s *StatusService) Get(ctx context.Context, opt *GetStatusOptions, opts ...RequestOption) (*Status, *Response, error) {
+	path, err := addQuery("/api/status", opt)
 	if err != nil {
-		var errResp *ErrorResponse
-		if errors.As(err, &errResp) && errResp.StatusCode == http.StatusServiceUnavailable {
-			status = new(Status)
-			if json.Unmarshal(errResp.Body, status) == nil && status.Status.Overall.Level != "" {
-				return status, resp, err
-			}
-		}
+		return nil, nil, err
+	}
+	status := new(Status)
+	resp, err := s.client.do(ctx, http.MethodGet, path, nil, status, opts)
+	if err != nil {
 		return nil, resp, err
 	}
 	return status, resp, nil
+}
+
+// GetStatusOptions are the options of [StatusService.Get].
+type GetStatusOptions struct {
+	_ [0]func()
+}
+
+// StatusFromError returns the status that Kibana sends with a 503 Service
+// Unavailable error of [StatusService.Get], and whether err carries one. A
+// 503 from a proxy, or before Kibana is ready, has no status.
+func StatusFromError(err error) (*Status, bool) {
+	var errResp *ErrorResponse
+	if !errors.As(err, &errResp) || errResp.StatusCode != http.StatusServiceUnavailable {
+		return nil, false
+	}
+	status := new(Status)
+	if json.Unmarshal(errResp.Body, status) != nil || status.Health.Overall.Level == "" {
+		return nil, false
+	}
+	return status, true
 }

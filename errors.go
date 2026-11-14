@@ -26,6 +26,12 @@ var (
 	// ErrTooManyRequests is returned for 429 Too Many Requests, e.g. while
 	// an encryption key rotation is already running.
 	ErrTooManyRequests = errors.New("kibana: too many requests")
+
+	// ErrServiceUnavailable is returned for 503 Service Unavailable, e.g.
+	// while Kibana starts, or when a core service is unavailable. In the
+	// second case, [StatusFromError] returns the status Kibana sends with
+	// it.
+	ErrServiceUnavailable = errors.New("kibana: service unavailable")
 )
 
 const (
@@ -42,8 +48,12 @@ const (
 //
 //	{"statusCode": 404, "error": "Not Found", "message": "Saved object [space/foo] not found"}
 type ErrorResponse struct {
-	// Response is the HTTP response. Its body has already been read into Body.
-	Response *http.Response `json:"-"`
+	// Method and URL identify the request. The URL has no credentials.
+	Method string `json:"-"`
+	URL    string `json:"-"`
+
+	// Header holds the response headers.
+	Header http.Header `json:"-"`
 
 	// StatusCode is the HTTP status code of the response.
 	StatusCode int `json:"statusCode"`
@@ -61,6 +71,8 @@ type ErrorResponse struct {
 	Body []byte `json:"-"`
 }
 
+// Error returns a description of the error, with the request method and URL.
+// Its format is not part of the API and may change.
 func (e *ErrorResponse) Error() string {
 	msg := e.Message
 	if msg == "" {
@@ -69,11 +81,8 @@ func (e *ErrorResponse) Error() string {
 	if msg == "" {
 		msg = http.StatusText(e.StatusCode)
 	}
-	if e.Response != nil && e.Response.Request != nil {
-		req := e.Response.Request
-		u := *req.URL
-		u.User = nil
-		return fmt.Sprintf("kibana: %s %s: %d %s", req.Method, u.Redacted(), e.StatusCode, msg)
+	if e.Method != "" && e.URL != "" {
+		return fmt.Sprintf("kibana: %s %s: %d %s", e.Method, e.URL, e.StatusCode, msg)
 	}
 	return fmt.Sprintf("kibana: %d %s", e.StatusCode, msg)
 }
@@ -103,18 +112,25 @@ func statusIs(code int, target error) bool {
 		return code == http.StatusConflict
 	case ErrTooManyRequests:
 		return code == http.StatusTooManyRequests
+	case ErrServiceUnavailable:
+		return code == http.StatusServiceUnavailable
 	}
 	return false
 }
 
-// CheckResponse returns an [*ErrorResponse] if the response has a non-2xx
+// checkResponse returns an [*ErrorResponse] if the response has a non-2xx
 // status code, and nil otherwise. It reads the body of error responses.
-func CheckResponse(r *http.Response) error {
+func checkResponse(r *http.Response) error {
 	if r.StatusCode >= 200 && r.StatusCode <= 299 {
 		return nil
 	}
 
-	errResp := &ErrorResponse{Response: r}
+	errResp := &ErrorResponse{Header: r.Header}
+	if req := r.Request; req != nil && req.URL != nil {
+		u := *req.URL
+		u.User = nil
+		errResp.Method, errResp.URL = req.Method, u.Redacted()
+	}
 	data, err := io.ReadAll(io.LimitReader(r.Body, maxErrorBodySize))
 	if err == nil && len(data) > 0 {
 		errResp.Body = data

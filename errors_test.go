@@ -5,6 +5,7 @@ import (
 	"errors"
 	"io"
 	"net/http"
+	"net/url"
 	"strings"
 	"testing"
 	"unicode/utf8"
@@ -36,7 +37,7 @@ func TestErrorResponse(t *testing.T) {
 		{name: "unexpected field type", status: 400, body: `{"statusCode":400,"error":{"type":"x"},"message":"bad input"}`,
 			sentinel: kibana.ErrBadRequest, wantMessage: "bad input"},
 		{name: "JSON array body", status: 500, body: `["x"]`, wantMessage: `["x"]`},
-		{name: "empty body", status: 503},
+		{name: "empty body", status: 503, sentinel: kibana.ErrServiceUnavailable},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -68,7 +69,7 @@ func TestErrorResponse(t *testing.T) {
 			if tt.sentinel != nil && !errors.Is(err, tt.sentinel) {
 				t.Errorf("errors.Is(err, %v) = false, want true", tt.sentinel)
 			}
-			for _, other := range []error{kibana.ErrBadRequest, kibana.ErrUnauthorized, kibana.ErrForbidden, kibana.ErrNotFound, kibana.ErrConflict, kibana.ErrTooManyRequests} {
+			for _, other := range []error{kibana.ErrBadRequest, kibana.ErrUnauthorized, kibana.ErrForbidden, kibana.ErrNotFound, kibana.ErrConflict, kibana.ErrTooManyRequests, kibana.ErrServiceUnavailable} {
 				if errors.Is(other, tt.sentinel) {
 					continue
 				}
@@ -144,4 +145,50 @@ func TestErrorResponse_isUnhashableTarget(t *testing.T) {
 	if errors.Is(nilErrResp, kibana.ErrNotFound) || errors.Is(nilErrResp, sliceErr{"a"}) {
 		t.Error("errors.Is(nil *ErrorResponse, ...) = true, want false")
 	}
+}
+
+func TestErrorResponse_request(t *testing.T) {
+	mux, client := setup(t)
+	mux.HandleFunc("GET /s/x/api/spaces/space/x", func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("X-Request-Id", "r1")
+		writeJSON(t, w, http.StatusNotFound, []byte(notFound))
+	})
+	_, resp, err := client.InSpace("x").Spaces.Get(context.Background(), "x")
+	var errResp *kibana.ErrorResponse
+	if !errors.As(err, &errResp) {
+		t.Fatalf("error = %v, want *kibana.ErrorResponse", err)
+	}
+	if errResp.Method != http.MethodGet || !strings.HasSuffix(errResp.URL, "/s/x/api/spaces/space/x") {
+		t.Errorf("Method, URL = %q, %q; want the request", errResp.Method, errResp.URL)
+	}
+	if errResp.Header.Get("X-Request-Id") != "r1" || resp.Header.Get("X-Request-Id") != "r1" {
+		t.Errorf("headers = %v, %v; want X-Request-Id", errResp.Header, resp.Header)
+	}
+	if resp.StatusCode != http.StatusNotFound || resp.Status != "404 Not Found" {
+		t.Errorf("Response = %d %q, want 404 Not Found", resp.StatusCode, resp.Status)
+	}
+}
+
+func TestErrorResponse_urlWithoutCredentials(t *testing.T) {
+	r := &http.Response{
+		StatusCode: http.StatusForbidden,
+		Body:       io.NopCloser(strings.NewReader(`{}`)),
+		Request:    &http.Request{Method: http.MethodGet, URL: mustParseURL(t, "https://user:secret@kibana.example.com/api/x?token=1")},
+	}
+	var errResp *kibana.ErrorResponse
+	if !errors.As(kibana.CheckResponse(r), &errResp) {
+		t.Fatal("CheckResponse() is not an *ErrorResponse")
+	}
+	if strings.Contains(errResp.URL, "secret") || strings.Contains(errResp.URL, "user") || strings.Contains(errResp.Error(), "secret") {
+		t.Errorf("URL = %q, Error() = %q; want no credentials", errResp.URL, errResp.Error())
+	}
+}
+
+func mustParseURL(t *testing.T, s string) *url.URL {
+	t.Helper()
+	u, err := url.Parse(s)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return u
 }

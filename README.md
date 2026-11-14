@@ -66,7 +66,7 @@ if err != nil {
 spaces, _, err := client.Spaces.List(ctx, nil)
 ```
 
-Methods return the decoded result, the `*kibana.Response` (which wraps `*http.Response`) and an
+Methods return the decoded result, the `*kibana.Response` (status code and headers) and an
 error. Methods for endpoints without a response body, such as `Delete`, return only the
 `*kibana.Response` and the error.
 
@@ -155,8 +155,8 @@ if errors.As(err, &errResp) {
 ### Timeouts, retries and custom transports
 
 The default HTTP client has no timeout: pass a context with a deadline, or bring your own client.
-The client does not retry. To retry, for example on the 503 Kibana returns while it starts, plug in a
-retrying transport:
+The client does not retry. To retry, for example on the 503 Kibana returns while it starts
+(`errors.Is(err, kibana.ErrServiceUnavailable)`), plug in a retrying transport:
 
 ```go
 client, err := kibana.NewClient(kibanaURL,

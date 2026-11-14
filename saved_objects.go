@@ -48,6 +48,8 @@ type ObjectError struct {
 	Message    string `json:"message"`
 }
 
+// Error returns the status code and message of the error. Its format is not
+// part of the API and may change.
 func (e *ObjectError) Error() string {
 	return fmt.Sprintf("kibana: %d %s", e.StatusCode, e.Message)
 }

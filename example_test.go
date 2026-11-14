@@ -227,16 +227,19 @@ func ExampleStatusService_Get() {
 		log.Fatal(err)
 	}
 
-	// Kibana answers 503 when a core service is unavailable. Get then
-	// returns the status too, to see which services are affected.
-	status, _, err := client.Status.Get(context.Background())
-	if status == nil {
+	status, _, err := client.Status.Get(context.Background(), nil)
+	if err != nil {
+		// Kibana answers 503 when a core service is unavailable, and sends
+		// the status with it, to see which services are affected.
+		if status, ok := kibana.StatusFromError(err); ok {
+			log.Fatalf("Kibana is %s: %s", status.Health.Overall.Level, status.Health.Overall.Summary)
+		}
 		log.Fatal(err)
 	}
-	fmt.Println("Kibana", status.Version.Number, status.Status.Overall.Level)
+	fmt.Println("Kibana", status.Version.Number, status.Health.Overall.Level)
 	// A degraded Kibana answers 200, so check the levels.
-	for name, s := range status.Status.Core {
-		if s.Level != kibana.StatusAvailable {
+	for name, s := range status.Health.Core {
+		if s.Level != kibana.StatusLevelAvailable {
 			fmt.Println(name, s.Level, s.Summary)
 		}
 	}

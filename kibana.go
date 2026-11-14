@@ -311,10 +311,18 @@ func (c *Client) NewRequest(ctx context.Context, method, path string, body any, 
 	return req, nil
 }
 
-// Response wraps the [http.Response] returned by Kibana. Its body has already
-// been read and closed.
+// Response describes the HTTP response of an API call. The body has already
+// been read: it is decoded into the method's result, or reported in an
+// [*ErrorResponse].
 type Response struct {
-	*http.Response
+	// StatusCode is the HTTP status code, such as 200.
+	StatusCode int
+
+	// Status is the HTTP status line, such as "200 OK".
+	Status string
+
+	// Header holds the response headers.
+	Header http.Header
 }
 
 // Do sends an API request and returns the API response.
@@ -334,8 +342,8 @@ func (c *Client) Do(req *http.Request, v any) (*Response, error) {
 		_ = resp.Body.Close()
 	}()
 
-	response := &Response{Response: resp}
-	if err := CheckResponse(resp); err != nil {
+	response := &Response{StatusCode: resp.StatusCode, Status: resp.Status, Header: resp.Header}
+	if err := checkResponse(resp); err != nil {
 		return response, err
 	}
 
