@@ -108,6 +108,15 @@ type RuntimeField struct {
 	// Fields lists the subfields of a composite runtime field, emitted by
 	// the script.
 	Fields map[string]RuntimeSubField `json:"fields,omitempty"`
+
+	// CustomLabel, CustomDescription, Popularity and Format are only used by
+	// [DataViewsService.CreateRuntimeField] and
+	// [DataViewsService.CreateOrUpdateRuntimeField], which store them as the
+	// field's metadata. Kibana does not return them here.
+	CustomLabel       string               `json:"customLabel,omitempty"`
+	CustomDescription string               `json:"customDescription,omitempty"`
+	Popularity        int                  `json:"popularity,omitempty"`
+	Format            *DataViewFieldFormat `json:"format,omitempty"`
 }
 
 // RuntimeFieldScript is the Painless script of a runtime field, such as
@@ -301,7 +310,7 @@ type UpdateDataViewOptions struct {
 //   - SourceFilters, FieldFormats and RuntimeFieldMap are kept when nil, and
 //     replaced when not nil: an empty map removes all runtime fields.
 //   - ID, FieldAttrs, Namespaces, Fields, AllowHidden and Version are not
-//     sent. Field attributes are changed with the field metadata endpoint.
+//     sent. Change field attributes with [DataViewsService.UpdateFieldsMetadata].
 //
 // Kibana API: POST /api/data_views/data_view/{viewId}
 // Kibana API docs: https://www.elastic.co/docs/api/doc/kibana/operation/operation-updatedataviewdefault

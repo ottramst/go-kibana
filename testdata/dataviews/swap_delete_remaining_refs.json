@@ -1,0 +1,12 @@
+{
+  "result": [
+    {
+      "id": "probe-vis3",
+      "type": "visualization"
+    }
+  ],
+  "deleteStatus": {
+    "remainingRefs": 1,
+    "deletePerformed": false
+  }
+}

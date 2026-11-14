@@ -1,0 +1,12 @@
+{
+  "result": [
+    {
+      "id": "probe-vis1",
+      "type": "visualization"
+    },
+    {
+      "id": "probe-vis2",
+      "type": "visualization"
+    }
+  ]
+}

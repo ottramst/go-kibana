@@ -1,0 +1,5 @@
+{
+  "statusCode": 404,
+  "error": "Not Found",
+  "message": "Field [index_pattern = probe-dv-2, field = nope] not found."
+}

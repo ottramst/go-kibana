@@ -1,0 +1,73 @@
+{
+  "fields": [
+    {
+      "count": 2,
+      "name": "rt4",
+      "type": "string",
+      "esTypes": [
+        "keyword"
+      ],
+      "scripted": false,
+      "searchable": true,
+      "aggregatable": true,
+      "readFromDocValues": false,
+      "customLabel": "RT4",
+      "customDescription": "d4",
+      "shortDotsEnable": false,
+      "runtimeField": {
+        "type": "keyword",
+        "script": {
+          "source": "emit(\"a\")"
+        }
+      }
+    }
+  ],
+  "data_view": {
+    "id": "probe-dv-2",
+    "version": "WzMxLDFd",
+    "title": "",
+    "timeFieldName": "@timestamp",
+    "sourceFilters": [
+      {
+        "value": "msg"
+      }
+    ],
+    "fieldFormats": {
+      "rt4": {
+        "id": "string"
+      }
+    },
+    "runtimeFieldMap": {
+      "rt3": {
+        "type": "keyword"
+      },
+      "rt2": {
+        "type": "long",
+        "script": {
+          "source": "emit(3.0)"
+        }
+      },
+      "rt4": {
+        "type": "keyword",
+        "script": {
+          "source": "emit(\"a\")"
+        }
+      }
+    },
+    "fieldAttrs": {
+      "host": {
+        "customDescription": "desc"
+      },
+      "nope": {
+        "customLabel": "N"
+      },
+      "rt4": {
+        "customLabel": "RT4",
+        "customDescription": "d4"
+      }
+    },
+    "allowNoIndex": false,
+    "name": "Renamed",
+    "allowHidden": false
+  }
+}

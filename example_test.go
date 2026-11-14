@@ -388,3 +388,19 @@ func ExampleDataViewsService_Create() {
 	}
 	fmt.Println("created data view", dv.ID)
 }
+
+func ExampleDataViewsService_CreateRuntimeField() {
+	client, err := kibana.NewClient("http://localhost:5601", kibana.WithAPIKey(os.Getenv("KIBANA_API_KEY")))
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	_, _, err = client.DataViews.CreateRuntimeField(context.Background(), "logs-data-view", "status_class", &kibana.RuntimeField{
+		Type:        "keyword",
+		Script:      &kibana.RuntimeFieldScript{Source: `emit(doc["status"].value >= 500 ? "error" : "ok")`},
+		CustomLabel: "Status class",
+	})
+	if err != nil {
+		log.Fatal(err)
+	}
+}
