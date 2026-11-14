@@ -1,4 +1,4 @@
-## Unreleased
+## v0.5.0
 
 FEATURES:
 
@@ -6,6 +6,10 @@ FEATURES:
 * data views: `UpdateFieldsMetadata` changes the custom labels, descriptions, popularity and formats of fields ([#39](https://github.com/ottramst/go-kibana/issues/39))
 * data views: `CreateRuntimeField`, `CreateOrUpdateRuntimeField`, `GetRuntimeField`, `UpdateRuntimeField` and `DeleteRuntimeField`, including composite runtime fields ([#40](https://github.com/ottramst/go-kibana/issues/40))
 * data views: `SwapReferences` and `PreviewSwapReferences` move the references of saved objects from one data view to another ([#41](https://github.com/ottramst/go-kibana/issues/41))
+
+NOTES:
+
+* Tested against Kibana 8.19.25 and 9.5.6, which behave identically for data views. Kibana answers 400, not 409, for an existing data view ID; `SetDefault` always sends `force`, because Kibana otherwise keeps an existing default without an error; and Kibana fails to return composite runtime fields with `GetRuntimeField` (400), although it creates them
 
 ## v0.4.0
 
