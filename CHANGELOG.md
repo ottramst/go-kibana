@@ -5,7 +5,7 @@ BREAKING CHANGES:
 * `Response` no longer embeds `*http.Response`, whose body was already read and closed. It has `StatusCode`, `Status` and `Header` ([#43](https://github.com/ottramst/go-kibana/issues/43))
 * `ErrorResponse` no longer has a `Response` field; it has `Method`, `URL` (without credentials) and `Header` instead. The format of `Error()` is not part of the API ([#43](https://github.com/ottramst/go-kibana/issues/43))
 * `CheckResponse` is no longer exported; `Do` returns the `*ErrorResponse` ([#43](https://github.com/ottramst/go-kibana/issues/43))
-* status: `Get` takes `*GetStatusOptions`, and returns no status with the error on a 503: use `StatusFromError`. `Status.Status` (`StatusInfo`) is now `Status.Summary` (`StatusSummary`), and the `Status*` level constants are `StatusLevel*` ([#43](https://github.com/ottramst/go-kibana/issues/43))
+* status: `Get` takes `*GetStatusOptions`, and returns no status with the error on a 503: use `StatusFromError`. `Status.Status` (`StatusInfo`) is now `Status.Health` (`StatusHealth`), and the `Status*` level constants are `StatusLevel*` ([#43](https://github.com/ottramst/go-kibana/issues/43))
 
 FEATURES:
 

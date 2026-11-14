@@ -28,7 +28,7 @@ const (
 // Status is the status of a Kibana instance.
 //
 // Kibana redacts the status of unauthenticated callers and, since 9.5, of
-// callers without the "monitor" cluster privilege: only Summary.Overall.Level
+// callers without the "monitor" cluster privilege: only Health.Overall.Level
 // is set, and the other fields are empty, including Version.Number.
 type Status struct {
 	// Name is the Kibana server name.
@@ -38,8 +38,8 @@ type Status struct {
 	UUID    string        `json:"uuid"`
 	Version StatusVersion `json:"version"`
 
-	// Summary is the overall status and the status of each service.
-	Summary StatusSummary `json:"status"`
+	// Health is the overall status and the status of each service.
+	Health StatusHealth `json:"status"`
 
 	// Metrics are the process, OS and request metrics of the instance, as
 	// returned by Kibana.
@@ -57,9 +57,9 @@ type StatusVersion struct {
 	BuildDate     time.Time `json:"build_date,omitzero"`
 }
 
-// StatusSummary is the overall status of a Kibana instance and the status of
+// StatusHealth is the overall status of a Kibana instance and the status of
 // its services.
-type StatusSummary struct {
+type StatusHealth struct {
 	Overall ServiceStatus `json:"overall"`
 
 	// Core maps core services, such as "elasticsearch" and "savedObjects",
@@ -93,7 +93,7 @@ type ServiceStatus struct {
 //
 // A degraded Kibana, or one with unavailable plugins, answers 200 OK, so a
 // nil error does not mean that Kibana is healthy: check
-// Summary.Overall.Level.
+// Health.Overall.Level.
 //
 // Kibana API: GET /api/status
 //
@@ -125,7 +125,7 @@ func StatusFromError(err error) (*Status, bool) {
 		return nil, false
 	}
 	status := new(Status)
-	if json.Unmarshal(errResp.Body, status) != nil || status.Summary.Overall.Level == "" {
+	if json.Unmarshal(errResp.Body, status) != nil || status.Health.Overall.Level == "" {
 		return nil, false
 	}
 	return status, true

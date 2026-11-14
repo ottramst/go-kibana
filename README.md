@@ -155,8 +155,8 @@ if errors.As(err, &errResp) {
 ### Timeouts, retries and custom transports
 
 The default HTTP client has no timeout: pass a context with a deadline, or bring your own client.
-The client does not retry. To retry, for example on the 503 Kibana returns while it starts, plug in a
-retrying transport:
+The client does not retry. To retry, for example on the 503 Kibana returns while it starts
+(`errors.Is(err, kibana.ErrServiceUnavailable)`), plug in a retrying transport:
 
 ```go
 client, err := kibana.NewClient(kibanaURL,
