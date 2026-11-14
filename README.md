@@ -6,55 +6,8 @@
 [![Go Reference](https://pkg.go.dev/badge/github.com/ottramst/go-kibana.svg)](https://pkg.go.dev/github.com/ottramst/go-kibana)
 [![Go Report Card](https://goreportcard.com/badge/github.com/ottramst/go-kibana)](https://goreportcard.com/report/github.com/ottramst/go-kibana)
 
-An idiomatic Go client for the [Kibana REST API](https://www.elastic.co/docs/api/doc/kibana).
-
-> [!NOTE]
-> go-kibana is pre-1.0: the API may still change between minor versions. Breaking changes are
-> listed in the [CHANGELOG](CHANGELOG.md). See the [roadmap](#roadmap) for what is planned.
-
-## Features
-
-- **Context-aware:** every method takes a `context.Context` for cancellation and deadlines.
-- **Spaces built in:** scope a client to a Kibana space with `WithSpace` or `client.InSpace("id")`.
-- **Typed errors:** `*kibana.ErrorResponse` carries Kibana's status code and message, and works
-  with `errors.Is(err, kibana.ErrNotFound)`, `ErrConflict`, `ErrForbidden` and the other sentinels.
-- **Round-trip friendly types:** read an object, change it, and write it back. Read-only fields
-  are stripped from requests automatically.
-- **Escape hatch:** `client.NewRequest` and `client.Do` reach any endpoint that has no method yet,
-  with authentication, space scoping and error handling included.
-- **Tested against real Kibana:** acceptance tests run against every supported Kibana version in CI.
-- **One small dependency:** [go-querystring](https://github.com/google/go-querystring).
-
-### Supported APIs
-
-| API | Status |
-| --- | --- |
-| Spaces | CRUD ✅ · copy saved objects and resolve conflicts ✅ · share saved objects ✅ · disable legacy URL aliases ✅ |
-| Roles | CRUD ✅ · query with an iterator ✅ · bulk create or update ✅ |
-| User sessions | invalidate ✅ |
-| Status, features, Task Manager health | get status ✅ · list features ✅ · Task Manager health ✅ |
-| Short URLs | create, get, resolve and delete ✅ |
-| Tags (Kibana 9.5+) | CRUD with an iterator ✅ |
-| Saved objects | import, export and resolve import errors ✅ · CRUD, bulk, find with an iterator and resolve (deprecated by Kibana) ✅ |
-| Encrypted saved objects | rotate the encryption key ✅ |
-| Data views | CRUD and the default data view ✅ · field metadata ✅ · runtime fields ✅ · reference swaps ✅ |
-
-[COVERAGE.md](COVERAGE.md) lists every endpoint of the Kibana OpenAPI specs and the method that
-implements it.
-
-## Installation
-
-```shell
-go get github.com/ottramst/go-kibana
-```
-
-## Usage
-
-```go
-import "github.com/ottramst/go-kibana"
-```
-
-Create a client with the Kibana URL and credentials, then use its services:
+An idiomatic Go client for the [Kibana REST API](https://www.elastic.co/docs/api/doc/kibana): spaces,
+roles, saved objects, data views and more, tested against real Kibana 9.x and 8.19.
 
 ```go
 client, err := kibana.NewClient("https://kibana.example.com:5601",
@@ -62,56 +15,61 @@ client, err := kibana.NewClient("https://kibana.example.com:5601",
 if err != nil {
 	log.Fatal(err)
 }
-
 spaces, _, err := client.Spaces.List(ctx, nil)
 ```
 
-Methods return the decoded result, the `*kibana.Response` (status code and headers) and an
-error. Methods for endpoints without a response body, such as `Delete`, return only the
-`*kibana.Response` and the error.
+```shell
+go get github.com/ottramst/go-kibana
+```
 
-### Authentication
+Authenticate with `WithAPIKey` (the base64 `encoded` value of an Elasticsearch API key) or
+`WithBasicAuth`. If Kibana runs under a base path (`server.basePath`), include it in the URL.
 
-| Option | Header |
+## Features
+
+- **Typed and context-aware:** every method takes a `context.Context` and an options struct (`nil` for
+  the defaults), and returns typed results.
+- **Spaces built in:** scope a client to a Kibana space with `client.InSpace("marketing")`.
+- **Errors you can match:** `errors.Is(err, kibana.ErrNotFound)`, `ErrConflict` and the other sentinels;
+  `*kibana.ErrorResponse` has Kibana's status code, message and body.
+- **Read, modify, write:** read an object, change it and pass it back. Read-only fields are never sent.
+- **Iterators** over paginated results, and **opt-in retries** with backoff and `Retry-After`.
+- **Escape hatch:** `NewRequest` and `Do` call any endpoint, with authentication and spaces handled.
+- **One small dependency:** [go-querystring](https://github.com/google/go-querystring).
+
+## Supported APIs
+
+| API | Methods |
 | --- | --- |
-| `kibana.WithAPIKey(encoded)` | `Authorization: ApiKey <encoded>`. Use the base64 `encoded` value of an Elasticsearch API key. |
-| `kibana.WithBasicAuth(user, password)` | `Authorization: Basic ...` |
+| Spaces | CRUD · copy saved objects and resolve conflicts · share saved objects · disable legacy URL aliases |
+| Roles | CRUD · query with an iterator · bulk create or update |
+| User sessions | invalidate |
+| Platform | status · features · Task Manager health |
+| Short URLs | create, get, resolve, delete |
+| Tags (Kibana 9.5+) | CRUD with an iterator |
+| Saved objects | import, export, resolve import errors · CRUD, bulk, find and resolve (deprecated by Kibana) |
+| Encrypted saved objects | rotate the encryption key |
+| Data views | CRUD and the default data view · field metadata · runtime fields · reference swaps |
 
-For other schemes, such as a bearer token, set the header per request with
-`kibana.WithHeader("Authorization", "Bearer ...")`, or for every request with an `http.RoundTripper`
-passed in `kibana.WithHTTPClient`.
+[COVERAGE.md](COVERAGE.md) maps every endpoint of the Kibana OpenAPI specs to its method.
 
-If Kibana runs under a base path (`server.basePath`), include it in the URL:
-`kibana.NewClient("https://example.com/kibana", ...)`.
+## Cookbook
 
-### Creating and updating objects
+The [package documentation](https://pkg.go.dev/github.com/ottramst/go-kibana) explains the conventions;
+each recipe links to a complete example.
+
+**Update an object** ([example](https://pkg.go.dev/github.com/ottramst/go-kibana#example-SpacesService.Update)).
+Updates replace the object, so read it first. Empty text fields are sent, so `""` clears a field.
 
 ```go
-space, _, err := client.Spaces.Create(ctx, &kibana.Space{
-	ID:               "marketing",
-	Name:             "Marketing",
-	DisabledFeatures: []string{"dev_tools"},
-}, nil)
-if err != nil {
-	return err
-}
-
-// Update replaces the whole object: read it, change it, write it back.
-space, _, err = client.Spaces.Get(ctx, "marketing", nil)
-if err != nil {
-	return err
-}
+space, _, err := client.Spaces.Get(ctx, "marketing", nil)
 space.Description = "Campaign dashboards"
 space, _, err = client.Spaces.Update(ctx, space.ID, space, nil)
 ```
 
-Empty text fields are sent too, so setting `space.Description = ""` clears the description (likewise
-`Initials` and `ImageURL`; an empty `Color` or `Solution` keeps the current value). Read-only
-fields, such as `Space.Reserved` or `Role.TransientMetadata`, are never sent.
-
-Roles use Kibana's feature privileges as plain maps, so every feature of your Kibana version works.
-Every Kibana privilege must list its spaces (`"*"` for all spaces); `CreateOrUpdate` rejects an empty
-list, which Kibana would otherwise treat as all spaces:
+**Grant access to one space** ([example](https://pkg.go.dev/github.com/ottramst/go-kibana#example-RolesService.CreateOrUpdate)).
+Feature privileges are plain maps, so every feature of your Kibana version works. A privilege must
+list its spaces (`"*"` for all).
 
 ```go
 _, err := client.Roles.CreateOrUpdate(ctx, "marketing_analyst", &kibana.Role{
@@ -125,66 +83,81 @@ _, err := client.Roles.CreateOrUpdate(ctx, "marketing_analyst", &kibana.Role{
 }, nil)
 ```
 
-### Spaces
+**Copy dashboards to another space or Kibana** ([between spaces](https://pkg.go.dev/github.com/ottramst/go-kibana#example-SpacesService.CopySavedObjects),
+[between instances](https://pkg.go.dev/github.com/ottramst/go-kibana#example-SavedObjectsService.Import-FromAnotherKibana)).
+`Spaces.CopySavedObjects` copies within one Kibana. Across instances, stream `SavedObjects.Export` into
+`SavedObjects.Import`. Both succeed when some objects fail, so check `result.Errors`.
 
-Space-aware endpoints act on the default space unless the client is scoped to another one:
-
-```go
-marketing := client.InSpace("marketing") // requests go to /s/marketing/api/...
-
-// or, for a whole new client:
-scoped, err := kibana.NewClient(kibanaURL, kibana.WithAPIKey(apiKey), kibana.WithSpace("marketing"))
-```
-
-`InSpace` returns a cheap copy that shares the HTTP client.
-
-### Errors
+**Handle errors** ([example](https://pkg.go.dev/github.com/ottramst/go-kibana#example-ErrorResponse)).
 
 ```go
 _, _, err := client.Spaces.Get(ctx, "marketing", nil)
-if errors.Is(err, kibana.ErrNotFound) {
-	// the space does not exist
-}
-
 var errResp *kibana.ErrorResponse
-if errors.As(err, &errResp) {
+switch {
+case errors.Is(err, kibana.ErrNotFound):
+	// The space does not exist.
+case errors.As(err, &errResp):
 	log.Printf("Kibana answered %d: %s", errResp.StatusCode, errResp.Message)
 }
 ```
 
-### Timeouts, retries and custom transports
+`Status.Get` returns an error when Kibana answers 503; `kibana.StatusFromError(err)` returns the
+status Kibana sent with it ([example](https://pkg.go.dev/github.com/ottramst/go-kibana#example-StatusService.Get)).
 
-The default HTTP client has no timeout: pass a context with a deadline, or bring your own client.
-The client does not retry. To retry, for example on the 503 Kibana returns while it starts
-(`errors.Is(err, kibana.ErrServiceUnavailable)`), plug in a retrying transport:
+**Iterate over all results** ([example](https://pkg.go.dev/github.com/ottramst/go-kibana#example-SavedObjectsService.FindAll)).
+`QueryAll`, `ListAll` and `FindAll` fetch the pages as you go.
+
+```go
+for obj, err := range client.SavedObjects.FindAll(ctx, []string{"dashboard"}, nil) {
+	if err != nil {
+		return err
+	}
+	fmt.Println(obj.ID)
+}
+```
+
+**Call an endpoint without a method** ([example](https://pkg.go.dev/github.com/ottramst/go-kibana#example-Client.Do)).
+`NewRequest` takes the escaped API path and adds authentication, the space and the headers Kibana
+needs. `Do` decodes the response, or copies it into an `io.Writer`, and returns an `*ErrorResponse`
+for non-2xx responses.
+
+```go
+req, err := client.NewRequest(ctx, http.MethodGet, "/api/alerting/rules/_find?per_page=10", nil)
+var rules struct{ Total int `json:"total"` }
+_, err = client.Do(req, &rules)
+```
+
+**Set timeouts and retries** ([example](https://pkg.go.dev/github.com/ottramst/go-kibana#example-WithRetry)).
+The default HTTP client has no timeout, and the client only retries with `WithRetry`. It retries
+429, 502, 503 and 504 responses and network errors, but not requests Kibana may have processed, such as
+a POST answered with 502.
 
 ```go
 client, err := kibana.NewClient(kibanaURL,
 	kibana.WithAPIKey(apiKey),
-	kibana.WithHTTPClient(&http.Client{Timeout: 30 * time.Second, Transport: myRetryingTransport}),
+	kibana.WithHTTPClient(&http.Client{Timeout: 2 * time.Minute}), // spans all attempts
+	kibana.WithRetry(kibana.RetryPolicy{}),                         // 4 attempts, 1s to 30s backoff
 )
 ```
 
-### Endpoints without a method
+For other authentication schemes, such as a bearer token, use `kibana.WithHeader` per request or an
+`http.RoundTripper` in `WithHTTPClient`.
 
-```go
-req, err := client.NewRequest(ctx, http.MethodGet, "/api/status", nil)
-if err != nil {
-	return err
-}
-var status map[string]any
-if _, err := client.Do(req, &status); err != nil {
-	return err
-}
-```
+## Stability
 
-The path is the escaped API path from the [Kibana API reference](https://www.elastic.co/docs/api/doc/kibana)
-(escape IDs with `url.PathEscape`). The request gets the client's authentication, space scoping
-and `kbn-xsrf` header; set `Content-Type` with `kibana.WithHeader` when the body is an `io.Reader`. Responses with
-a non-2xx status return an `*ErrorResponse`. If the value passed to `Do` is an `io.Writer`, the
-response body is copied into it as is.
+From v1.0.0, go-kibana follows [semantic versioning](https://semver.org/): code that compiles against a
+v1 release keeps compiling against later v1 releases. Breaking changes need a new major version
+(`/v2`), and CI checks every pull request against the latest release. Adding fields, methods and
+functions is not a breaking change, and whether a struct can be compared with `==` is not part of the
+API. There are two exceptions, which follow Kibana:
 
-More examples are in the [package documentation](https://pkg.go.dev/github.com/ottramst/go-kibana#pkg-examples).
+- Endpoints that Kibana marks as technical preview or experimental (tags, short URLs and features) may
+  change in a minor release if Kibana changes them.
+- Methods of endpoints that Kibana deprecated (the saved objects CRUD, bulk, find and resolve
+  endpoints) keep compiling, but return Kibana's error once Kibana removes the endpoint.
+
+Upgrading from v0.x? See [Upgrading to v1](docs/upgrading-to-v1.md). Changes are listed in the
+[CHANGELOG](CHANGELOG.md).
 
 ## Compatibility
 
@@ -202,21 +175,9 @@ Serverless projects should work for the endpoints they expose, but are not teste
 
 ## Roadmap
 
-The path to v1.0 is tracked in [milestones](https://github.com/ottramst/go-kibana/milestones). Each
-epic issue lists its endpoints as sub-issues:
-
-| Milestone | Scope |
-| --- | --- |
-| [v0.1.0](https://github.com/ottramst/go-kibana/milestone/1) | Foundation: client core, CI, acceptance tests, spaces and roles CRUD |
-| [v0.2.0](https://github.com/ottramst/go-kibana/milestone/2) | Spaces saved object operations, role query and bulk, user sessions |
-| [v0.3.0](https://github.com/ottramst/go-kibana/milestone/3) | Status, features, Task Manager health, short URLs, tags |
-| [v0.4.0](https://github.com/ottramst/go-kibana/milestone/4) | Saved objects: import/export, key rotation, and the deprecated CRUD/bulk/find endpoints |
-| [v0.5.0](https://github.com/ottramst/go-kibana/milestone/5) | Data views and runtime fields |
-| [v1.0.0](https://github.com/ottramst/go-kibana/milestone/6) | API freeze and compatibility guarantees |
-
-Alerting, connectors, Fleet, the Security solution and other areas are tracked as
-[backlog epics](https://github.com/ottramst/go-kibana/issues?q=is%3Aissue+is%3Aopen+label%3Aepic+no%3Amilestone).
-Contributions are welcome.
+v1.0 covers the core platform APIs. Alerting, connectors, Fleet, the Security solution and other areas
+are tracked as [backlog epics](https://github.com/ottramst/go-kibana/issues?q=is%3Aissue+is%3Aopen+label%3Aepic+no%3Amilestone)
+and [milestones](https://github.com/ottramst/go-kibana/milestones). Contributions are welcome.
 
 ## Development
 

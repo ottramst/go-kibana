@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"log"
 	"net/http"
 	"os"
@@ -147,20 +148,26 @@ func ExampleClient_Do() {
 		log.Fatal(err)
 	}
 
-	// Call an endpoint the client has no method for yet.
-	req, err := client.NewRequest(context.Background(), http.MethodGet, "/api/status", nil)
+	// Call an endpoint the client has no method for yet: find alerting
+	// rules.
+	req, err := client.NewRequest(context.Background(), http.MethodGet, "/api/alerting/rules/_find?per_page=10", nil)
 	if err != nil {
 		log.Fatal(err)
 	}
-	var status struct {
-		Version struct {
-			Number string `json:"number"`
-		} `json:"version"`
+	var rules struct {
+		Total int `json:"total"`
+		Data  []struct {
+			ID   string `json:"id"`
+			Name string `json:"name"`
+		} `json:"data"`
 	}
-	if _, err := client.Do(req, &status); err != nil {
+	if _, err := client.Do(req, &rules); err != nil {
 		log.Fatal(err)
 	}
-	fmt.Println("Kibana", status.Version.Number)
+	for _, r := range rules.Data {
+		fmt.Println(r.ID, r.Name)
+	}
+	fmt.Println(rules.Total, "rules")
 }
 
 func ExampleSpacesService_CopySavedObjects() {
@@ -321,6 +328,37 @@ func ExampleSavedObjectsService_Import() {
 		fmt.Println("not imported:", e.Error())
 	}
 	fmt.Println("imported", result.SuccessCount, "objects")
+}
+
+func ExampleSavedObjectsService_Import_fromAnotherKibana() {
+	src, err := kibana.NewClient("https://kibana-a.example.com:5601", kibana.WithAPIKey(os.Getenv("KIBANA_A_API_KEY")))
+	if err != nil {
+		log.Fatal(err)
+	}
+	dst, err := kibana.NewClient("https://kibana-b.example.com:5601", kibana.WithAPIKey(os.Getenv("KIBANA_B_API_KEY")))
+	if err != nil {
+		log.Fatal(err)
+	}
+	ctx := context.Background()
+
+	// Stream the export into the import, without a temporary file.
+	pr, pw := io.Pipe()
+	go func() {
+		_, _, err := src.SavedObjects.Export(ctx, pw, &kibana.ExportSavedObjectsRequest{
+			Types:                 []string{"dashboard"},
+			IncludeReferencesDeep: true,
+		}, nil)
+		pw.CloseWithError(err) // nil closes the pipe normally
+	}()
+	result, _, err := dst.InSpace("marketing").SavedObjects.Import(ctx, pr, &kibana.ImportSavedObjectsOptions{Overwrite: true})
+	_ = pr.Close() // stops the export if the import failed early
+	if err != nil {
+		log.Fatal(err)
+	}
+	for _, e := range result.Errors {
+		fmt.Println("not imported:", e.Error())
+	}
+	fmt.Println("copied", result.SuccessCount, "objects")
 }
 
 func ExampleSavedObjectsService_Get() {
