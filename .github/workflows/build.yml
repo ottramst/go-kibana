@@ -36,3 +36,42 @@ jobs:
       - run: go vet ./...
       - name: Unit tests
         run: go test -race -cover -timeout=120s -parallel=10 ./...
+
+  api-compat:
+    name: API compatibility
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version: '1.27.x'
+          cache: true
+          cache-dependency-path: tools/gorelease/go.sum
+      # From v1.0.0, breaking changes need a new major version (/v2). gorelease
+      # compares the API with the latest v1 release and fails on incompatible
+      # changes. A change allowed by the stability exceptions in README.md
+      # (technical preview and experimental endpoints) needs the
+      # "api-break-approved" label, applied by the owner, and a re-run.
+      - name: Check the API against the latest v1 release
+        env:
+          BREAK_APPROVED: ${{ contains(github.event.pull_request.labels.*.name, 'api-break-approved') }}
+        run: |
+          latest=$(go list -m -versions github.com/ottramst/go-kibana | tr ' ' '\n' | grep -E '^v1\.[0-9]+\.[0-9]+$' | sort -V | tail -n 1 || true)
+          if [ -z "$latest" ]; then
+            echo "No v1 release yet, so there is no API to stay compatible with."
+            exit 0
+          fi
+          minor=$(echo "$latest" | cut -d. -f2)
+          next="v1.$((minor + 1)).0"
+          (cd tools/gorelease && go build -o "$RUNNER_TEMP/gorelease" golang.org/x/exp/cmd/gorelease)
+          if ! "$RUNNER_TEMP/gorelease" -base="$latest" -version="$next"; then
+            if [ "$BREAK_APPROVED" = "true" ]; then
+              echo "::warning::Incompatible API changes, allowed by the api-break-approved label."
+              exit 0
+            fi
+            echo "::error::Incompatible API changes since $latest. See CONTRIBUTING.md."
+            exit 1
+          fi

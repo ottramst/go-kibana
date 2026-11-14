@@ -1,22 +1,3 @@
-// Package kibana is a client for the Kibana REST API.
-//
-// Create a client with [NewClient], passing the Kibana URL and an
-// authentication option, then use its services to call the API:
-//
-//	client, err := kibana.NewClient("https://kibana.example.com:5601",
-//		kibana.WithAPIKey(os.Getenv("KIBANA_API_KEY")))
-//	if err != nil {
-//		return err
-//	}
-//	spaces, _, err := client.Spaces.List(ctx, nil)
-//
-// Every service method takes a [context.Context] first and returns the
-// decoded result (if Kibana returns one), the [Response] and an error. API errors are returned as
-// [*ErrorResponse] and can be matched with [errors.Is] against sentinel
-// errors such as [ErrNotFound].
-//
-// Space-aware endpoints act on the default space unless the client is scoped
-// to another space with [WithSpace] or [Client.InSpace].
 package kibana
 
 import (
