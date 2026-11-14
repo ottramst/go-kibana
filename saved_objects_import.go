@@ -13,6 +13,8 @@ import (
 // ImportSavedObjectsResult is the result of an import, and of a copy of
 // saved objects into a space.
 type ImportSavedObjectsResult struct {
+	_ [0]func()
+
 	// Success is true if all objects were imported.
 	Success bool `json:"success"`
 
@@ -26,6 +28,8 @@ type ImportSavedObjectsResult struct {
 
 // ImportSuccess is an object that was imported or copied.
 type ImportSuccess struct {
+	_ [0]func()
+
 	SavedObjectRef
 	Meta SavedObjectMeta `json:"meta"`
 
@@ -73,6 +77,8 @@ const (
 // For an object, Type, ID, Meta and Detail are set. When the copy into a
 // whole space failed, only StatusCode, StatusText and Message are set.
 type ImportError struct {
+	_ [0]func()
+
 	SavedObjectRef
 	Title string          `json:"title,omitempty"`
 	Meta  SavedObjectMeta `json:"meta"`
@@ -139,6 +145,8 @@ func (e *ImportError) Error() string {
 
 // ImportErrorDetail describes why an object was not imported or copied.
 type ImportErrorDetail struct {
+	_ [0]func()
+
 	Type ImportErrorType `json:"type"`
 
 	// DestinationID is the ID of the conflicting object, for conflicts.
@@ -157,6 +165,8 @@ type ImportErrorDetail struct {
 
 // ImportErrorDestination is one of the objects of an ambiguous conflict.
 type ImportErrorDestination struct {
+	_ [0]func()
+
 	ID    string `json:"id"`
 	Title string `json:"title,omitempty"`
 
@@ -167,6 +177,8 @@ type ImportErrorDestination struct {
 
 // ImportWarning is a warning about an import that succeeded.
 type ImportWarning struct {
+	_ [0]func()
+
 	Type    ImportWarningType `json:"type"`
 	Message string            `json:"message"`
 
@@ -245,6 +257,8 @@ func (s *SavedObjectsService) Import(ctx context.Context, r io.Reader, opt *Impo
 // ImportRetry is an object to import again with
 // [SavedObjectsService.ResolveImportErrors].
 type ImportRetry struct {
+	_ [0]func()
+
 	Type string `json:"type"`
 	ID   string `json:"id"`
 
@@ -270,6 +284,8 @@ type ImportRetry struct {
 // ImportReferenceReplacement replaces the references of an object to the
 // object of type Type with ID From by references to the object with ID To.
 type ImportReferenceReplacement struct {
+	_ [0]func()
+
 	// Type is the type of the referenced object, From the ID in the file,
 	// and To the ID of the existing object to reference instead.
 	Type string `json:"type"`

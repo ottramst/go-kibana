@@ -67,6 +67,8 @@ type ResolveCopySavedObjectsErrorsRequest struct {
 
 // CopySavedObjectsRetry is an object to copy again with [SpacesService.ResolveCopySavedObjectsErrors].
 type CopySavedObjectsRetry struct {
+	_ [0]func()
+
 	Type string `json:"type"`
 	ID   string `json:"id"`
 

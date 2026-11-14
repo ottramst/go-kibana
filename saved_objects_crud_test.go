@@ -121,7 +121,7 @@ func TestSavedObjectsService_Get(t *testing.T) {
 		t.Fatalf("Get() error = %v", err)
 	}
 	wantRefs := []kibana.SavedObjectReference{{Name: "panel_0", Type: "visualization", ID: "probe-vis"}}
-	if got.ID != "probe-dash" || !reflect.DeepEqual(got.References, wantRefs) || got.Ref() != (kibana.SavedObjectRef{Type: "dashboard", ID: "probe-dash"}) {
+	if got.ID != "probe-dash" || !reflect.DeepEqual(got.References, wantRefs) || !reflect.DeepEqual(got.Ref(), kibana.SavedObjectRef{Type: "dashboard", ID: "probe-dash"}) {
 		t.Errorf("Get() = %+v, want probe-dash with its references", got)
 	}
 	var attrs struct {

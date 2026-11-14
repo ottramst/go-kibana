@@ -57,7 +57,7 @@ func TestTagsService_Create(t *testing.T) {
 	if resp.StatusCode != http.StatusCreated || got.ID != "fab28ebf-63c5-4d90-94c4-4ac294dae221" {
 		t.Errorf("Create() = %+v (%d), want the created tag", got, resp.StatusCode)
 	}
-	if *tag != before {
+	if !reflect.DeepEqual(*tag, before) {
 		t.Error("Create() modified the tag")
 	}
 }
@@ -348,7 +348,7 @@ func TestTagMeta_users(t *testing.T) {
 		t.Fatalf("Unmarshal() error = %v", err)
 	}
 	want := kibana.TagMeta{CreatedBy: "u_1", UpdatedBy: "u_2", Owner: "u_1", Managed: true}
-	if tag.Meta != want {
+	if !reflect.DeepEqual(tag.Meta, want) {
 		t.Errorf("Meta = %+v, want %+v", tag.Meta, want)
 	}
 }

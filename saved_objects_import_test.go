@@ -72,7 +72,7 @@ func TestSavedObjectsService_Import(t *testing.T) {
 		Meta:           kibana.SavedObjectMeta{Title: "probe2-*", Icon: "indexPatternApp"},
 		DestinationID:  "e9fa6a65-eab7-499b-b2cb-4b9fcbcb7688",
 	}
-	if got.SuccessResults[0] != want {
+	if !reflect.DeepEqual(got.SuccessResults[0], want) {
 		t.Errorf("SuccessResults[0] = %+v, want %+v", got.SuccessResults[0], want)
 	}
 }

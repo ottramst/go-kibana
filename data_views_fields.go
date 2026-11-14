@@ -13,6 +13,8 @@ import (
 // unchanged, and a pointer to the zero value ("", 0, or a format with an
 // empty ID) removes the value.
 type DataViewFieldMetadata struct {
+	_ [0]func()
+
 	CustomLabel *string
 
 	// CustomDescription has at most 300 characters.
@@ -105,6 +107,8 @@ func (s *DataViewsService) UpdateFieldsMetadata(ctx context.Context, viewID stri
 // field. A composite runtime field has an entry for each of its subfields,
 // named "<field>.<subfield>".
 type RuntimeFieldResult struct {
+	_ [0]func()
+
 	DataView *DataView       `json:"data_view"`
 	Fields   []DataViewField `json:"fields"`
 }
@@ -278,6 +282,8 @@ type SwapReferencesRequest struct {
 // SwapReferencesResult is the result of [DataViewsService.SwapReferences]
 // and [DataViewsService.PreviewSwapReferences].
 type SwapReferencesResult struct {
+	_ [0]func()
+
 	// Result lists the saved objects whose references are, or would be,
 	// changed.
 	Result []SavedObjectRef `json:"result"`
@@ -289,6 +295,8 @@ type SwapReferencesResult struct {
 // SwapReferencesDeleteStatus reports whether a swap deleted the object
 // whose references it changed.
 type SwapReferencesDeleteStatus struct {
+	_ [0]func()
+
 	// DeletePerformed reports whether the object whose references were
 	// swapped was deleted.
 	DeletePerformed bool `json:"deletePerformed"`

@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"reflect"
 	"testing"
 	"time"
 
@@ -64,7 +65,7 @@ func TestStatusService_Get_version(t *testing.T) {
 		t.Errorf("BuildDate = %v, want %v", got.Version.BuildDate, want.BuildDate)
 	}
 	got.Version.BuildDate = want.BuildDate
-	if got.Version != want {
+	if !reflect.DeepEqual(got.Version, want) {
 		t.Errorf("Version = %+v, want %+v", got.Version, want)
 	}
 }

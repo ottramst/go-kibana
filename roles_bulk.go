@@ -12,6 +12,8 @@ import (
 
 // BulkCreateOrUpdateRolesResult is the result of [RolesService.BulkCreateOrUpdate].
 type BulkCreateOrUpdateRolesResult struct {
+	_ [0]func()
+
 	// Created lists the names of the roles that were created.
 	Created []string `json:"created,omitempty"`
 
@@ -23,11 +25,13 @@ type BulkCreateOrUpdateRolesResult struct {
 	Noop []string `json:"noop,omitempty"`
 
 	// Errors maps the names of the roles that failed to their error.
-	Errors map[string]BulkRoleError `json:"errors,omitempty"`
+	Errors map[string]*BulkRoleError `json:"errors,omitempty"`
 }
 
 // BulkRoleError is the error of a role in [BulkCreateOrUpdateRolesResult].
 type BulkRoleError struct {
+	_ [0]func()
+
 	// Type is the Elasticsearch error type, such as
 	// "action_request_validation_exception".
 	Type   string `json:"type"`
@@ -35,7 +39,7 @@ type BulkRoleError struct {
 }
 
 // Error returns the error type and reason.
-func (e BulkRoleError) Error() string {
+func (e *BulkRoleError) Error() string {
 	if e.Type == "" {
 		return "kibana: " + e.Reason
 	}

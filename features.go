@@ -17,6 +17,8 @@ type FeaturesService service
 //
 // The alerting and cases fields of a feature are not decoded.
 type Feature struct {
+	_ [0]func()
+
 	ID          string `json:"id"`
 	Name        string `json:"name"`
 	Description string `json:"description,omitempty"`
@@ -61,6 +63,8 @@ type Feature struct {
 
 // FeatureCategory is the category a [Feature] is listed under.
 type FeatureCategory struct {
+	_ [0]func()
+
 	ID          string `json:"id"`
 	Label       string `json:"label"`
 	EUIIconType string `json:"euiIconType,omitempty"`
@@ -69,6 +73,8 @@ type FeatureCategory struct {
 
 // FeaturePrivilege is what a feature privilege grants.
 type FeaturePrivilege struct {
+	_ [0]func()
+
 	// App, Catalogue, API, UI, SavedObject and Management are what the
 	// privilege grants: applications, catalogue entries, API tags, UI
 	// capabilities, access to saved object types and management entries.
@@ -89,12 +95,16 @@ type FeaturePrivilege struct {
 // FeatureSavedObjectPrivileges lists the saved object types a privilege
 // grants full and read-only access to.
 type FeatureSavedObjectPrivileges struct {
+	_ [0]func()
+
 	All  []string `json:"all"`
 	Read []string `json:"read"`
 }
 
 // SubFeature is a group of sub-feature privileges of a [Feature].
 type SubFeature struct {
+	_ [0]func()
+
 	Name        string `json:"name"`
 	Description string `json:"description,omitempty"`
 
@@ -120,6 +130,8 @@ const (
 
 // SubFeaturePrivilegeGroup is a group of sub-feature privileges.
 type SubFeaturePrivilegeGroup struct {
+	_ [0]func()
+
 	GroupType  SubFeaturePrivilegeGroupType `json:"groupType"`
 	Privileges []SubFeaturePrivilege        `json:"privileges"`
 }
@@ -127,6 +139,8 @@ type SubFeaturePrivilegeGroup struct {
 // SubFeaturePrivilege is a sub-feature privilege. Its ID is granted next to
 // the feature privilege, e.g. {"dashboard_v2": ["read", "url_create"]}.
 type SubFeaturePrivilege struct {
+	_ [0]func()
+
 	ID   string `json:"id"`
 	Name string `json:"name"`
 

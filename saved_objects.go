@@ -18,6 +18,8 @@ type SavedObjectsService service
 // Result types that identify an object embed it, so their Type and ID fields
 // are its fields.
 type SavedObjectRef struct {
+	_ [0]func()
+
 	Type string `json:"type"`
 	ID   string `json:"id"`
 }
@@ -39,6 +41,8 @@ func validateRefs(refs []SavedObjectRef) error {
 // SavedObjectMeta is the display information Kibana returns for a saved
 // object.
 type SavedObjectMeta struct {
+	_ [0]func()
+
 	Title string `json:"title,omitempty"`
 	Icon  string `json:"icon,omitempty"`
 }
@@ -46,6 +50,8 @@ type SavedObjectMeta struct {
 // ObjectError is the error of a single object in a bulk operation that
 // otherwise succeeded.
 type ObjectError struct {
+	_ [0]func()
+
 	StatusCode int    `json:"statusCode"`
 	StatusText string `json:"error"`
 	Message    string `json:"message"`

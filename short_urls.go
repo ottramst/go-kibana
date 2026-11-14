@@ -24,6 +24,8 @@ const LegacyShortURLLocatorID = "LEGACY_SHORT_URL_LOCATOR"
 
 // ShortURL is a Kibana short URL. It is opened at /goto/{Slug}.
 type ShortURL struct {
+	_ [0]func()
+
 	ID   string
 	Slug string
 
@@ -41,6 +43,8 @@ type ShortURL struct {
 // ShortURLLocator is a locator and the parameters it resolves to a Kibana
 // location.
 type ShortURLLocator struct {
+	_ [0]func()
+
 	ID string `json:"id"`
 
 	// Version is the Kibana version that created the short URL.
