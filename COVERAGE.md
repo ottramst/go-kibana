@@ -6,7 +6,7 @@ Endpoints of the official Kibana OpenAPI specs (v8.19.25, v9.5.6) and the go-kib
 
 Endpoint data comes from the [Kibana OpenAPI specification](https://github.com/elastic/kibana/tree/main/oas_docs) by Elastic, licensed under [CC BY-NC-ND 4.0](https://creativecommons.org/licenses/by-nc-nd/4.0/).
 
-**45 of 726 endpoints implemented.**
+**52 of 726 endpoints implemented.**
 
 | Area | Implemented |
 |---|---|
@@ -21,7 +21,7 @@ Endpoint data comes from the [Kibana OpenAPI specification](https://github.com/e
 | [connectors](#connectors) | 0 / 17 |
 | [Dashboards](#dashboards) | 0 / 5 |
 | [Data streams](#data-streams) | 0 / 2 |
-| [data views](#data-views) | 0 / 15 |
+| [data views](#data-views) | 7 / 15 |
 | [Elastic Agent actions](#elastic-agent-actions) | 0 / 16 |
 | [Elastic Agent binary download sources](#elastic-agent-binary-download-sources) | 0 / 5 |
 | [Elastic Agent policies](#elastic-agent-policies) | 0 / 14 |
@@ -278,19 +278,19 @@ Endpoint data comes from the [Kibana OpenAPI specification](https://github.com/e
 
 | Method | Path | v8.19.25 | v9.5.6 | go-kibana | Notes |
 |---|---|:-:|:-:|---|---|
-| GET | `/api/data_views` | ✅ | ✅ |  |  |
-| POST | `/api/data_views/data_view` | ✅ | ✅ |  |  |
-| GET | `/api/data_views/data_view/{viewId}` | ✅ | ✅ |  |  |
-| POST | `/api/data_views/data_view/{viewId}` | ✅ | ✅ |  |  |
-| DELETE | `/api/data_views/data_view/{viewId}` | ✅ | ✅ |  |  |
+| GET | `/api/data_views` | ✅ | ✅ | `DataViewsService.List` |  |
+| POST | `/api/data_views/data_view` | ✅ | ✅ | `DataViewsService.Create` |  |
+| GET | `/api/data_views/data_view/{viewId}` | ✅ | ✅ | `DataViewsService.Get` |  |
+| POST | `/api/data_views/data_view/{viewId}` | ✅ | ✅ | `DataViewsService.Update` |  |
+| DELETE | `/api/data_views/data_view/{viewId}` | ✅ | ✅ | `DataViewsService.Delete` |  |
 | POST | `/api/data_views/data_view/{viewId}/fields` | ✅ | ✅ |  |  |
 | POST | `/api/data_views/data_view/{viewId}/runtime_field` | ✅ | ✅ |  |  |
 | PUT | `/api/data_views/data_view/{viewId}/runtime_field` | ✅ | ✅ |  |  |
 | GET | `/api/data_views/data_view/{viewId}/runtime_field/{fieldName}` | ✅ | ✅ |  |  |
 | POST | `/api/data_views/data_view/{viewId}/runtime_field/{fieldName}` | ✅ | ✅ |  |  |
 | DELETE | `/api/data_views/data_view/{viewId}/runtime_field/{fieldName}` | ✅ | ✅ |  |  |
-| GET | `/api/data_views/default` | ✅ | ✅ |  |  |
-| POST | `/api/data_views/default` | ✅ | ✅ |  |  |
+| GET | `/api/data_views/default` | ✅ | ✅ | `DataViewsService.GetDefault` |  |
+| POST | `/api/data_views/default` | ✅ | ✅ | `DataViewsService.SetDefault` |  |
 | POST | `/api/data_views/swap_references` | ✅ | ✅ |  |  |
 | POST | `/api/data_views/swap_references/_preview` | ✅ | ✅ |  |  |
 

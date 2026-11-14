@@ -1,0 +1,18 @@
+{
+  "data_view": {
+    "id": "ce8566b7-f14a-4b3b-81cf-6f3101b373a5",
+    "version": "WzUsMV0=",
+    "title": "probe-logs-*",
+    "sourceFilters": [],
+    "fieldFormats": {},
+    "runtimeFieldMap": {},
+    "fieldAttrs": {},
+    "allowNoIndex": false,
+    "name": "probe-logs-*",
+    "allowHidden": false,
+    "fields": {},
+    "namespaces": [
+      "probe-dv"
+    ]
+  }
+}

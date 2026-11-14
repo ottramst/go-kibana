@@ -368,3 +368,23 @@ func ExampleSavedObjectsService_FindAll() {
 		fmt.Println(obj.Type, obj.ID)
 	}
 }
+
+func ExampleDataViewsService_Create() {
+	client, err := kibana.NewClient("http://localhost:5601", kibana.WithAPIKey(os.Getenv("KIBANA_API_KEY")))
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	dv, _, err := client.InSpace("marketing").DataViews.Create(context.Background(), &kibana.DataView{
+		Title:         "logs-*",
+		Name:          "Logs",
+		TimeFieldName: "@timestamp",
+		RuntimeFieldMap: map[string]kibana.RuntimeField{
+			"status_class": {Type: "keyword", Script: &kibana.RuntimeFieldScript{Source: `emit(doc["status"].value >= 500 ? "error" : "ok")`}},
+		},
+	}, nil)
+	if err != nil {
+		log.Fatal(err)
+	}
+	fmt.Println("created data view", dv.ID)
+}
