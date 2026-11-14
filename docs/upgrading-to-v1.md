@@ -65,3 +65,16 @@ Options and `…Request` structs now have an unexported field. Literals of them 
 
 | v0.5.0 | v1.0.0 |
 | --- | --- |
+| `client.Spaces.GetShareableReferences(ctx, objects)` | `client.Spaces.GetShareableReferences(ctx, &kibana.GetShareableReferencesRequest{Objects: objects}, nil)` |
+| `client.Spaces.DisableLegacyURLAliases(ctx, aliases)` | `client.Spaces.DisableLegacyURLAliases(ctx, &kibana.DisableLegacyURLAliasesRequest{Aliases: aliases}, nil)` |
+| `client.Roles.BulkCreateOrUpdate(ctx, roles)` | `client.Roles.BulkCreateOrUpdate(ctx, &kibana.BulkCreateOrUpdateRolesRequest{Roles: roles}, nil)` |
+| `client.DataViews.UpdateFieldsMetadata(ctx, viewID, fields)` | `client.DataViews.UpdateFieldsMetadata(ctx, viewID, &kibana.UpdateFieldsMetadataRequest{Fields: fields}, nil)` |
+| `id, _, err := client.DataViews.GetDefault(ctx)` | `res, _, err := client.DataViews.GetDefault(ctx, nil)`, then `res.ID` |
+| `resp, err := client.SavedObjects.Export(ctx, req, w)` | `details, resp, err := client.SavedObjects.Export(ctx, w, req, nil)`. The details line is still written to `w`; `details` is nil with `ExcludeExportDetails`. |
+| `client.SavedObjects.ResolveImportErrors(ctx, r, &kibana.ResolveImportErrorsRequest{Retries: retries, CreateNewCopies: true})` | `client.SavedObjects.ResolveImportErrors(ctx, r, retries, &kibana.ResolveImportErrorsOptions{CreateNewCopies: true})` |
+| `client.SavedObjects.Update(ctx, obj, opt)` | `client.SavedObjects.Update(ctx, obj.Type, obj.ID, obj, opt)`. `obj.Type` and `obj.ID` are ignored. |
+| `client.SavedObjects.Find(ctx, &kibana.FindSavedObjectsOptions{Types: types, Search: s})`, also `FindAll` | `client.SavedObjects.Find(ctx, types, &kibana.FindSavedObjectsOptions{Search: s})`. The options can be nil. |
+| `FindSavedObjectsOptions.Aggs` (`string`) | `json.RawMessage` |
+| `importErr.Error` (`*ImportErrorDetail`) | `importErr.Detail`. `*ImportError` implements `error`. |
+| `kibana.ImportSuccess{Type: t, ID: id}`, also `ImportError`, `ShareableReference`, `ObjectSpaces`, `BulkDeleteStatus` and `ExportExcludedObject` | `kibana.ImportSuccess{SavedObjectRef: kibana.SavedObjectRef{Type: t, ID: id}}`. Reading `r.Type` and `r.ID` is unchanged. |
+| `Feature.Privileges` (`map[string]*FeaturePrivilege`), `Feature.SubFeatures`, `SubFeature.PrivilegeGroups`, `SubFeaturePrivilegeGroup.Privileges`, `QueryRolesResult.Roles`, `ListTagsResult.Tags`, `FindSavedObjectsResult.SavedObjects`, `DataView.Fields`, `RuntimeFieldResult.Fields` (pointers) | Values (`map[string]FeaturePrivilege`, `[]Role`, …). Use `&result.Roles[i]` for a pointer, and the `ok` of a map lookup instead of a nil check. Iterators still yield pointers. |
