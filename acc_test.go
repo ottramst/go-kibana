@@ -69,7 +69,7 @@ func randName(t *testing.T, prefix string) string {
 // "9.5.6".
 func kibanaVersion(t *testing.T, client *kibana.Client) string {
 	t.Helper()
-	status, _, err := client.Status.Get(t.Context())
+	status, _, err := client.Status.Get(t.Context(), nil)
 	if err != nil {
 		t.Fatalf("Status.Get() error = %v", err)
 	}

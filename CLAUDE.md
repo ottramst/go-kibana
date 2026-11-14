@@ -50,7 +50,7 @@ The stack runs with security enabled and a trial license, on ports bound to 127.
   - Header order: `Accept`, `kbn-xsrf: true` (always, even on GET), `Content-Type` (JSON bodies only), `User-Agent`, `Authorization`, then the caller's `RequestOption`s. So callers can override anything.
   - Body: an `io.Reader` is sent raw, with no `Content-Type` (the caller sets it, e.g. for the multipart import); anything else is JSON-encoded.
 - `Do(req, v)`:
-  - Non-2xx returns `*ErrorResponse`, through `CheckResponse`.
+  - Returns a `*Response{StatusCode, Status, Header}`; it doesn't expose the `*http.Response`, whose body is already read. Non-2xx returns `*ErrorResponse`, built by the unexported `checkResponse`.
   - `v == nil` drains the body; an `io.Writer` gets the raw body (for ndjson exports).
   - Anything else is JSON-decoded. An empty body (204) is success and leaves `v` untouched. Data after the JSON value is an error.
   - The body is always drained and closed.
@@ -60,7 +60,7 @@ The stack runs with security enabled and a trial license, on ports bound to 127.
   - `addQuery(path, opt)` encodes `url:"..."` struct tags with go-querystring, for any HTTP method.
   - `WithQueryParam` appends to the existing query string without re-encoding it.
   - `requireID(name, v)` rejects empty, `.` and `..` path parameters before sending.
-- `ErrorResponse{StatusCode, StatusText (the "error" field), Message, Attributes, Body}`. `Is()` maps 400/401/403/404/409/429 to `ErrBadRequest`/`ErrUnauthorized`/`ErrForbidden`/`ErrNotFound`/`ErrConflict`/`ErrTooManyRequests`. Fields of unexpected types are skipped. Bodies that are not a JSON object, such as proxy pages, become `Message`, cut to 512 bytes; `Body` keeps the whole body (up to 1 MiB).
+- `ErrorResponse{Method, URL (without credentials), Header, StatusCode, StatusText (the "error" field), Message, Attributes, Body}`. The format of `Error()` is not part of the API. `Is()` maps 400/401/403/404/409/429/503 to `ErrBadRequest`/`ErrUnauthorized`/`ErrForbidden`/`ErrNotFound`/`ErrConflict`/`ErrTooManyRequests`/`ErrServiceUnavailable`. Fields of unexpected types are skipped. Bodies that are not a JSON object, such as proxy pages, become `Message`, cut to 512 bytes; `Body` keeps the whole body (up to 1 MiB).
 
 **Service conventions** (`spaces.go` is the template). These are the v1 API rules; changes that break them need a new major version after v1.0.0.
 - **Names:**
@@ -154,7 +154,7 @@ The stack runs with security enabled and a trial license, on ports bound to 127.
 - Swap references: `toId` must exist (400 otherwise). `forId` takes a string or an array; `[]` matches nothing, and leaving it out matches everything, so the client rejects an empty non-nil `ForID`. `deleteStatus` is only returned with `delete: true`; the source data view is deleted only when `remainingRefs` is 0.
 - User sessions: `POST /api/security/session/_invalidate` needs a superuser (403 otherwise) and returns `{total}`. `match: "query"` requires `query.provider.type`, and `match: "all"` with a `query` is a 400. Sessions only exist for interactive logins, so API key or basic auth requests create none.
 - Platform (verified on 8.19.25 and 9.5.6):
-  - `GET /api/status` answers 503 with the full status body only when a **core** service (Elasticsearch, saved objects) is unavailable or critical. A degraded Kibana, or one with unavailable plugins, answers 200. `Status.Get` returns the decoded status together with the 503 `*ErrorResponse`. A 503 without a status body (e.g. from a proxy) returns only the error.
+  - `GET /api/status` answers 503 with the full status body only when a **core** service (Elasticsearch, saved objects) is unavailable or critical. A degraded Kibana, or one with unavailable plugins, answers 200. `Status.Get` returns the 503 as an `*ErrorResponse` like any other error, and `StatusFromError` decodes the status from its body. A 503 without a status body (e.g. from a proxy, or "Kibana server is not ready yet") has none.
   - Unauthenticated callers, and since 9.5 callers without the `monitor` cluster privilege, get only `{"status":{"overall":{"level":...}}}` (no version). Plugin statuses add `reported`, which is not in the spec.
   - `GET /api/features` has the same shape on both versions, but the IDs differ (`dashboard` on 8.19.25, `dashboard_v2` on 9.5.6; 50 and 64 features). Features with only reserved privileges (e.g. `monitoring`) have `privileges: null`. `?ignoreValidLicenses=true` is accepted but not in the spec.
   - `GET /api/task_manager/_health` has a top-level `reason` when the status is not `OK`. Stats sections are `{status, timestamp, value}`, plus `reason` for `capacity_estimation`. The section values change between versions, so they stay `json.RawMessage`.

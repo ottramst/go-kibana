@@ -66,7 +66,7 @@ if err != nil {
 spaces, _, err := client.Spaces.List(ctx, nil)
 ```
 
-Methods return the decoded result, the `*kibana.Response` (which wraps `*http.Response`) and an
+Methods return the decoded result, the `*kibana.Response` (status code and headers) and an
 error. Methods for endpoints without a response body, such as `Delete`, return only the
 `*kibana.Response` and the error.
 

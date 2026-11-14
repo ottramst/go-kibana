@@ -7,7 +7,7 @@ import (
 
 func TestAccStatus(t *testing.T) {
 	client := accClient(t)
-	status, _, err := client.Status.Get(t.Context())
+	status, _, err := client.Status.Get(t.Context(), nil)
 	if err != nil {
 		t.Fatalf("Get() error = %v", err)
 	}
@@ -15,16 +15,16 @@ func TestAccStatus(t *testing.T) {
 		t.Fatal("Get() returned no version")
 	}
 	// Kibana answers 200 when it is degraded too.
-	if status.Status.Overall.Level == "" {
+	if status.Summary.Overall.Level == "" {
 		t.Error("Overall.Level is empty")
 	}
-	if _, ok := status.Status.Core["elasticsearch"]; !ok {
+	if _, ok := status.Summary.Core["elasticsearch"]; !ok {
 		t.Error("Core has no elasticsearch status")
 	}
-	if len(status.Status.Plugins) == 0 {
+	if len(status.Summary.Plugins) == 0 {
 		t.Error("Plugins is empty")
 	}
-	t.Logf("Kibana %s, %s", status.Version.Number, status.Status.Overall.Level)
+	t.Logf("Kibana %s, %s", status.Version.Number, status.Summary.Overall.Level)
 }
 
 func TestAccFeatures(t *testing.T) {

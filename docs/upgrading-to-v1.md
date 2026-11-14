@@ -10,6 +10,13 @@ that can break your code, with what to use instead.
 
 | v0.5.0 | v1.0.0 |
 | --- | --- |
+| `Response` embeds `*http.Response` | `Response{StatusCode, Status, Header}`. The body was already read before. For other fields of the HTTP response, such as `TLS` or the final `Request` after redirects, use a custom `http.RoundTripper` in `WithHTTPClient`. |
+| `ErrorResponse.Response` | `ErrorResponse.Method`, `URL` (without credentials) and `Header` |
+| `CheckResponse(resp)` | Removed. `Client.Do` returns the `*ErrorResponse`. |
+| — | `ErrServiceUnavailable` for 503 responses |
+| `Status.Get(ctx)` returns the status together with the error on a 503 | `Status.Get(ctx, nil)` returns only the error; `status, ok := kibana.StatusFromError(err)` |
+| `status.Status.Overall` (`StatusInfo`) | `status.Summary.Overall` (`StatusSummary`) |
+| `StatusAvailable`, `StatusDegraded`, `StatusUnavailable`, `StatusCritical` | `StatusLevelAvailable`, `StatusLevelDegraded`, `StatusLevelUnavailable`, `StatusLevelCritical` |
 
 ## Method signatures
 
