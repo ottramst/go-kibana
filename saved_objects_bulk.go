@@ -168,8 +168,7 @@ type BulkDeleteSavedObjectsOptions struct {
 // BulkDeleteStatus is the result of deleting one object with
 // [SavedObjectsService.BulkDelete].
 type BulkDeleteStatus struct {
-	Type    string       `json:"type"`
-	ID      string       `json:"id"`
+	SavedObjectRef
 	Success bool         `json:"success"`
 	Error   *ObjectError `json:"error,omitempty"`
 }

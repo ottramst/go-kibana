@@ -17,15 +17,15 @@ func TestSavedObjectsService_Find(t *testing.T) {
 	mux, client := setup(t)
 	mux.HandleFunc("GET /s/x/api/saved_objects/_find", func(w http.ResponseWriter, r *http.Request) {
 		// Types are repeated, and references are JSON.
-		testQuery(t, r, "aggs=%7B%7D&default_search_operator=AND&fields=title&filter=dashboard.attributes.title%3Afoo"+
+		testQuery(t, r, "default_search_operator=AND&fields=title&filter=dashboard.attributes.title%3Afoo"+
 			"&has_no_reference_operator=OR&has_reference_operator=AND&namespaces=default&page=2&per_page=2&search=probe%2A"+
-			"&search_fields=title&sort_field=updated_at&type=index-pattern&type=dashboard"+
+			"&search_fields=title&sort_field=updated_at&aggs=%7B%7D"+
+			"&has_no_reference=%5B%7B%22type%22%3A%22visualization%22%2C%22id%22%3A%22v%22%7D%5D"+
 			"&has_reference=%5B%7B%22type%22%3A%22index-pattern%22%2C%22id%22%3A%22probe-ip%22%7D%5D"+
-			"&has_no_reference=%5B%7B%22type%22%3A%22visualization%22%2C%22id%22%3A%22v%22%7D%5D")
+			"&type=index-pattern&type=dashboard")
 		writeJSON(t, w, http.StatusOK, fixture(t, "savedobjects/find_type.json"))
 	})
-	got, _, err := client.InSpace("x").SavedObjects.Find(context.Background(), &kibana.FindSavedObjectsOptions{
-		Types:                  []string{"index-pattern", "dashboard"},
+	got, _, err := client.InSpace("x").SavedObjects.Find(context.Background(), []string{"index-pattern", "dashboard"}, &kibana.FindSavedObjectsOptions{
 		Search:                 "probe*",
 		SearchFields:           []string{"title"},
 		DefaultSearchOperator:  kibana.SearchOperatorAnd,
@@ -38,7 +38,7 @@ func TestSavedObjectsService_Find(t *testing.T) {
 		SortField:              "updated_at",
 		Page:                   2,
 		PerPage:                2,
-		Aggs:                   "{}",
+		Aggs:                   json.RawMessage(`{}`),
 		Namespaces:             []string{"default"},
 	})
 	if err != nil {
@@ -57,7 +57,7 @@ func TestSavedObjectsService_Find_errors(t *testing.T) {
 			mux.HandleFunc("GET /api/saved_objects/_find", func(w http.ResponseWriter, _ *http.Request) {
 				writeJSON(t, w, http.StatusBadRequest, fixture(t, name))
 			})
-			_, _, err := client.SavedObjects.Find(context.Background(), &kibana.FindSavedObjectsOptions{Types: []string{"index-pattern"}})
+			_, _, err := client.SavedObjects.Find(context.Background(), []string{"index-pattern"}, nil)
 			if !errors.Is(err, kibana.ErrBadRequest) {
 				t.Errorf("Find() error = %v, want ErrBadRequest", err)
 			}
@@ -67,13 +67,16 @@ func TestSavedObjectsService_Find_errors(t *testing.T) {
 
 func TestSavedObjectsService_Find_invalidArguments(t *testing.T) {
 	_, client := setup(t)
-	for name, opt := range map[string]*kibana.FindSavedObjectsOptions{
-		"nil options":          nil,
-		"no types":             {},
-		"reference without ID": {Types: []string{"dashboard"}, HasReference: []kibana.SavedObjectRef{{Type: "index-pattern"}}},
-		"no reference type":    {Types: []string{"dashboard"}, HasNoReference: []kibana.SavedObjectRef{{ID: "i"}}},
+	for name, tt := range map[string]struct {
+		types []string
+		opt   *kibana.FindSavedObjectsOptions
+	}{
+		"no types":             {nil, nil},
+		"empty type":           {[]string{""}, nil},
+		"reference without ID": {[]string{"dashboard"}, &kibana.FindSavedObjectsOptions{HasReference: []kibana.SavedObjectRef{{Type: "index-pattern"}}}},
+		"no reference type":    {[]string{"dashboard"}, &kibana.FindSavedObjectsOptions{HasNoReference: []kibana.SavedObjectRef{{ID: "i"}}}},
 	} {
-		if _, _, err := client.SavedObjects.Find(context.Background(), opt); err == nil {
+		if _, _, err := client.SavedObjects.Find(context.Background(), tt.types, tt.opt); err == nil {
 			t.Errorf("Find(%s) error = nil, want error", name)
 		}
 	}
@@ -101,8 +104,8 @@ func TestSavedObjectsService_FindAll(t *testing.T) {
 	findPages(t, mux, 5, &requests)
 
 	var ids []string
-	opt := &kibana.FindSavedObjectsOptions{Types: []string{"index-pattern"}, PerPage: 2, Aggs: "{}"}
-	for obj, err := range client.SavedObjects.FindAll(context.Background(), opt) {
+	opt := &kibana.FindSavedObjectsOptions{PerPage: 2, Aggs: json.RawMessage(`{}`)}
+	for obj, err := range client.SavedObjects.FindAll(context.Background(), []string{"index-pattern"}, opt) {
 		if err != nil {
 			t.Fatalf("FindAll() error = %v", err)
 		}
@@ -125,7 +128,7 @@ func TestSavedObjectsService_FindAll_startPageAndBreak(t *testing.T) {
 	var requests []string
 	findPages(t, mux, 250, &requests)
 	n := 0
-	for obj, err := range client.SavedObjects.FindAll(context.Background(), &kibana.FindSavedObjectsOptions{Types: []string{"index-pattern"}, Page: 2}) {
+	for obj, err := range client.SavedObjects.FindAll(context.Background(), []string{"index-pattern"}, &kibana.FindSavedObjectsOptions{Page: 2}) {
 		if err != nil {
 			t.Fatalf("FindAll() error = %v", err)
 		}
@@ -144,8 +147,8 @@ func TestSavedObjectsService_FindAll_startPageAndBreak(t *testing.T) {
 func TestSavedObjectsService_FindAll_error(t *testing.T) {
 	_, client := setup(t)
 	errs := 0
-	// Invalid options fail on the first page.
-	for obj, err := range client.SavedObjects.FindAll(context.Background(), nil) {
+	// Invalid arguments fail on the first page.
+	for obj, err := range client.SavedObjects.FindAll(context.Background(), nil, nil) {
 		if obj != nil || err == nil {
 			t.Errorf("FindAll() = %v, %v; want nil and an error", obj, err)
 		}

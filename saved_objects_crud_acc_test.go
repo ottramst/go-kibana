@@ -58,7 +58,7 @@ func TestAccSavedObjectsCRUD(t *testing.T) {
 	got.Attributes = json.RawMessage(`{"title":"acc vis 2"}`)
 	references := got.References
 	got.References = nil
-	if _, _, err := client.SavedObjects.Update(ctx, got, nil); err != nil {
+	if _, _, err := client.SavedObjects.Update(ctx, got.Type, got.ID, got, nil); err != nil {
 		t.Fatalf("Update() error = %v", err)
 	}
 	after, _, err := client.SavedObjects.Get(ctx, "visualization", vis.ID, nil)
@@ -77,13 +77,13 @@ func TestAccSavedObjectsCRUD(t *testing.T) {
 	}
 
 	// The version of the first read is stale now.
-	if _, _, err := client.SavedObjects.Update(ctx, got, nil); !errors.Is(err, kibana.ErrConflict) {
+	if _, _, err := client.SavedObjects.Update(ctx, got.Type, got.ID, got, nil); !errors.Is(err, kibana.ErrConflict) {
 		t.Errorf("Update(stale version) error = %v, want ErrConflict", err)
 	}
 
 	// Empty references remove them.
 	after.References = []kibana.SavedObjectReference{}
-	if _, _, err := client.SavedObjects.Update(ctx, after, nil); err != nil {
+	if _, _, err := client.SavedObjects.Update(ctx, after.Type, after.ID, after, nil); err != nil {
 		t.Fatalf("Update(no references) error = %v", err)
 	}
 	if after, _, err = client.SavedObjects.Get(ctx, "visualization", vis.ID, nil); err != nil {
@@ -95,10 +95,10 @@ func TestAccSavedObjectsCRUD(t *testing.T) {
 
 	// Upsert creates a missing object.
 	missing := &kibana.SavedObject{Type: "index-pattern", ID: randName(t, "acc"), Attributes: json.RawMessage(`{"title":"u-*"}`)}
-	if _, _, err := client.SavedObjects.Update(ctx, missing, nil); !errors.Is(err, kibana.ErrNotFound) {
+	if _, _, err := client.SavedObjects.Update(ctx, missing.Type, missing.ID, missing, nil); !errors.Is(err, kibana.ErrNotFound) {
 		t.Errorf("Update(missing) error = %v, want ErrNotFound", err)
 	}
-	if _, _, err := client.SavedObjects.Update(ctx, missing, &kibana.UpdateSavedObjectOptions{Upsert: missing.Attributes}); err != nil {
+	if _, _, err := client.SavedObjects.Update(ctx, missing.Type, missing.ID, missing, &kibana.UpdateSavedObjectOptions{Upsert: missing.Attributes}); err != nil {
 		t.Errorf("Update(upsert) error = %v", err)
 	}
 	if _, _, err := client.SavedObjects.Get(ctx, "index-pattern", missing.ID, nil); err != nil {

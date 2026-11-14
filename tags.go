@@ -129,7 +129,7 @@ type ListTagsOptions struct {
 
 // ListTagsResult is a page of tags.
 type ListTagsResult struct {
-	Tags    []*Tag
+	Tags    []Tag
 	Page    int
 	PerPage int
 
@@ -148,7 +148,7 @@ func (s *TagsService) List(ctx context.Context, opt *ListTagsOptions, opts ...Re
 		return nil, nil, err
 	}
 	var page struct {
-		Data []*Tag `json:"data"`
+		Data []Tag `json:"data"`
 		Meta struct {
 			Page    int `json:"page"`
 			PerPage int `json:"per_page"`
@@ -181,7 +181,7 @@ func (s *TagsService) ListAll(ctx context.Context, opt *ListTagsOptions, opts ..
 		if err != nil {
 			return nil, 0, err
 		}
-		return result.Tags, result.Total, nil
+		return pointers(result.Tags), result.Total, nil
 	})
 }
 

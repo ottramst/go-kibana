@@ -39,11 +39,11 @@ type Feature struct {
 	// Privileges maps the feature privileges, usually "all" and "read", to
 	// what they grant. It is nil for features that only have reserved
 	// privileges, such as "monitoring".
-	Privileges map[string]*FeaturePrivilege `json:"privileges,omitempty"`
+	Privileges map[string]FeaturePrivilege `json:"privileges,omitempty"`
 
 	// SubFeatures are the sub-feature privileges that can be granted on top
 	// of a feature privilege, with KibanaPrivilege.Feature too.
-	SubFeatures []*SubFeature `json:"subFeatures,omitempty"`
+	SubFeatures []SubFeature `json:"subFeatures,omitempty"`
 
 	// Reserved holds the reserved privileges, which only built-in roles
 	// get, as returned by Kibana.
@@ -94,8 +94,8 @@ type SubFeature struct {
 	Description string `json:"description,omitempty"`
 
 	// RequireAllSpaces sub-features can only be granted in all spaces.
-	RequireAllSpaces bool                        `json:"requireAllSpaces,omitempty"`
-	PrivilegeGroups  []*SubFeaturePrivilegeGroup `json:"privilegeGroups,omitempty"`
+	RequireAllSpaces bool                       `json:"requireAllSpaces,omitempty"`
+	PrivilegeGroups  []SubFeaturePrivilegeGroup `json:"privilegeGroups,omitempty"`
 }
 
 // SubFeaturePrivilegeGroupType is how the privileges of a
@@ -116,7 +116,7 @@ const (
 // SubFeaturePrivilegeGroup is a group of sub-feature privileges.
 type SubFeaturePrivilegeGroup struct {
 	GroupType  SubFeaturePrivilegeGroupType `json:"groupType"`
-	Privileges []*SubFeaturePrivilege       `json:"privileges"`
+	Privileges []SubFeaturePrivilege        `json:"privileges"`
 }
 
 // SubFeaturePrivilege is a sub-feature privilege. Its ID is granted next to

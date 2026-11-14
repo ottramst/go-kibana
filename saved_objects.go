@@ -14,6 +14,9 @@ type SavedObjectsService service
 
 // SavedObjectRef identifies a saved object by its type and ID, such as
 // {Type: "dashboard", ID: "7adfa750-4c81-11e8-b3d7-01146121b73d"}.
+//
+// Result types that identify an object embed it, so their Type and ID fields
+// are its fields.
 type SavedObjectRef struct {
 	Type string `json:"type"`
 	ID   string `json:"id"`

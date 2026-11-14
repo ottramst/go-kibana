@@ -33,8 +33,7 @@ func TestAccSavedObjectsFind(t *testing.T) {
 		visIDs = append(visIDs, obj.ID)
 	}
 
-	got, _, err := client.SavedObjects.Find(ctx, &kibana.FindSavedObjectsOptions{
-		Types:        []string{"visualization"},
+	got, _, err := client.SavedObjects.Find(ctx, []string{"visualization"}, &kibana.FindSavedObjectsOptions{
 		HasReference: []kibana.SavedObjectRef{{Type: "index-pattern", ID: ipID}},
 		Fields:       []string{"title"},
 	})
@@ -51,8 +50,7 @@ func TestAccSavedObjectsFind(t *testing.T) {
 		t.Errorf("Find(has reference) = %v (total %d), want %v", found, got.Total, want)
 	}
 
-	got, _, err = client.SavedObjects.Find(ctx, &kibana.FindSavedObjectsOptions{
-		Types:          []string{"visualization"},
+	got, _, err = client.SavedObjects.Find(ctx, []string{"visualization"}, &kibana.FindSavedObjectsOptions{
 		HasNoReference: []kibana.SavedObjectRef{{Type: "index-pattern", ID: ipID}},
 	})
 	if err != nil || got.Total != 1 || got.SavedObjects[0].ID != visIDs[2] {
@@ -60,8 +58,8 @@ func TestAccSavedObjectsFind(t *testing.T) {
 	}
 
 	var all []string
-	for obj, err := range client.SavedObjects.FindAll(ctx, &kibana.FindSavedObjectsOptions{
-		Types: []string{"visualization", "index-pattern"}, PerPage: 1, SortField: "updated_at",
+	for obj, err := range client.SavedObjects.FindAll(ctx, []string{"visualization", "index-pattern"}, &kibana.FindSavedObjectsOptions{
+		PerPage: 1, SortField: "updated_at",
 	}) {
 		if err != nil {
 			t.Fatalf("FindAll() error = %v", err)
@@ -72,7 +70,7 @@ func TestAccSavedObjectsFind(t *testing.T) {
 		t.Errorf("FindAll() = %v, want the 4 objects of the space", all)
 	}
 
-	_, _, err = client.SavedObjects.Find(ctx, &kibana.FindSavedObjectsOptions{Types: []string{"visualization"}, Page: 101, PerPage: 100})
+	_, _, err = client.SavedObjects.Find(ctx, []string{"visualization"}, &kibana.FindSavedObjectsOptions{Page: 101, PerPage: 100})
 	if !errors.Is(err, kibana.ErrBadRequest) {
 		t.Errorf("Find(beyond 10,000) error = %v, want ErrBadRequest", err)
 	}

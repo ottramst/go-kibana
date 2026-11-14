@@ -9,8 +9,7 @@ import (
 // ShareableReference describes a saved object and its references, and the
 // spaces they are in.
 type ShareableReference struct {
-	Type string `json:"type"`
-	ID   string `json:"id"`
+	SavedObjectRef
 
 	// Spaces lists the spaces the object is in. It is empty for objects that
 	// cannot be shared, which exist in a single space.
@@ -37,6 +36,15 @@ type GetShareableReferencesOptions struct {
 	_ [0]func()
 }
 
+// GetShareableReferencesRequest is the request of
+// [SpacesService.GetShareableReferences].
+type GetShareableReferencesRequest struct {
+	_ [0]func()
+
+	// Objects lists the saved objects to look up. Required.
+	Objects []SavedObjectRef `json:"objects"`
+}
+
 // GetShareableReferences returns the given saved objects, the objects they
 // reference, and the spaces they are in. The objects are looked up in the
 // client's space; use [Client.InSpace] for another space.
@@ -44,17 +52,17 @@ type GetShareableReferencesOptions struct {
 // Kibana API: POST /api/spaces/_get_shareable_references
 //
 // Kibana API docs: https://www.elastic.co/docs/api/doc/kibana/operation/operation-post-spaces-get-shareable-references
-func (s *SpacesService) GetShareableReferences(ctx context.Context, objects []SavedObjectRef, opt *GetShareableReferencesOptions, opts ...RequestOption) ([]*ShareableReference, *Response, error) {
-	if err := validateRefs(objects); err != nil {
+func (s *SpacesService) GetShareableReferences(ctx context.Context, req *GetShareableReferencesRequest, opt *GetShareableReferencesOptions, opts ...RequestOption) ([]*ShareableReference, *Response, error) {
+	if req == nil {
+		return nil, nil, errors.New("kibana: request must not be nil")
+	}
+	if err := validateRefs(req.Objects); err != nil {
 		return nil, nil, err
 	}
-	body := struct {
-		Objects []SavedObjectRef `json:"objects"`
-	}{objects}
 	var result struct {
 		Objects []*ShareableReference `json:"objects"`
 	}
-	resp, err := s.client.do(ctx, http.MethodPost, "/api/spaces/_get_shareable_references", body, &result, opt, opts)
+	resp, err := s.client.do(ctx, http.MethodPost, "/api/spaces/_get_shareable_references", req, &result, opt, opts)
 	if err != nil {
 		return nil, resp, err
 	}
@@ -78,8 +86,7 @@ type UpdateObjectsSpacesRequest struct {
 // ObjectSpaces is the result of [SpacesService.UpdateObjectsSpaces] for one
 // object.
 type ObjectSpaces struct {
-	Type string `json:"type"`
-	ID   string `json:"id"`
+	SavedObjectRef
 
 	// Spaces lists the spaces the object is in after the update. It is empty
 	// if the object was removed from all its spaces, which deletes it.

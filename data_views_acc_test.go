@@ -16,8 +16,8 @@ func TestAccDataViews(t *testing.T) {
 	ctx := t.Context()
 
 	// A new space has no default data view.
-	if id, _, err := client.DataViews.GetDefault(ctx, nil); err != nil || id != "" {
-		t.Fatalf("GetDefault() = %q, %v; want none", id, err)
+	if id := defaultDataView(t, client); id != "" {
+		t.Fatalf("GetDefault() = %q, want none", id)
 	}
 
 	// No index matches the title, so the view needs AllowNoIndex to be
@@ -44,8 +44,8 @@ func TestAccDataViews(t *testing.T) {
 	}
 
 	// The first data view of a space becomes its default.
-	if id, _, err := client.DataViews.GetDefault(ctx, nil); err != nil || id != dv.ID {
-		t.Errorf("GetDefault() = %q, %v; want %s", id, err, dv.ID)
+	if id := defaultDataView(t, client); id != dv.ID {
+		t.Errorf("GetDefault() = %q, want %s", id, dv.ID)
 	}
 
 	// An existing ID is a 400, unless Override is set.
@@ -107,14 +107,14 @@ func TestAccDataViews(t *testing.T) {
 	if _, err := client.DataViews.SetDefault(ctx, other.ID, nil); err != nil {
 		t.Fatalf("SetDefault() error = %v", err)
 	}
-	if id, _, err := client.DataViews.GetDefault(ctx, nil); err != nil || id != other.ID {
-		t.Errorf("GetDefault() = %q, %v; want %s", id, err, other.ID)
+	if id := defaultDataView(t, client); id != other.ID {
+		t.Errorf("GetDefault() = %q, want %s", id, other.ID)
 	}
 	if _, err := client.DataViews.SetDefault(ctx, "", nil); err != nil {
 		t.Fatalf("SetDefault(\"\") error = %v", err)
 	}
-	if id, _, err := client.DataViews.GetDefault(ctx, nil); err != nil || id != "" {
-		t.Errorf("GetDefault() = %q, %v; want none", id, err)
+	if id := defaultDataView(t, client); id != "" {
+		t.Errorf("GetDefault() = %q, want none", id)
 	}
 
 	if _, err := client.DataViews.Delete(ctx, dv.ID, nil); err != nil {
@@ -126,4 +126,15 @@ func TestAccDataViews(t *testing.T) {
 	if _, err := client.DataViews.Delete(ctx, dv.ID, nil); !errors.Is(err, kibana.ErrNotFound) {
 		t.Errorf("Delete(deleted) error = %v, want ErrNotFound", err)
 	}
+}
+
+// defaultDataView returns the ID of the default data view of the client's
+// space.
+func defaultDataView(t *testing.T, client *kibana.Client) string {
+	t.Helper()
+	def, _, err := client.DataViews.GetDefault(t.Context(), nil)
+	if err != nil {
+		t.Fatalf("GetDefault() error = %v", err)
+	}
+	return def.ID
 }
