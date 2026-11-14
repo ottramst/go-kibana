@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strings"
 )
 
 // ExportSavedObjectsRequest is the request of [SavedObjectsService.Export].
@@ -98,6 +99,11 @@ func (s *SavedObjectsService) Export(ctx context.Context, w io.Writer, req *Expo
 	case len(req.Objects) > 0:
 		if err := validateRefs(req.Objects); err != nil {
 			return nil, nil, err
+		}
+	}
+	if len(req.HasReference) > 0 {
+		if err := validateRefs(req.HasReference); err != nil {
+			return nil, nil, fmt.Errorf("kibana: HasReference: %s", strings.TrimPrefix(err.Error(), "kibana: "))
 		}
 	}
 	lw := &lastLineWriter{w: w}

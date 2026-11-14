@@ -68,7 +68,7 @@ const (
 // ImportError is an object that was not imported or copied, or an error
 // that stopped the copy into a space.
 //
-// For an object, Type, ID, Meta and Error are set. When the copy into a
+// For an object, Type, ID, Meta and Detail are set. When the copy into a
 // whole space failed, only StatusCode, StatusText and Message are set.
 type ImportError struct {
 	SavedObjectRef
@@ -121,6 +121,12 @@ func (e *ImportError) Error() string {
 			msg += ": " + e.Detail.Message
 		}
 		return fmt.Sprintf("kibana: %s %s: %s", e.Type, e.ID, msg)
+	}
+	if e.StatusCode == 0 {
+		if e.Type != "" || e.ID != "" {
+			return fmt.Sprintf("kibana: %s %s: import failed", e.Type, e.ID)
+		}
+		return "kibana: import failed"
 	}
 	msg := e.Message
 	if msg == "" {

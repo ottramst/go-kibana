@@ -299,10 +299,11 @@ func TestSavedObjectsService_Export_invalidArguments(t *testing.T) {
 	ctx := context.Background()
 	obj := []kibana.SavedObjectRef{{Type: "dashboard", ID: "d"}}
 	for name, req := range map[string]*kibana.ExportSavedObjectsRequest{
-		"nil request":       nil,
-		"nothing to export": {},
-		"types and objects": {Types: []string{"dashboard"}, Objects: obj},
-		"object without ID": {Objects: []kibana.SavedObjectRef{{Type: "dashboard"}}},
+		"nil request":          nil,
+		"nothing to export":    {},
+		"types and objects":    {Types: []string{"dashboard"}, Objects: obj},
+		"object without ID":    {Objects: []kibana.SavedObjectRef{{Type: "dashboard"}}},
+		"reference without ID": {Types: []string{"visualization"}, HasReference: []kibana.SavedObjectRef{{Type: "index-pattern"}}},
 	} {
 		if _, _, err := client.SavedObjects.Export(ctx, io.Discard, req, nil); err == nil {
 			t.Errorf("Export(%s) error = nil, want error", name)

@@ -236,6 +236,9 @@ func TestImportError_Error(t *testing.T) {
 		}, "kibana: index-pattern i: conflict"},
 		{&kibana.ImportError{StatusCode: 403, StatusText: "Forbidden", Message: "Unable to bulk_create"}, "kibana: 403 Unable to bulk_create"},
 		{&kibana.ImportError{StatusCode: 403, StatusText: "Forbidden"}, "kibana: 403 Forbidden"},
+		// Neither an error detail nor a status code.
+		{&kibana.ImportError{SavedObjectRef: kibana.SavedObjectRef{Type: "dashboard", ID: "d"}}, "kibana: dashboard d: import failed"},
+		{&kibana.ImportError{}, "kibana: import failed"},
 	}
 	for _, tt := range tests {
 		if got := tt.err.Error(); got != tt.want {
@@ -249,26 +252,20 @@ func TestImportError_Error(t *testing.T) {
 }
 
 func TestImportResult_marshal(t *testing.T) {
-	// The embedded SavedObjectRef is flattened, and left out of a failure
-	// of the whole space.
+	// The embedded SavedObjectRef is flattened.
 	data, err := json.Marshal(kibana.ImportSavedObjectsResult{
 		SuccessResults: []kibana.ImportSuccess{{SavedObjectRef: kibana.SavedObjectRef{Type: "dashboard", ID: "d"}}},
-		Errors:         []kibana.ImportError{{StatusCode: 403, StatusText: "Forbidden", Message: "m"}},
 	})
 	if err != nil {
 		t.Fatalf("Marshal() error = %v", err)
 	}
 	var got struct {
 		SuccessResults []map[string]any `json:"successResults"`
-		Errors         []map[string]any `json:"errors"`
 	}
 	if err := json.Unmarshal(data, &got); err != nil {
 		t.Fatalf("Unmarshal() error = %v", err)
 	}
 	if s := got.SuccessResults[0]; s["type"] != "dashboard" || s["id"] != "d" {
 		t.Errorf("successResults[0] = %v, want type and id", s)
-	}
-	if e := got.Errors[0]; e["type"] != nil || e["id"] != nil {
-		t.Errorf("errors[0] = %v, want no type or id", e)
 	}
 }

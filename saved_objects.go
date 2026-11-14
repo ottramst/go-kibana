@@ -18,8 +18,8 @@ type SavedObjectsService service
 // Result types that identify an object embed it, so their Type and ID fields
 // are its fields.
 type SavedObjectRef struct {
-	Type string `json:"type,omitempty"`
-	ID   string `json:"id,omitempty"`
+	Type string `json:"type"`
+	ID   string `json:"id"`
 }
 
 // validateRefs returns an error if refs is empty or has an entry without a
