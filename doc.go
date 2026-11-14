@@ -104,6 +104,7 @@
 //     CRUD and bulk methods, keep compiling but return Kibana's error once
 //     Kibana removes the endpoint.
 //
-// Adding fields to structs and methods to services is not a breaking change.
-// Whether structs can be compared with == is not part of the API.
+// Adding fields to structs and methods to services is not a breaking change:
+// structs can't be compared with == or written as unkeyed literals, so new
+// fields never break code.
 package kibana

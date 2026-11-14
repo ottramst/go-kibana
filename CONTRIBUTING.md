@@ -74,13 +74,16 @@ CI tests the latest patch of the supported Kibana release lines (see the
 From v1.0.0, the module follows [semantic versioning](https://semver.org/). A change that can break code
 using the module, such as removing or renaming an exported identifier, changing a signature or a field type,
 or adding a method to an interface, needs a new major version with a `/v2` module path. Adding methods,
-functions, types and struct fields is compatible.
+functions, types and struct fields is compatible: exported structs have an unexported `_ [0]func()` field,
+so they can't be compared or written as unkeyed literals, which adding a field would break.
 
 The `API compatibility` job of CI runs [gorelease](https://pkg.go.dev/golang.org/x/exp/cmd/gorelease) against
 the latest v1 release and fails on incompatible changes. The only exceptions are the ones in the
 [stability policy](README.md#stability): endpoints that Kibana marks as technical preview or experimental
-may change with Kibana. Such a pull request needs the `api-break-approved` label, applied by a maintainer,
-and a re-run of the check, and its CHANGELOG entry goes under `BREAKING CHANGES`.
+may change with Kibana. Such a pull request adds the file `.github/api-break-allowed`, containing the latest
+release (for example `v1.2.0`), and its CHANGELOG entry goes under `BREAKING CHANGES`. The check then
+warns instead of failing, on the pull request, on `main` and on later pull requests, until the next release
+makes the file stale; the release pull request deletes it.
 
 To run the check locally on a clean checkout:
 
@@ -95,7 +98,7 @@ Maintainers release by pushing a `vX.Y.Z` tag:
 
 1. Pick the version: a patch release for bug fixes, a minor release for new features. `gorelease` suggests one.
 2. In a release pull request, move the `## Unreleased` entries in `CHANGELOG.md` under a new `## vX.Y.Z`
-   heading.
+   heading, and delete `.github/api-break-allowed` if it exists.
 3. After it is merged, tag the merge commit and push the tag. The release workflow publishes the
    `## vX.Y.Z` section as the GitHub release notes and warms the Go module proxy, so that pkg.go.dev picks
    up the version.

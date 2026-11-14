@@ -59,7 +59,8 @@ The [package documentation](https://pkg.go.dev/github.com/ottramst/go-kibana) ex
 each recipe links to a complete example.
 
 **Update an object** ([example](https://pkg.go.dev/github.com/ottramst/go-kibana#example-SpacesService.Update)).
-Updates replace the object, so read it first. Empty text fields are sent, so `""` clears a field.
+Updates replace the object, so read it first. Empty text fields are sent, so `""` clears most of them;
+the field docs name the exceptions, such as `Space.Color`.
 
 ```go
 space, _, err := client.Spaces.Get(ctx, "marketing", nil)
@@ -86,7 +87,8 @@ _, err := client.Roles.CreateOrUpdate(ctx, "marketing_analyst", &kibana.Role{
 **Copy dashboards to another space or Kibana** ([between spaces](https://pkg.go.dev/github.com/ottramst/go-kibana#example-SpacesService.CopySavedObjects),
 [between instances](https://pkg.go.dev/github.com/ottramst/go-kibana#example-SavedObjectsService.Import-FromAnotherKibana)).
 `Spaces.CopySavedObjects` copies within one Kibana. Across instances, stream `SavedObjects.Export` into
-`SavedObjects.Import`. Both succeed when some objects fail, so check `result.Errors`.
+`SavedObjects.Import`. Both succeed when some objects fail, so check the `Errors` of the result (one
+result per target space for copies).
 
 **Handle errors** ([example](https://pkg.go.dev/github.com/ottramst/go-kibana#example-ErrorResponse)).
 
@@ -148,8 +150,8 @@ For other authentication schemes, such as a bearer token, use `kibana.WithHeader
 From v1.0.0, go-kibana follows [semantic versioning](https://semver.org/): code that compiles against a
 v1 release keeps compiling against later v1 releases. Breaking changes need a new major version
 (`/v2`), and CI checks every pull request against the latest release. Adding fields, methods and
-functions is not a breaking change, and whether a struct can be compared with `==` is not part of the
-API. There are two exceptions, which follow Kibana:
+functions is not a breaking change: structs can't be compared with `==` or written as unkeyed literals,
+so new fields never break your code. There are two exceptions, which follow Kibana:
 
 - Endpoints that Kibana marks as technical preview or experimental (tags, short URLs and features) may
   change in a minor release if Kibana changes them.
