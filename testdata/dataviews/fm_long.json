@@ -1,0 +1,5 @@
+{
+  "statusCode": 400,
+  "error": "Bad Request",
+  "message": "[request body.fields.host.customDescription]: types that failed validation:\n- [request body.customDescription.0]: value has length [301] but it must have a maximum length of [300].\n- [request body.customDescription.1]: expected value to equal [null]"
+}

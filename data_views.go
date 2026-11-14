@@ -108,6 +108,17 @@ type RuntimeField struct {
 	// Fields lists the subfields of a composite runtime field, emitted by
 	// the script.
 	Fields map[string]RuntimeSubField `json:"fields,omitempty"`
+
+	// CustomLabel, CustomDescription, Popularity and Format are the field's
+	// metadata. The runtime field methods, such as
+	// [DataViewsService.CreateRuntimeField], store them in
+	// DataView.FieldAttrs and FieldFormats, and do not return them here. In
+	// DataView.RuntimeFieldMap, Kibana stores and returns them with the
+	// runtime field.
+	CustomLabel       string               `json:"customLabel,omitempty"`
+	CustomDescription string               `json:"customDescription,omitempty"`
+	Popularity        int                  `json:"popularity,omitempty"`
+	Format            *DataViewFieldFormat `json:"format,omitempty"`
 }
 
 // RuntimeFieldScript is the Painless script of a runtime field, such as
@@ -116,9 +127,16 @@ type RuntimeFieldScript struct {
 	Source string `json:"source"`
 }
 
-// RuntimeSubField is a subfield of a composite runtime field.
+// RuntimeSubField is a subfield of a composite runtime field. Its metadata
+// is stored like that of a [RuntimeField], under the name
+// "<field>.<subfield>".
 type RuntimeSubField struct {
 	Type string `json:"type"`
+
+	CustomLabel       string               `json:"customLabel,omitempty"`
+	CustomDescription string               `json:"customDescription,omitempty"`
+	Popularity        int                  `json:"popularity,omitempty"`
+	Format            *DataViewFieldFormat `json:"format,omitempty"`
 }
 
 // DataViewField is the specification of a field of a data view, as Kibana
@@ -302,8 +320,9 @@ type UpdateDataViewOptions struct {
 //   - An empty Title keeps the stored title.
 //   - SourceFilters, FieldFormats and RuntimeFieldMap are kept when nil, and
 //     replaced when not nil: an empty map removes all runtime fields.
-//   - ID, FieldAttrs, Namespaces, AllowHidden, Fields and Version are not
-//     sent, because Kibana rejects them. Field attributes are changed with the field metadata endpoint.
+//   - ID, FieldAttrs, Namespaces and AllowHidden are not sent, because
+//     Kibana rejects them, nor Fields and Version, which Kibana sets.
+//     Change field attributes with [DataViewsService.UpdateFieldsMetadata].
 //
 // Kibana API: POST /api/data_views/data_view/{viewId}
 // Kibana API docs: https://www.elastic.co/docs/api/doc/kibana/operation/operation-updatedataviewdefault

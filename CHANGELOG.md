@@ -3,6 +3,9 @@
 FEATURES:
 
 * New `DataViews` service: `List`, `Get`, `Create`, `Update` and `Delete` data views, and `GetDefault` and `SetDefault` for the default data view of a space ([#37](https://github.com/ottramst/go-kibana/issues/37), [#38](https://github.com/ottramst/go-kibana/issues/38))
+* data views: `UpdateFieldsMetadata` changes the custom labels, descriptions, popularity and formats of fields ([#39](https://github.com/ottramst/go-kibana/issues/39))
+* data views: `CreateRuntimeField`, `CreateOrUpdateRuntimeField`, `GetRuntimeField`, `UpdateRuntimeField` and `DeleteRuntimeField`, including composite runtime fields ([#40](https://github.com/ottramst/go-kibana/issues/40))
+* data views: `SwapReferences` and `PreviewSwapReferences` move the references of saved objects from one data view to another ([#41](https://github.com/ottramst/go-kibana/issues/41))
 
 ## v0.4.0
 

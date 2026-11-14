@@ -1,0 +1,122 @@
+{
+  "fields": [
+    {
+      "count": 0,
+      "name": "comp.a",
+      "type": "string",
+      "esTypes": [
+        "keyword"
+      ],
+      "scripted": false,
+      "searchable": true,
+      "aggregatable": true,
+      "readFromDocValues": false,
+      "shortDotsEnable": false,
+      "runtimeField": {
+        "type": "composite",
+        "script": {
+          "source": "emit(\"a\", \"x\"); emit(\"b\", 1)"
+        },
+        "fields": {
+          "a": {
+            "type": "keyword"
+          },
+          "b": {
+            "type": "long"
+          }
+        }
+      }
+    },
+    {
+      "count": 0,
+      "name": "comp.b",
+      "type": "number",
+      "esTypes": [
+        "long"
+      ],
+      "scripted": false,
+      "searchable": true,
+      "aggregatable": true,
+      "readFromDocValues": false,
+      "shortDotsEnable": false,
+      "runtimeField": {
+        "type": "composite",
+        "script": {
+          "source": "emit(\"a\", \"x\"); emit(\"b\", 1)"
+        },
+        "fields": {
+          "a": {
+            "type": "keyword"
+          },
+          "b": {
+            "type": "long"
+          }
+        }
+      }
+    }
+  ],
+  "data_view": {
+    "id": "probe-dv-2",
+    "version": "WzMyLDFd",
+    "title": "",
+    "timeFieldName": "@timestamp",
+    "sourceFilters": [
+      {
+        "value": "msg"
+      }
+    ],
+    "fieldFormats": {
+      "rt4": {
+        "id": "string"
+      }
+    },
+    "runtimeFieldMap": {
+      "rt3": {
+        "type": "keyword"
+      },
+      "rt2": {
+        "type": "long",
+        "script": {
+          "source": "emit(3.0)"
+        }
+      },
+      "rt4": {
+        "type": "keyword",
+        "script": {
+          "source": "emit(\"a\")"
+        }
+      },
+      "comp": {
+        "type": "composite",
+        "script": {
+          "source": "emit(\"a\", \"x\"); emit(\"b\", 1)"
+        },
+        "fields": {
+          "a": {
+            "type": "keyword"
+          },
+          "b": {
+            "type": "long"
+          }
+        }
+      }
+    },
+    "fieldAttrs": {
+      "host": {
+        "customDescription": "desc"
+      },
+      "nope": {
+        "customLabel": "N"
+      },
+      "rt4": {
+        "customLabel": "RT4",
+        "customDescription": "d4"
+      },
+      "comp.a": {},
+      "comp.b": {}
+    },
+    "allowNoIndex": false,
+    "name": "Renamed",
+    "allowHidden": false
+  }
+}

@@ -1,0 +1,58 @@
+{
+  "fields": [
+    {
+      "count": 0,
+      "name": "rt2",
+      "type": "number",
+      "esTypes": [
+        "long"
+      ],
+      "scripted": false,
+      "searchable": true,
+      "aggregatable": true,
+      "readFromDocValues": false,
+      "shortDotsEnable": false,
+      "runtimeField": {
+        "type": "long",
+        "script": {
+          "source": "emit(3.0)"
+        }
+      }
+    }
+  ],
+  "data_view": {
+    "id": "probe-dv-2",
+    "version": "WzMwLDFd",
+    "title": "",
+    "timeFieldName": "@timestamp",
+    "sourceFilters": [
+      {
+        "value": "msg"
+      }
+    ],
+    "fieldFormats": {},
+    "runtimeFieldMap": {
+      "rt3": {
+        "type": "keyword"
+      },
+      "rt2": {
+        "type": "long",
+        "script": {
+          "source": "emit(3.0)"
+        }
+      }
+    },
+    "fieldAttrs": {
+      "host": {
+        "customDescription": "desc"
+      },
+      "nope": {
+        "customLabel": "N"
+      },
+      "rt2": {}
+    },
+    "allowNoIndex": false,
+    "name": "Renamed",
+    "allowHidden": false
+  }
+}

@@ -1,0 +1,5 @@
+{
+  "statusCode": 400,
+  "error": "Bad Request",
+  "message": "Could not find object with type index-pattern and id ce8566b7-f14a-4b3b-81cf-6f3101b373a5"
+}

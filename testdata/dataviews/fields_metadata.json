@@ -1,0 +1,74 @@
+{
+  "data_view": {
+    "id": "probe-dv-2",
+    "version": "WzIyLDFd",
+    "title": "",
+    "timeFieldName": "@timestamp",
+    "sourceFilters": [
+      {
+        "value": "msg"
+      }
+    ],
+    "fieldFormats": {
+      "status": {
+        "id": "bytes"
+      }
+    },
+    "runtimeFieldMap": {},
+    "fieldAttrs": {
+      "host": {
+        "customLabel": "H",
+        "count": 5,
+        "customDescription": "desc"
+      }
+    },
+    "allowNoIndex": false,
+    "name": "Renamed",
+    "allowHidden": false,
+    "fields": {
+      "host": {
+        "count": 5,
+        "conflictDescriptions": {
+          "keyword": [
+            "probe-logs-1"
+          ],
+          "object": [
+            ".internal.alerts-security.alerts-default-000001"
+          ]
+        },
+        "name": "host",
+        "type": "conflict",
+        "esTypes": [
+          "keyword",
+          "object"
+        ],
+        "scripted": false,
+        "searchable": true,
+        "aggregatable": true,
+        "readFromDocValues": false,
+        "format": {
+          "id": "string"
+        },
+        "customLabel": "H",
+        "customDescription": "desc",
+        "shortDotsEnable": false
+      },
+      "status": {
+        "count": 0,
+        "name": "status",
+        "type": "number",
+        "esTypes": [
+          "long"
+        ],
+        "scripted": false,
+        "searchable": true,
+        "aggregatable": true,
+        "readFromDocValues": true,
+        "format": {
+          "id": "bytes"
+        },
+        "shortDotsEnable": false
+      }
+    }
+  }
+}
