@@ -17,11 +17,13 @@ type FeaturesService service
 //
 // The alerting and cases fields of a feature are not decoded.
 type Feature struct {
-	ID          string           `json:"id"`
-	Name        string           `json:"name"`
-	Description string           `json:"description,omitempty"`
-	Order       int              `json:"order,omitempty"`
-	Category    *FeatureCategory `json:"category,omitempty"`
+	ID          string `json:"id"`
+	Name        string `json:"name"`
+	Description string `json:"description,omitempty"`
+
+	// Order and Category place the feature in the role management UI.
+	Order    int              `json:"order,omitempty"`
+	Category *FeatureCategory `json:"category,omitempty"`
 
 	// App and Catalogue list the applications and catalogue entries the
 	// feature contains.
@@ -67,6 +69,9 @@ type FeatureCategory struct {
 
 // FeaturePrivilege is what a feature privilege grants.
 type FeaturePrivilege struct {
+	// App, Catalogue, API, UI, SavedObject and Management are what the
+	// privilege grants: applications, catalogue entries, API tags, UI
+	// capabilities, access to saved object types and management entries.
 	App         []string                     `json:"app,omitempty"`
 	Catalogue   []string                     `json:"catalogue,omitempty"`
 	API         []string                     `json:"api,omitempty"`
@@ -127,7 +132,10 @@ type SubFeaturePrivilege struct {
 
 	// IncludeIn is the feature privilege that already includes this one:
 	// "all", "read" or "none".
-	IncludeIn      string                       `json:"includeIn"`
+	IncludeIn string `json:"includeIn"`
+
+	// MinimumLicense is the license the privilege needs, if any. The other
+	// fields are what it grants, as in [FeaturePrivilege].
 	MinimumLicense string                       `json:"minimumLicense,omitempty"`
 	API            []string                     `json:"api,omitempty"`
 	UI             []string                     `json:"ui,omitempty"`

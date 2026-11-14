@@ -16,6 +16,8 @@ type ImportSavedObjectsResult struct {
 	// Success is true if all objects were imported.
 	Success bool `json:"success"`
 
+	// SuccessResults lists the imported objects, and Errors the objects
+	// that were not imported. Warnings are only set by imports.
 	SuccessCount   int             `json:"successCount"`
 	SuccessResults []ImportSuccess `json:"successResults,omitempty"`
 	Errors         []ImportError   `json:"errors,omitempty"`
@@ -155,8 +157,11 @@ type ImportErrorDetail struct {
 
 // ImportErrorDestination is one of the objects of an ambiguous conflict.
 type ImportErrorDestination struct {
-	ID        string `json:"id"`
-	Title     string `json:"title,omitempty"`
+	ID    string `json:"id"`
+	Title string `json:"title,omitempty"`
+
+	// UpdatedAt is the time the object was last updated, as Kibana
+	// formats it (an RFC 3339 timestamp).
 	UpdatedAt string `json:"updatedAt,omitempty"`
 }
 
@@ -265,6 +270,8 @@ type ImportRetry struct {
 // ImportReferenceReplacement replaces the references of an object to the
 // object of type Type with ID From by references to the object with ID To.
 type ImportReferenceReplacement struct {
+	// Type is the type of the referenced object, From the ID in the file,
+	// and To the ID of the existing object to reference instead.
 	Type string `json:"type"`
 	From string `json:"from"`
 	To   string `json:"to"`

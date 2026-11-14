@@ -58,6 +58,8 @@ type ExportDetails struct {
 // ExportExcludedObject is an object that was left out of an export.
 type ExportExcludedObject struct {
 	SavedObjectRef
+
+	// Reason says why the object was left out, such as "excluded".
 	Reason string `json:"reason,omitempty"`
 }
 

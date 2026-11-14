@@ -2,12 +2,14 @@
 
 ## Supported versions
 
-Security fixes are released for the latest minor version of the module only.
+Security fixes are released as a patch of the latest v1.x minor version. Since v1 releases are
+backward compatible, upgrading to the latest minor version is safe.
 
-| Module version | Supported          |
-| -------------- | ------------------ |
-| latest release | :white_check_mark: |
-| older releases | :x:                |
+| Module version     | Supported          |
+| ------------------ | ------------------ |
+| latest v1.x minor  | :white_check_mark: |
+| older v1.x minors  | :x:                |
+| v0.x               | :x:                |
 
 See the [support policy](README.md#support-policy) for the supported Go and Kibana versions.
 

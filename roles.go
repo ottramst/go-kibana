@@ -32,8 +32,10 @@ type Role struct {
 	// is disabled, for example because it needs a higher license level.
 	TransientMetadata map[string]any `json:"transient_metadata,omitempty"`
 
+	// Elasticsearch holds the cluster, index and run-as privileges.
 	Elasticsearch ElasticsearchPrivileges `json:"elasticsearch"`
 
+	// Kibana lists the Kibana privileges, each granted in some spaces.
 	Kibana []KibanaPrivilege `json:"kibana,omitempty"`
 
 	// UnrecognizedApplications is read-only and lists application privileges
@@ -48,6 +50,8 @@ type Role struct {
 // RoleTransformError describes application privileges of a role that
 // Kibana could not convert to Kibana privileges.
 type RoleTransformError struct {
+	// Reason says why the privileges could not be converted, and State
+	// holds them as Kibana returned them.
 	Reason string          `json:"reason"`
 	State  json.RawMessage `json:"state,omitempty"`
 }
@@ -82,6 +86,8 @@ type IndexPrivilege struct {
 	// Query is a document level security query, as a JSON string.
 	Query string `json:"query,omitempty"`
 
+	// AllowRestrictedIndices lets Names match restricted indices, such as
+	// .security.
 	AllowRestrictedIndices bool `json:"allow_restricted_indices,omitempty"`
 }
 
@@ -96,6 +102,8 @@ type RemoteIndexPrivilege struct {
 	// Privileges lists index privileges, such as "read". Required.
 	Privileges []string `json:"privileges"`
 
+	// FieldSecurity, Query and AllowRestrictedIndices are as in
+	// [IndexPrivilege].
 	FieldSecurity map[string][]string `json:"field_security,omitempty"`
 
 	Query string `json:"query,omitempty"`

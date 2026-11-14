@@ -28,7 +28,7 @@ type FindSavedObjectsOptions struct {
 
 	// Search is an Elasticsearch simple_query_string query, such as
 	// "my-dash*", on SearchFields (the type's default search fields if
-	// empty).
+	// empty). DefaultSearchOperator combines its terms: OR unless set.
 	Search                string         `url:"search,omitempty"`
 	SearchFields          []string       `url:"search_fields,omitempty"`
 	DefaultSearchOperator SearchOperator `url:"default_search_operator,omitempty"`
