@@ -167,11 +167,11 @@ func createIndexPattern(t *testing.T, client *kibana.Client, id, title string) {
 func createSpace(t *testing.T, client *kibana.Client) string {
 	t.Helper()
 	id := randName(t, "acc")
-	if _, _, err := client.Spaces.Create(t.Context(), &kibana.Space{ID: id, Name: "Acceptance " + id}); err != nil {
+	if _, _, err := client.Spaces.Create(t.Context(), &kibana.Space{ID: id, Name: "Acceptance " + id}, nil); err != nil {
 		t.Fatalf("creating space %s: %v", id, err)
 	}
 	cleanup(t, func(ctx context.Context) error {
-		_, err := client.Spaces.Delete(ctx, id)
+		_, err := client.Spaces.Delete(ctx, id, nil)
 		return err
 	})
 	return id

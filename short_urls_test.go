@@ -22,9 +22,9 @@ func TestShortURLsService_Create(t *testing.T) {
 	})
 
 	got, _, err := client.ShortURLs.Create(context.Background(), &kibana.CreateShortURLRequest{
-		LocatorID: kibana.LegacyShortURLLocator,
+		LocatorID: kibana.LegacyShortURLLocatorID,
 		Params:    map[string]any{"url": "/app/discover#/"},
-	})
+	}, nil)
 	if err != nil {
 		t.Fatalf("Create() error = %v", err)
 	}
@@ -33,7 +33,7 @@ func TestShortURLsService_Create(t *testing.T) {
 		ID:   "7cfb4636-4483-46d2-9ed7-72baed3d53e4",
 		Slug: "ipYsn",
 		Locator: kibana.ShortURLLocator{
-			ID:      kibana.LegacyShortURLLocator,
+			ID:      kibana.LegacyShortURLLocatorID,
 			Version: "9.5.6",
 			State:   map[string]any{"url": "/app/discover#/"},
 		},
@@ -52,7 +52,7 @@ func TestShortURLsService_Create_8_19(t *testing.T) {
 	mux.HandleFunc("POST /api/short_url", func(w http.ResponseWriter, _ *http.Request) {
 		writeJSON(t, w, http.StatusOK, fixture(t, "shorturls/create_8.19.json"))
 	})
-	got, _, err := client.ShortURLs.Create(context.Background(), &kibana.CreateShortURLRequest{LocatorID: kibana.LegacyShortURLLocator})
+	got, _, err := client.ShortURLs.Create(context.Background(), &kibana.CreateShortURLRequest{LocatorID: kibana.LegacyShortURLLocatorID}, nil)
 	if err != nil {
 		t.Fatalf("Create() error = %v", err)
 	}
@@ -69,7 +69,7 @@ func TestShortURLsService_Create_options(t *testing.T) {
 		writeJSON(t, w, http.StatusOK, fixture(t, "shorturls/create_slug.json"))
 	})
 	req := &kibana.CreateShortURLRequest{LocatorID: "L", Slug: "probe-slug-1"}
-	got, _, err := client.InSpace("x").ShortURLs.Create(context.Background(), req)
+	got, _, err := client.InSpace("x").ShortURLs.Create(context.Background(), req, nil)
 	if err != nil {
 		t.Fatalf("Create() error = %v", err)
 	}
@@ -88,7 +88,7 @@ func TestShortURLsService_Create_conflict(t *testing.T) {
 			mux.HandleFunc("POST /api/short_url", func(w http.ResponseWriter, _ *http.Request) {
 				writeJSON(t, w, http.StatusConflict, fixture(t, name))
 			})
-			_, _, err := client.ShortURLs.Create(context.Background(), &kibana.CreateShortURLRequest{LocatorID: "L", Slug: "probe-slug-1"})
+			_, _, err := client.ShortURLs.Create(context.Background(), &kibana.CreateShortURLRequest{LocatorID: "L", Slug: "probe-slug-1"}, nil)
 			if !errors.Is(err, kibana.ErrConflict) {
 				t.Errorf("Create() error = %v, want ErrConflict", err)
 			}
@@ -104,7 +104,7 @@ func TestShortURLsService_Get(t *testing.T) {
 		}
 		writeJSON(t, w, http.StatusOK, fixture(t, "shorturls/create.json"))
 	})
-	got, _, err := client.ShortURLs.Get(context.Background(), "a/b?")
+	got, _, err := client.ShortURLs.Get(context.Background(), "a/b?", nil)
 	if err != nil {
 		t.Fatalf("Get() error = %v", err)
 	}
@@ -121,7 +121,7 @@ func TestShortURLsService_Resolve(t *testing.T) {
 		}
 		writeJSON(t, w, http.StatusOK, fixture(t, "shorturls/create.json"))
 	})
-	got, _, err := client.InSpace("x").ShortURLs.Resolve(context.Background(), "a/b?")
+	got, _, err := client.InSpace("x").ShortURLs.Resolve(context.Background(), "a/b?", nil)
 	if err != nil {
 		t.Fatalf("Resolve() error = %v", err)
 	}
@@ -140,7 +140,7 @@ func TestShortURLsService_Delete(t *testing.T) {
 		// Kibana answers 200 with a JSON null.
 		writeJSON(t, w, http.StatusOK, []byte("null"))
 	})
-	if _, err := client.ShortURLs.Delete(context.Background(), "u1"); err != nil {
+	if _, err := client.ShortURLs.Delete(context.Background(), "u1", nil); err != nil {
 		t.Errorf("Delete() error = %v", err)
 	}
 }
@@ -156,13 +156,13 @@ func TestShortURLsService_notFound(t *testing.T) {
 		writeJSON(t, w, http.StatusNotFound, fixture(t, "shorturls/resolve_missing.json"))
 	})
 	ctx := context.Background()
-	if _, _, err := client.ShortURLs.Get(ctx, "nope"); !errors.Is(err, kibana.ErrNotFound) {
+	if _, _, err := client.ShortURLs.Get(ctx, "nope", nil); !errors.Is(err, kibana.ErrNotFound) {
 		t.Errorf("Get() error = %v, want ErrNotFound", err)
 	}
-	if _, _, err := client.ShortURLs.Resolve(ctx, "nope"); !errors.Is(err, kibana.ErrNotFound) {
+	if _, _, err := client.ShortURLs.Resolve(ctx, "nope", nil); !errors.Is(err, kibana.ErrNotFound) {
 		t.Errorf("Resolve() error = %v, want ErrNotFound", err)
 	}
-	if _, err := client.ShortURLs.Delete(ctx, "nope"); !errors.Is(err, kibana.ErrNotFound) {
+	if _, err := client.ShortURLs.Delete(ctx, "nope", nil); !errors.Is(err, kibana.ErrNotFound) {
 		t.Errorf("Delete() error = %v, want ErrNotFound", err)
 	}
 }
@@ -170,20 +170,20 @@ func TestShortURLsService_notFound(t *testing.T) {
 func TestShortURLsService_invalidArguments(t *testing.T) {
 	_, client := setup(t)
 	ctx := context.Background()
-	if _, _, err := client.ShortURLs.Create(ctx, nil); err == nil {
+	if _, _, err := client.ShortURLs.Create(ctx, nil, nil); err == nil {
 		t.Error("Create(nil) error = nil, want error")
 	}
-	if _, _, err := client.ShortURLs.Create(ctx, &kibana.CreateShortURLRequest{}); err == nil {
+	if _, _, err := client.ShortURLs.Create(ctx, &kibana.CreateShortURLRequest{}, nil); err == nil {
 		t.Error("Create(no locator) error = nil, want error")
 	}
 	for _, id := range []string{"", ".", ".."} {
-		if _, _, err := client.ShortURLs.Get(ctx, id); err == nil {
+		if _, _, err := client.ShortURLs.Get(ctx, id, nil); err == nil {
 			t.Errorf("Get(%q) error = nil, want error", id)
 		}
-		if _, _, err := client.ShortURLs.Resolve(ctx, id); err == nil {
+		if _, _, err := client.ShortURLs.Resolve(ctx, id, nil); err == nil {
 			t.Errorf("Resolve(%q) error = nil, want error", id)
 		}
-		if _, err := client.ShortURLs.Delete(ctx, id); err == nil {
+		if _, err := client.ShortURLs.Delete(ctx, id, nil); err == nil {
 			t.Errorf("Delete(%q) error = nil, want error", id)
 		}
 	}

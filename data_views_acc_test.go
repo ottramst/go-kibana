@@ -16,7 +16,7 @@ func TestAccDataViews(t *testing.T) {
 	ctx := t.Context()
 
 	// A new space has no default data view.
-	if id, _, err := client.DataViews.GetDefault(ctx); err != nil || id != "" {
+	if id, _, err := client.DataViews.GetDefault(ctx, nil); err != nil || id != "" {
 		t.Fatalf("GetDefault() = %q, %v; want none", id, err)
 	}
 
@@ -44,7 +44,7 @@ func TestAccDataViews(t *testing.T) {
 	}
 
 	// The first data view of a space becomes its default.
-	if id, _, err := client.DataViews.GetDefault(ctx); err != nil || id != dv.ID {
+	if id, _, err := client.DataViews.GetDefault(ctx, nil); err != nil || id != dv.ID {
 		t.Errorf("GetDefault() = %q, %v; want %s", id, err, dv.ID)
 	}
 
@@ -56,7 +56,7 @@ func TestAccDataViews(t *testing.T) {
 		t.Errorf("Create(override) error = %v", err)
 	}
 
-	got, _, err := client.DataViews.Get(ctx, dv.ID)
+	got, _, err := client.DataViews.Get(ctx, dv.ID, nil)
 	if err != nil {
 		t.Fatalf("Get() error = %v", err)
 	}
@@ -91,7 +91,7 @@ func TestAccDataViews(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Create(other) error = %v", err)
 	}
-	list, _, err := client.DataViews.List(ctx)
+	list, _, err := client.DataViews.List(ctx, nil)
 	if err != nil {
 		t.Fatalf("List() error = %v", err)
 	}
@@ -104,26 +104,26 @@ func TestAccDataViews(t *testing.T) {
 	}
 
 	// SetDefault replaces an existing default, and "" removes it.
-	if _, err := client.DataViews.SetDefault(ctx, other.ID); err != nil {
+	if _, err := client.DataViews.SetDefault(ctx, other.ID, nil); err != nil {
 		t.Fatalf("SetDefault() error = %v", err)
 	}
-	if id, _, err := client.DataViews.GetDefault(ctx); err != nil || id != other.ID {
+	if id, _, err := client.DataViews.GetDefault(ctx, nil); err != nil || id != other.ID {
 		t.Errorf("GetDefault() = %q, %v; want %s", id, err, other.ID)
 	}
-	if _, err := client.DataViews.SetDefault(ctx, ""); err != nil {
+	if _, err := client.DataViews.SetDefault(ctx, "", nil); err != nil {
 		t.Fatalf("SetDefault(\"\") error = %v", err)
 	}
-	if id, _, err := client.DataViews.GetDefault(ctx); err != nil || id != "" {
+	if id, _, err := client.DataViews.GetDefault(ctx, nil); err != nil || id != "" {
 		t.Errorf("GetDefault() = %q, %v; want none", id, err)
 	}
 
-	if _, err := client.DataViews.Delete(ctx, dv.ID); err != nil {
+	if _, err := client.DataViews.Delete(ctx, dv.ID, nil); err != nil {
 		t.Fatalf("Delete() error = %v", err)
 	}
-	if _, _, err := client.DataViews.Get(ctx, dv.ID); !errors.Is(err, kibana.ErrNotFound) {
+	if _, _, err := client.DataViews.Get(ctx, dv.ID, nil); !errors.Is(err, kibana.ErrNotFound) {
 		t.Errorf("Get(deleted) error = %v, want ErrNotFound", err)
 	}
-	if _, err := client.DataViews.Delete(ctx, dv.ID); !errors.Is(err, kibana.ErrNotFound) {
+	if _, err := client.DataViews.Delete(ctx, dv.ID, nil); !errors.Is(err, kibana.ErrNotFound) {
 		t.Errorf("Delete(deleted) error = %v, want ErrNotFound", err)
 	}
 }

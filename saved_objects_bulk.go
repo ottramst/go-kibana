@@ -11,6 +11,8 @@ import (
 // BulkCreateSavedObjectsOptions are the options of
 // [SavedObjectsService.BulkCreate].
 type BulkCreateSavedObjectsOptions struct {
+	_ [0]func()
+
 	// Overwrite replaces objects with the same ID instead of reporting
 	// conflicts.
 	Overwrite bool `url:"overwrite,omitempty"`
@@ -39,12 +41,14 @@ func (s *SavedObjectsService) BulkCreate(ctx context.Context, objs []*SavedObjec
 	if err != nil {
 		return nil, nil, err
 	}
-	return s.bulkObjects(ctx, http.MethodPost, path, body, opts)
+	return s.bulkObjects(ctx, http.MethodPost, path, body, nil, opts)
 }
 
-// BulkGetSavedObjectsRequest is an object to get with
+// BulkGetSavedObjectsItem is an object to get with
 // [SavedObjectsService.BulkGet].
-type BulkGetSavedObjectsRequest struct {
+type BulkGetSavedObjectsItem struct {
+	_ [0]func()
+
 	Type string `json:"type"`
 	ID   string `json:"id"`
 
@@ -54,6 +58,11 @@ type BulkGetSavedObjectsRequest struct {
 	// Namespaces gets the object from these spaces instead of the
 	// client's space.
 	Namespaces []string `json:"namespaces,omitempty"`
+}
+
+// BulkGetSavedObjectsOptions are the options of [SavedObjectsService.BulkGet].
+type BulkGetSavedObjectsOptions struct {
+	_ [0]func()
 }
 
 // BulkGet returns saved objects of the client's space.
@@ -68,7 +77,7 @@ type BulkGetSavedObjectsRequest struct {
 // Kibana API: POST /api/saved_objects/_bulk_get
 //
 // Kibana API docs: https://www.elastic.co/docs/api/doc/kibana/operation/operation-post-saved-objects-bulk-get
-func (s *SavedObjectsService) BulkGet(ctx context.Context, reqs []BulkGetSavedObjectsRequest, opts ...RequestOption) ([]*SavedObject, *Response, error) {
+func (s *SavedObjectsService) BulkGet(ctx context.Context, reqs []BulkGetSavedObjectsItem, opt *BulkGetSavedObjectsOptions, opts ...RequestOption) ([]*SavedObject, *Response, error) {
 	if len(reqs) == 0 {
 		return nil, nil, errors.New("kibana: objects must not be empty")
 	}
@@ -77,7 +86,12 @@ func (s *SavedObjectsService) BulkGet(ctx context.Context, reqs []BulkGetSavedOb
 			return nil, nil, fmt.Errorf("kibana: object %d must have a type and an ID", i)
 		}
 	}
-	return s.bulkObjects(ctx, http.MethodPost, "/api/saved_objects/_bulk_get", reqs, opts)
+	return s.bulkObjects(ctx, http.MethodPost, "/api/saved_objects/_bulk_get", reqs, opt, opts)
+}
+
+// BulkUpdateSavedObjectsOptions are the options of [SavedObjectsService.BulkUpdate].
+type BulkUpdateSavedObjectsOptions struct {
+	_ [0]func()
 }
 
 // BulkUpdate updates saved objects of the client's space, like
@@ -98,12 +112,12 @@ func (s *SavedObjectsService) BulkGet(ctx context.Context, reqs []BulkGetSavedOb
 // Kibana API: PUT /api/saved_objects/_bulk_update
 //
 // Kibana API docs: https://www.elastic.co/docs/api/doc/kibana/operation/operation-put-saved-objects-bulk-update
-func (s *SavedObjectsService) BulkUpdate(ctx context.Context, objs []*SavedObject, opts ...RequestOption) ([]*SavedObject, *Response, error) {
+func (s *SavedObjectsService) BulkUpdate(ctx context.Context, objs []*SavedObject, opt *BulkUpdateSavedObjectsOptions, opts ...RequestOption) ([]*SavedObject, *Response, error) {
 	body, err := bulkWrites(objs, true)
 	if err != nil {
 		return nil, nil, err
 	}
-	return s.bulkObjects(ctx, http.MethodPut, "/api/saved_objects/_bulk_update", body, opts)
+	return s.bulkObjects(ctx, http.MethodPut, "/api/saved_objects/_bulk_update", body, opt, opts)
 }
 
 // bulkWrites validates objs and returns their writable fields. Updates need
@@ -132,15 +146,25 @@ func bulkWrites(objs []*SavedObject, update bool) ([]*savedObjectWrite, error) {
 }
 
 // bulkObjects sends a bulk request whose response is {"saved_objects": [...]}.
-func (s *SavedObjectsService) bulkObjects(ctx context.Context, method, path string, body any, opts []RequestOption) ([]*SavedObject, *Response, error) {
+func (s *SavedObjectsService) bulkObjects(ctx context.Context, method, path string, body, query any, opts []RequestOption) ([]*SavedObject, *Response, error) {
 	var result struct {
 		SavedObjects []*SavedObject `json:"saved_objects"`
 	}
-	resp, err := s.client.do(ctx, method, path, body, &result, opts)
+	resp, err := s.client.do(ctx, method, path, body, &result, query, opts)
 	if err != nil {
 		return nil, resp, err
 	}
 	return result.SavedObjects, resp, nil
+}
+
+// BulkDeleteSavedObjectsOptions are the options of
+// [SavedObjectsService.BulkDelete].
+type BulkDeleteSavedObjectsOptions struct {
+	_ [0]func()
+
+	// Force deletes objects that are shared with several spaces, which
+	// Kibana refuses otherwise. They are deleted from all their spaces.
+	Force bool `url:"force,omitempty"`
 }
 
 // BulkDeleteStatus is the result of deleting one object with
@@ -164,7 +188,7 @@ type BulkDeleteStatus struct {
 // Kibana API: POST /api/saved_objects/_bulk_delete
 //
 // Kibana API docs: https://www.elastic.co/docs/api/doc/kibana/operation/operation-post-saved-objects-bulk-delete
-func (s *SavedObjectsService) BulkDelete(ctx context.Context, refs []SavedObjectRef, opt *DeleteSavedObjectOptions, opts ...RequestOption) ([]*BulkDeleteStatus, *Response, error) {
+func (s *SavedObjectsService) BulkDelete(ctx context.Context, refs []SavedObjectRef, opt *BulkDeleteSavedObjectsOptions, opts ...RequestOption) ([]*BulkDeleteStatus, *Response, error) {
 	if err := validateRefs(refs); err != nil {
 		return nil, nil, err
 	}
@@ -175,7 +199,7 @@ func (s *SavedObjectsService) BulkDelete(ctx context.Context, refs []SavedObject
 	var result struct {
 		Statuses []*BulkDeleteStatus `json:"statuses"`
 	}
-	resp, err := s.client.do(ctx, http.MethodPost, path, refs, &result, opts)
+	resp, err := s.client.do(ctx, http.MethodPost, path, refs, &result, nil, opts)
 	if err != nil {
 		return nil, resp, err
 	}
@@ -187,17 +211,17 @@ type ResolveOutcome string
 
 // Resolve outcomes.
 const (
-	// ResolveExactMatch: the object has the requested ID.
-	ResolveExactMatch ResolveOutcome = "exactMatch"
+	// ResolveOutcomeExactMatch: the object has the requested ID.
+	ResolveOutcomeExactMatch ResolveOutcome = "exactMatch"
 
-	// ResolveAliasMatch: the requested ID is a legacy URL alias of the
+	// ResolveOutcomeAliasMatch: the requested ID is a legacy URL alias of the
 	// object, which got a new ID when it was converted or imported. Use
 	// ResolvedSavedObject.AliasTargetID from now on.
-	ResolveAliasMatch ResolveOutcome = "aliasMatch"
+	ResolveOutcomeAliasMatch ResolveOutcome = "aliasMatch"
 
-	// ResolveConflict: both an object with the requested ID and a legacy
+	// ResolveOutcomeConflict: both an object with the requested ID and a legacy
 	// URL alias with it exist. The result is the object with the ID.
-	ResolveConflict ResolveOutcome = "conflict"
+	ResolveOutcomeConflict ResolveOutcome = "conflict"
 )
 
 // ResolvedSavedObject is a saved object found by its current ID or by a
@@ -210,9 +234,27 @@ type ResolvedSavedObject struct {
 	// conflicts.
 	AliasTargetID string `json:"alias_target_id,omitempty"`
 
-	// AliasPurpose is why the alias exists: "savedObjectConversion" or
-	// "savedObjectImport".
-	AliasPurpose string `json:"alias_purpose,omitempty"`
+	// AliasPurpose is why the alias exists.
+	AliasPurpose ResolveAliasPurpose `json:"alias_purpose,omitempty"`
+}
+
+// ResolveAliasPurpose is why a legacy URL alias exists.
+type ResolveAliasPurpose string
+
+// Legacy URL alias purposes. Kibana may send others.
+const (
+	// ResolveAliasPurposeConversion: the object got a new ID when Kibana
+	// 8.0 made object IDs unique across spaces.
+	ResolveAliasPurposeConversion ResolveAliasPurpose = "savedObjectConversion"
+
+	// ResolveAliasPurposeImport: the object got a new ID when it was
+	// imported.
+	ResolveAliasPurposeImport ResolveAliasPurpose = "savedObjectImport"
+)
+
+// BulkResolveSavedObjectsOptions are the options of [SavedObjectsService.BulkResolve].
+type BulkResolveSavedObjectsOptions struct {
+	_ [0]func()
 }
 
 // BulkResolve returns saved objects of the client's space by their ID or
@@ -227,14 +269,14 @@ type ResolvedSavedObject struct {
 // Kibana API: POST /api/saved_objects/_bulk_resolve
 //
 // Kibana API docs: https://www.elastic.co/docs/api/doc/kibana/operation/operation-post-saved-objects-bulk-resolve
-func (s *SavedObjectsService) BulkResolve(ctx context.Context, refs []SavedObjectRef, opts ...RequestOption) ([]*ResolvedSavedObject, *Response, error) {
+func (s *SavedObjectsService) BulkResolve(ctx context.Context, refs []SavedObjectRef, opt *BulkResolveSavedObjectsOptions, opts ...RequestOption) ([]*ResolvedSavedObject, *Response, error) {
 	if err := validateRefs(refs); err != nil {
 		return nil, nil, err
 	}
 	var result struct {
 		ResolvedObjects []*ResolvedSavedObject `json:"resolved_objects"`
 	}
-	resp, err := s.client.do(ctx, http.MethodPost, "/api/saved_objects/_bulk_resolve", refs, &result, opts)
+	resp, err := s.client.do(ctx, http.MethodPost, "/api/saved_objects/_bulk_resolve", refs, &result, opt, opts)
 	if err != nil {
 		return nil, resp, err
 	}

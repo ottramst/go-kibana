@@ -1037,7 +1037,7 @@ Endpoint data comes from the [Kibana OpenAPI specification](https://github.com/e
 | GET | `/api/tags` | — | ✅ | `TagsService.List` | Experimental; added in 9.5.0 |
 | POST | `/api/tags` | — | ✅ | `TagsService.Create` | Experimental; added in 9.5.0 |
 | GET | `/api/tags/{id}` | — | ✅ | `TagsService.Get` | Experimental; added in 9.5.0 |
-| PUT | `/api/tags/{id}` | — | ✅ | `TagsService.Update` | Experimental; added in 9.5.0 |
+| PUT | `/api/tags/{id}` | — | ✅ | `TagsService.CreateOrUpdate` | Experimental; added in 9.5.0 |
 | DELETE | `/api/tags/{id}` | — | ✅ | `TagsService.Delete` | Experimental; added in 9.5.0 |
 
 ## task manager

@@ -116,7 +116,7 @@ func TestSavedObjectsService_Get(t *testing.T) {
 		}
 		writeJSON(t, w, http.StatusOK, fixture(t, "savedobjects/so_get_dash.json"))
 	})
-	got, _, err := client.SavedObjects.Get(context.Background(), "a/b", "c?d")
+	got, _, err := client.SavedObjects.Get(context.Background(), "a/b", "c?d", nil)
 	if err != nil {
 		t.Fatalf("Get() error = %v", err)
 	}
@@ -211,7 +211,7 @@ func TestSavedObjectsService_notFound(t *testing.T) {
 	mux.HandleFunc("GET /api/saved_objects/{type}/{id}", missing)
 	mux.HandleFunc("DELETE /api/saved_objects/{type}/{id}", missing)
 	ctx := context.Background()
-	if _, _, err := client.SavedObjects.Get(ctx, "index-pattern", "probe-nope"); !errors.Is(err, kibana.ErrNotFound) {
+	if _, _, err := client.SavedObjects.Get(ctx, "index-pattern", "probe-nope", nil); !errors.Is(err, kibana.ErrNotFound) {
 		t.Errorf("Get() error = %v, want ErrNotFound", err)
 	}
 	if _, err := client.SavedObjects.Delete(ctx, "index-pattern", "probe-nope", nil); !errors.Is(err, kibana.ErrNotFound) {
@@ -240,7 +240,7 @@ func TestSavedObjectsService_crudInvalidArguments(t *testing.T) {
 		t.Error("Update(no ID) error = nil, want error")
 	}
 	for _, args := range [][2]string{{"", "i"}, {"t", ""}, {".", "i"}, {"t", ".."}} {
-		if _, _, err := client.SavedObjects.Get(ctx, args[0], args[1]); err == nil {
+		if _, _, err := client.SavedObjects.Get(ctx, args[0], args[1], nil); err == nil {
 			t.Errorf("Get(%q, %q) error = nil, want error", args[0], args[1])
 		}
 		if _, err := client.SavedObjects.Delete(ctx, args[0], args[1], nil); err == nil {

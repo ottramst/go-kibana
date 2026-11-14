@@ -21,12 +21,12 @@ func TestAccSpaces(t *testing.T) {
 		Color:            "#aabbcc",
 		Initials:         "AT",
 		DisabledFeatures: []string{"dev_tools"},
-	})
+	}, nil)
 	if err != nil {
 		t.Fatalf("Create() error = %v", err)
 	}
 	cleanup(t, func(ctx context.Context) error {
-		if _, err := client.Spaces.Delete(ctx, id); err != nil && !errors.Is(err, kibana.ErrNotFound) {
+		if _, err := client.Spaces.Delete(ctx, id, nil); err != nil && !errors.Is(err, kibana.ErrNotFound) {
 			return err
 		}
 		return nil
@@ -35,11 +35,11 @@ func TestAccSpaces(t *testing.T) {
 		t.Errorf("Create() = %+v", created)
 	}
 
-	if _, _, err := client.Spaces.Create(ctx, &kibana.Space{ID: id, Name: "duplicate"}); !errors.Is(err, kibana.ErrConflict) {
+	if _, _, err := client.Spaces.Create(ctx, &kibana.Space{ID: id, Name: "duplicate"}, nil); !errors.Is(err, kibana.ErrConflict) {
 		t.Errorf("Create(duplicate) error = %v, want ErrConflict", err)
 	}
 
-	space, _, err := client.Spaces.Get(ctx, id)
+	space, _, err := client.Spaces.Get(ctx, id, nil)
 	if err != nil {
 		t.Fatalf("Get() error = %v", err)
 	}
@@ -49,7 +49,7 @@ func TestAccSpaces(t *testing.T) {
 
 	// Read, modify, write back: the other settings must be kept.
 	space.Description = "updated"
-	updated, _, err := client.Spaces.Update(ctx, id, space)
+	updated, _, err := client.Spaces.Update(ctx, id, space, nil)
 	if err != nil {
 		t.Fatalf("Update() error = %v", err)
 	}
@@ -59,10 +59,10 @@ func TestAccSpaces(t *testing.T) {
 
 	// Empty text fields clear the settings; an empty color keeps the color.
 	space.Description, space.Initials, space.Color = "", "", ""
-	if _, _, err := client.Spaces.Update(ctx, id, space); err != nil {
+	if _, _, err := client.Spaces.Update(ctx, id, space, nil); err != nil {
 		t.Fatalf("Update(clear) error = %v", err)
 	}
-	cleared, _, err := client.Spaces.Get(ctx, id)
+	cleared, _, err := client.Spaces.Get(ctx, id, nil)
 	if err != nil {
 		t.Fatalf("Get() error = %v", err)
 	}
@@ -84,7 +84,7 @@ func TestAccSpaces(t *testing.T) {
 	}
 
 	// The default space can be read with a client scoped to another space.
-	def, _, err := client.InSpace(id).Spaces.Get(ctx, kibana.DefaultSpace)
+	def, _, err := client.InSpace(id).Spaces.Get(ctx, kibana.DefaultSpace, nil)
 	if err != nil {
 		t.Fatalf("InSpace().Get(default) error = %v", err)
 	}
@@ -94,7 +94,7 @@ func TestAccSpaces(t *testing.T) {
 	// Writing the reserved default space back changes shared state, so only
 	// do it on the local compose stack.
 	if localStack() {
-		updated, _, err := client.Spaces.Update(ctx, kibana.DefaultSpace, def)
+		updated, _, err := client.Spaces.Update(ctx, kibana.DefaultSpace, def, nil)
 		if err != nil {
 			t.Errorf("Update(default) error = %v", err)
 		} else if !updated.Reserved {
@@ -102,10 +102,10 @@ func TestAccSpaces(t *testing.T) {
 		}
 	}
 
-	if _, err := client.Spaces.Delete(ctx, id); err != nil {
+	if _, err := client.Spaces.Delete(ctx, id, nil); err != nil {
 		t.Fatalf("Delete() error = %v", err)
 	}
-	if _, _, err := client.Spaces.Get(ctx, id); !errors.Is(err, kibana.ErrNotFound) {
+	if _, _, err := client.Spaces.Get(ctx, id, nil); !errors.Is(err, kibana.ErrNotFound) {
 		t.Errorf("Get(deleted) error = %v, want ErrNotFound", err)
 	}
 }

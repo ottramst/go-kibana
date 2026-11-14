@@ -18,7 +18,7 @@ func TestDataViewsService_List(t *testing.T) {
 			mux.HandleFunc("GET /s/x/api/data_views", func(w http.ResponseWriter, _ *http.Request) {
 				writeJSON(t, w, http.StatusOK, fixture(t, name))
 			})
-			got, _, err := client.InSpace("x").DataViews.List(context.Background())
+			got, _, err := client.InSpace("x").DataViews.List(context.Background(), nil)
 			if err != nil {
 				t.Fatalf("List() error = %v", err)
 			}
@@ -37,7 +37,7 @@ func TestDataViewsService_Get(t *testing.T) {
 		}
 		writeJSON(t, w, http.StatusOK, fixture(t, "dataviews/get.json"))
 	})
-	got, _, err := client.DataViews.Get(context.Background(), "a/b?")
+	got, _, err := client.DataViews.Get(context.Background(), "a/b?", nil)
 	if err != nil {
 		t.Fatalf("Get() error = %v", err)
 	}
@@ -181,7 +181,7 @@ func TestDataViewsService_Delete(t *testing.T) {
 		testHeader(t, r, "kbn-xsrf", "true")
 		w.WriteHeader(http.StatusNoContent)
 	})
-	if _, err := client.DataViews.Delete(context.Background(), "probe-dv-2"); err != nil {
+	if _, err := client.DataViews.Delete(context.Background(), "probe-dv-2", nil); err != nil {
 		t.Errorf("Delete() error = %v", err)
 	}
 }
@@ -195,13 +195,13 @@ func TestDataViewsService_notFound(t *testing.T) {
 	mux.HandleFunc("POST /api/data_views/data_view/{viewId}", missing)
 	mux.HandleFunc("DELETE /api/data_views/data_view/{viewId}", missing)
 	ctx := context.Background()
-	if _, _, err := client.DataViews.Get(ctx, "probe-nope"); !errors.Is(err, kibana.ErrNotFound) {
+	if _, _, err := client.DataViews.Get(ctx, "probe-nope", nil); !errors.Is(err, kibana.ErrNotFound) {
 		t.Errorf("Get() error = %v, want ErrNotFound", err)
 	}
 	if _, _, err := client.DataViews.Update(ctx, "probe-nope", &kibana.DataView{Name: "x"}, nil); !errors.Is(err, kibana.ErrNotFound) {
 		t.Errorf("Update() error = %v, want ErrNotFound", err)
 	}
-	if _, err := client.DataViews.Delete(ctx, "probe-nope"); !errors.Is(err, kibana.ErrNotFound) {
+	if _, err := client.DataViews.Delete(ctx, "probe-nope", nil); !errors.Is(err, kibana.ErrNotFound) {
 		t.Errorf("Delete() error = %v, want ErrNotFound", err)
 	}
 }
@@ -219,13 +219,13 @@ func TestDataViewsService_invalidArguments(t *testing.T) {
 		t.Error("Update(nil) error = nil, want error")
 	}
 	for _, id := range []string{"", ".", ".."} {
-		if _, _, err := client.DataViews.Get(ctx, id); err == nil {
+		if _, _, err := client.DataViews.Get(ctx, id, nil); err == nil {
 			t.Errorf("Get(%q) error = nil, want error", id)
 		}
 		if _, _, err := client.DataViews.Update(ctx, id, &kibana.DataView{}, nil); err == nil {
 			t.Errorf("Update(%q) error = nil, want error", id)
 		}
-		if _, err := client.DataViews.Delete(ctx, id); err == nil {
+		if _, err := client.DataViews.Delete(ctx, id, nil); err == nil {
 			t.Errorf("Delete(%q) error = nil, want error", id)
 		}
 	}
@@ -239,7 +239,7 @@ func TestDataViewsService_GetDefault(t *testing.T) {
 			mux.HandleFunc("GET /s/x/api/data_views/default", func(w http.ResponseWriter, _ *http.Request) {
 				writeJSON(t, w, http.StatusOK, fixture(t, name))
 			})
-			got, _, err := client.InSpace("x").DataViews.GetDefault(context.Background())
+			got, _, err := client.InSpace("x").DataViews.GetDefault(context.Background(), nil)
 			if err != nil || got != want {
 				t.Errorf("GetDefault() = %q, %v; want %q", got, err, want)
 			}
@@ -261,7 +261,7 @@ func TestDataViewsService_SetDefault(t *testing.T) {
 				testJSONBody(t, r, body)
 				writeJSON(t, w, http.StatusOK, fixture(t, "dataviews/default_set.json"))
 			})
-			if _, err := client.DataViews.SetDefault(context.Background(), id); err != nil {
+			if _, err := client.DataViews.SetDefault(context.Background(), id, nil); err != nil {
 				t.Errorf("SetDefault(%q) error = %v", id, err)
 			}
 		})
@@ -274,13 +274,13 @@ func TestDataViewsService_defaultErrors(t *testing.T) {
 		writeJSON(t, w, http.StatusForbidden, []byte(`{"statusCode":403,"error":"Forbidden","message":"Forbidden"}`))
 	})
 	ctx := context.Background()
-	if _, _, err := client.DataViews.GetDefault(ctx); !errors.Is(err, kibana.ErrForbidden) {
+	if _, _, err := client.DataViews.GetDefault(ctx, nil); !errors.Is(err, kibana.ErrForbidden) {
 		t.Errorf("GetDefault() error = %v, want ErrForbidden", err)
 	}
-	if _, err := client.DataViews.SetDefault(ctx, "x"); !errors.Is(err, kibana.ErrForbidden) {
+	if _, err := client.DataViews.SetDefault(ctx, "x", nil); !errors.Is(err, kibana.ErrForbidden) {
 		t.Errorf("SetDefault() error = %v, want ErrForbidden", err)
 	}
-	if _, _, err := client.DataViews.List(ctx); err == nil {
+	if _, _, err := client.DataViews.List(ctx, nil); err == nil {
 		t.Error("List() error = nil, want an error for the unregistered path")
 	}
 }

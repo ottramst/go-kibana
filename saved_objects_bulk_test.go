@@ -39,11 +39,11 @@ func TestSavedObjectsService_BulkGet(t *testing.T) {
 		testJSONBody(t, r, `[{"type":"index-pattern","id":"probe-b1"},{"type":"index-pattern","id":"probe-nope"},{"type":"index-pattern","id":"probe-ip","fields":["title"],"namespaces":["default"]}]`)
 		writeJSON(t, w, http.StatusOK, fixture(t, "savedobjects/bulk_get.json"))
 	})
-	got, _, err := client.SavedObjects.BulkGet(context.Background(), []kibana.BulkGetSavedObjectsRequest{
+	got, _, err := client.SavedObjects.BulkGet(context.Background(), []kibana.BulkGetSavedObjectsItem{
 		{Type: "index-pattern", ID: "probe-b1"},
 		{Type: "index-pattern", ID: "probe-nope"},
 		{Type: "index-pattern", ID: "probe-ip", Fields: []string{"title"}, Namespaces: []string{"default"}},
-	})
+	}, nil)
 	if err != nil {
 		t.Fatalf("BulkGet() error = %v", err)
 	}
@@ -62,7 +62,7 @@ func TestSavedObjectsService_BulkUpdate(t *testing.T) {
 	got, _, err := client.SavedObjects.BulkUpdate(context.Background(), []*kibana.SavedObject{
 		{ID: "probe-b1", Type: "index-pattern", Attributes: json.RawMessage(`{"title":"b1u-*"}`), Version: "v1", TypeMigrationVersion: "8.0.0"},
 		{ID: "probe-nope", Type: "index-pattern", Attributes: json.RawMessage(`{"title":"x"}`), References: []kibana.SavedObjectReference{}},
-	})
+	}, nil)
 	if err != nil {
 		t.Fatalf("BulkUpdate() error = %v", err)
 	}
@@ -80,7 +80,7 @@ func TestSavedObjectsService_BulkDelete(t *testing.T) {
 	})
 	got, _, err := client.SavedObjects.BulkDelete(context.Background(), []kibana.SavedObjectRef{
 		{Type: "index-pattern", ID: "probe-b1"}, {Type: "index-pattern", ID: "probe-nope"},
-	}, &kibana.DeleteSavedObjectOptions{Force: true})
+	}, &kibana.BulkDeleteSavedObjectsOptions{Force: true})
 	if err != nil {
 		t.Fatalf("BulkDelete() error = %v", err)
 	}
@@ -97,11 +97,11 @@ func TestSavedObjectsService_BulkResolve(t *testing.T) {
 	})
 	got, _, err := client.SavedObjects.BulkResolve(context.Background(), []kibana.SavedObjectRef{
 		{Type: "index-pattern", ID: "probe-b1"}, {Type: "index-pattern", ID: "probe-nope"},
-	})
+	}, nil)
 	if err != nil {
 		t.Fatalf("BulkResolve() error = %v", err)
 	}
-	if len(got) != 2 || got[0].Outcome != kibana.ResolveExactMatch || got[0].SavedObject.ID != "probe-b1" {
+	if len(got) != 2 || got[0].Outcome != kibana.ResolveOutcomeExactMatch || got[0].SavedObject.ID != "probe-b1" {
 		t.Fatalf("BulkResolve() = %+v, want 2 results, the first an exact match", got)
 	}
 	// Missing objects have an error, with the outcome exactMatch.
@@ -121,16 +121,16 @@ func TestSavedObjectsService_bulkErrors(t *testing.T) {
 	if _, _, err := client.SavedObjects.BulkCreate(ctx, obj, nil); !errors.Is(err, kibana.ErrForbidden) {
 		t.Errorf("BulkCreate() error = %v, want ErrForbidden", err)
 	}
-	if _, _, err := client.SavedObjects.BulkUpdate(ctx, obj); !errors.Is(err, kibana.ErrForbidden) {
+	if _, _, err := client.SavedObjects.BulkUpdate(ctx, obj, nil); !errors.Is(err, kibana.ErrForbidden) {
 		t.Errorf("BulkUpdate() error = %v, want ErrForbidden", err)
 	}
-	if _, _, err := client.SavedObjects.BulkGet(ctx, []kibana.BulkGetSavedObjectsRequest{{Type: "t", ID: "i"}}); !errors.Is(err, kibana.ErrForbidden) {
+	if _, _, err := client.SavedObjects.BulkGet(ctx, []kibana.BulkGetSavedObjectsItem{{Type: "t", ID: "i"}}, nil); !errors.Is(err, kibana.ErrForbidden) {
 		t.Errorf("BulkGet() error = %v, want ErrForbidden", err)
 	}
 	if _, _, err := client.SavedObjects.BulkDelete(ctx, ref, nil); !errors.Is(err, kibana.ErrForbidden) {
 		t.Errorf("BulkDelete() error = %v, want ErrForbidden", err)
 	}
-	if _, _, err := client.SavedObjects.BulkResolve(ctx, ref); !errors.Is(err, kibana.ErrForbidden) {
+	if _, _, err := client.SavedObjects.BulkResolve(ctx, ref, nil); !errors.Is(err, kibana.ErrForbidden) {
 		t.Errorf("BulkResolve() error = %v, want ErrForbidden", err)
 	}
 }
@@ -148,15 +148,15 @@ func TestSavedObjectsService_bulkInvalidArguments(t *testing.T) {
 		if _, _, err := client.SavedObjects.BulkCreate(ctx, objs, nil); err == nil {
 			t.Errorf("BulkCreate(%s) error = nil, want error", name)
 		}
-		if _, _, err := client.SavedObjects.BulkUpdate(ctx, objs); err == nil {
+		if _, _, err := client.SavedObjects.BulkUpdate(ctx, objs, nil); err == nil {
 			t.Errorf("BulkUpdate(%s) error = nil, want error", name)
 		}
 	}
-	if _, _, err := client.SavedObjects.BulkUpdate(ctx, []*kibana.SavedObject{{Type: "t", Attributes: attrs}}); err == nil {
+	if _, _, err := client.SavedObjects.BulkUpdate(ctx, []*kibana.SavedObject{{Type: "t", Attributes: attrs}}, nil); err == nil {
 		t.Error("BulkUpdate(no ID) error = nil, want error")
 	}
-	for name, reqs := range map[string][]kibana.BulkGetSavedObjectsRequest{"no objects": nil, "no ID": {{Type: "t"}}} {
-		if _, _, err := client.SavedObjects.BulkGet(ctx, reqs); err == nil {
+	for name, reqs := range map[string][]kibana.BulkGetSavedObjectsItem{"no objects": nil, "no ID": {{Type: "t"}}} {
+		if _, _, err := client.SavedObjects.BulkGet(ctx, reqs, nil); err == nil {
 			t.Errorf("BulkGet(%s) error = nil, want error", name)
 		}
 	}
@@ -164,7 +164,7 @@ func TestSavedObjectsService_bulkInvalidArguments(t *testing.T) {
 		if _, _, err := client.SavedObjects.BulkDelete(ctx, refs, nil); err == nil {
 			t.Errorf("BulkDelete(%s) error = nil, want error", name)
 		}
-		if _, _, err := client.SavedObjects.BulkResolve(ctx, refs); err == nil {
+		if _, _, err := client.SavedObjects.BulkResolve(ctx, refs, nil); err == nil {
 			t.Errorf("BulkResolve(%s) error = nil, want error", name)
 		}
 	}

@@ -77,11 +77,11 @@ func TestAccSavedObjectsFind(t *testing.T) {
 		t.Errorf("Find(beyond 10,000) error = %v, want ErrBadRequest", err)
 	}
 
-	resolved, _, err := client.SavedObjects.Resolve(ctx, "index-pattern", ipID)
-	if err != nil || resolved.Outcome != kibana.ResolveExactMatch || resolved.SavedObject.ID != ipID {
+	resolved, _, err := client.SavedObjects.Resolve(ctx, "index-pattern", ipID, nil)
+	if err != nil || resolved.Outcome != kibana.ResolveOutcomeExactMatch || resolved.SavedObject.ID != ipID {
 		t.Errorf("Resolve() = %+v, %v; want an exact match", resolved, err)
 	}
-	if _, _, err := client.SavedObjects.Resolve(ctx, "index-pattern", randName(t, "missing")); !errors.Is(err, kibana.ErrNotFound) {
+	if _, _, err := client.SavedObjects.Resolve(ctx, "index-pattern", randName(t, "missing"), nil); !errors.Is(err, kibana.ErrNotFound) {
 		t.Errorf("Resolve(missing) error = %v, want ErrNotFound", err)
 	}
 }

@@ -94,12 +94,25 @@ type DataViewTypeMeta struct {
 	Params json.RawMessage `json:"params"`
 }
 
+// RuntimeFieldType is the type of a runtime field.
+type RuntimeFieldType string
+
+// Runtime field types. Elasticsearch may support others.
+const (
+	RuntimeFieldTypeKeyword   RuntimeFieldType = "keyword"
+	RuntimeFieldTypeLong      RuntimeFieldType = "long"
+	RuntimeFieldTypeDouble    RuntimeFieldType = "double"
+	RuntimeFieldTypeDate      RuntimeFieldType = "date"
+	RuntimeFieldTypeIP        RuntimeFieldType = "ip"
+	RuntimeFieldTypeBoolean   RuntimeFieldType = "boolean"
+	RuntimeFieldTypeGeoPoint  RuntimeFieldType = "geo_point"
+	RuntimeFieldTypeComposite RuntimeFieldType = "composite"
+)
+
 // RuntimeField is the definition of a runtime field: a field computed by a
 // Painless script when it is queried.
 type RuntimeField struct {
-	// Type is the field type: "keyword", "long", "double", "date", "ip",
-	// "boolean", "geo_point" or "composite".
-	Type string `json:"type,omitempty"`
+	Type RuntimeFieldType `json:"type,omitempty"`
 
 	// Script computes the field. Without it, the field has the value of
 	// the source field with the same name.
@@ -131,7 +144,7 @@ type RuntimeFieldScript struct {
 // is stored like that of a [RuntimeField], under the name
 // "<field>.<subfield>".
 type RuntimeSubField struct {
-	Type string `json:"type"`
+	Type RuntimeFieldType `json:"type"`
 
 	CustomLabel       string               `json:"customLabel,omitempty"`
 	CustomDescription string               `json:"customDescription,omitempty"`
@@ -240,9 +253,16 @@ type dataViewUpdateFields struct {
 
 // CreateDataViewOptions are the options of [DataViewsService.Create].
 type CreateDataViewOptions struct {
+	_ [0]func()
+
 	// Override replaces the data view with the same ID instead of failing
 	// with [ErrBadRequest].
 	Override bool `url:"-"`
+}
+
+// ListDataViewsOptions are the options of [DataViewsService.List].
+type ListDataViewsOptions struct {
+	_ [0]func()
 }
 
 // List returns the data views of the client's space.
@@ -250,13 +270,18 @@ type CreateDataViewOptions struct {
 // Kibana API: GET /api/data_views
 //
 // Kibana API docs: https://www.elastic.co/docs/api/doc/kibana/operation/operation-getalldataviewsdefault
-func (s *DataViewsService) List(ctx context.Context, opts ...RequestOption) ([]*DataViewSummary, *Response, error) {
+func (s *DataViewsService) List(ctx context.Context, opt *ListDataViewsOptions, opts ...RequestOption) ([]*DataViewSummary, *Response, error) {
 	var result dataViewEnvelope[[]*DataViewSummary]
-	resp, err := s.client.do(ctx, http.MethodGet, "/api/data_views", nil, &result, opts)
+	resp, err := s.client.do(ctx, http.MethodGet, "/api/data_views", nil, &result, opt, opts)
 	if err != nil {
 		return nil, resp, err
 	}
 	return result.DataView, resp, nil
+}
+
+// GetDataViewOptions are the options of [DataViewsService.Get].
+type GetDataViewOptions struct {
+	_ [0]func()
 }
 
 // Get returns a data view of the client's space.
@@ -264,11 +289,11 @@ func (s *DataViewsService) List(ctx context.Context, opts ...RequestOption) ([]*
 // Kibana API: GET /api/data_views/data_view/{viewId}
 //
 // Kibana API docs: https://www.elastic.co/docs/api/doc/kibana/operation/operation-getdataviewdefault
-func (s *DataViewsService) Get(ctx context.Context, id string, opts ...RequestOption) (*DataView, *Response, error) {
+func (s *DataViewsService) Get(ctx context.Context, id string, opt *GetDataViewOptions, opts ...RequestOption) (*DataView, *Response, error) {
 	if err := requireID("data view ID", id); err != nil {
 		return nil, nil, err
 	}
-	return s.dataView(ctx, http.MethodGet, pathf("/api/data_views/data_view/%s", id), nil, opts)
+	return s.dataView(ctx, http.MethodGet, pathf("/api/data_views/data_view/%s", id), nil, opt, opts)
 }
 
 // Create creates a data view in the client's space. It sends every field
@@ -306,11 +331,13 @@ func (s *DataViewsService) Create(ctx context.Context, dv *DataView, opt *Create
 	if opt != nil {
 		body.Override = opt.Override
 	}
-	return s.dataView(ctx, http.MethodPost, "/api/data_views/data_view", body, opts)
+	return s.dataView(ctx, http.MethodPost, "/api/data_views/data_view", body, nil, opts)
 }
 
 // UpdateDataViewOptions are the options of [DataViewsService.Update].
 type UpdateDataViewOptions struct {
+	_ [0]func()
+
 	// RefreshFields reloads the fields from Elasticsearch.
 	RefreshFields bool `url:"-"`
 }
@@ -351,7 +378,12 @@ func (s *DataViewsService) Update(ctx context.Context, id string, dv *DataView, 
 	if opt != nil {
 		body.RefreshFields = opt.RefreshFields
 	}
-	return s.dataView(ctx, http.MethodPost, pathf("/api/data_views/data_view/%s", id), body, opts)
+	return s.dataView(ctx, http.MethodPost, pathf("/api/data_views/data_view/%s", id), body, nil, opts)
+}
+
+// DeleteDataViewOptions are the options of [DataViewsService.Delete].
+type DeleteDataViewOptions struct {
+	_ [0]func()
 }
 
 // Delete deletes a data view of the client's space. A space whose default
@@ -360,21 +392,26 @@ func (s *DataViewsService) Update(ctx context.Context, id string, dv *DataView, 
 // Kibana API: DELETE /api/data_views/data_view/{viewId}
 //
 // Kibana API docs: https://www.elastic.co/docs/api/doc/kibana/operation/operation-deletedataviewdefault
-func (s *DataViewsService) Delete(ctx context.Context, id string, opts ...RequestOption) (*Response, error) {
+func (s *DataViewsService) Delete(ctx context.Context, id string, opt *DeleteDataViewOptions, opts ...RequestOption) (*Response, error) {
 	if err := requireID("data view ID", id); err != nil {
 		return nil, err
 	}
-	return s.client.do(ctx, http.MethodDelete, pathf("/api/data_views/data_view/%s", id), nil, nil, opts)
+	return s.client.do(ctx, http.MethodDelete, pathf("/api/data_views/data_view/%s", id), nil, nil, opt, opts)
 }
 
 // dataView sends a request whose response is {"data_view": {...}}.
-func (s *DataViewsService) dataView(ctx context.Context, method, path string, body any, opts []RequestOption) (*DataView, *Response, error) {
+func (s *DataViewsService) dataView(ctx context.Context, method, path string, body, query any, opts []RequestOption) (*DataView, *Response, error) {
 	var result dataViewEnvelope[*DataView]
-	resp, err := s.client.do(ctx, method, path, body, &result, opts)
+	resp, err := s.client.do(ctx, method, path, body, &result, query, opts)
 	if err != nil {
 		return nil, resp, err
 	}
 	return result.DataView, resp, nil
+}
+
+// GetDefaultDataViewOptions are the options of [DataViewsService.GetDefault].
+type GetDefaultDataViewOptions struct {
+	_ [0]func()
 }
 
 // GetDefault returns the ID of the default data view of the client's space,
@@ -384,15 +421,20 @@ func (s *DataViewsService) dataView(ctx context.Context, method, path string, bo
 // Kibana API: GET /api/data_views/default
 //
 // Kibana API docs: https://www.elastic.co/docs/api/doc/kibana/operation/operation-getdefaultdataviewdefault
-func (s *DataViewsService) GetDefault(ctx context.Context, opts ...RequestOption) (string, *Response, error) {
+func (s *DataViewsService) GetDefault(ctx context.Context, opt *GetDefaultDataViewOptions, opts ...RequestOption) (string, *Response, error) {
 	var result struct {
 		DataViewID string `json:"data_view_id"`
 	}
-	resp, err := s.client.do(ctx, http.MethodGet, "/api/data_views/default", nil, &result, opts)
+	resp, err := s.client.do(ctx, http.MethodGet, "/api/data_views/default", nil, &result, opt, opts)
 	if err != nil {
 		return "", resp, err
 	}
 	return result.DataViewID, resp, nil
+}
+
+// SetDefaultDataViewOptions are the options of [DataViewsService.SetDefault].
+type SetDefaultDataViewOptions struct {
+	_ [0]func()
 }
 
 // SetDefault sets the default data view of the client's space, or removes
@@ -404,7 +446,7 @@ func (s *DataViewsService) GetDefault(ctx context.Context, opts ...RequestOption
 // Kibana API: POST /api/data_views/default
 //
 // Kibana API docs: https://www.elastic.co/docs/api/doc/kibana/operation/operation-setdefaultdatailviewdefault
-func (s *DataViewsService) SetDefault(ctx context.Context, id string, opts ...RequestOption) (*Response, error) {
+func (s *DataViewsService) SetDefault(ctx context.Context, id string, opt *SetDefaultDataViewOptions, opts ...RequestOption) (*Response, error) {
 	body := struct {
 		// A nil ID is sent as null, which removes the default; Kibana
 		// rejects "".
@@ -414,5 +456,5 @@ func (s *DataViewsService) SetDefault(ctx context.Context, id string, opts ...Re
 	if id != "" {
 		body.DataViewID = &id
 	}
-	return s.client.do(ctx, http.MethodPost, "/api/data_views/default", body, nil, opts)
+	return s.client.do(ctx, http.MethodPost, "/api/data_views/default", body, nil, opt, opts)
 }

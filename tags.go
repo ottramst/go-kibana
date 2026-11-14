@@ -36,7 +36,7 @@ type Tag struct {
 
 // TagMeta holds the metadata of a [Tag].
 type TagMeta struct {
-	// CreatedAt is zero in the result of [TagsService.Update] when the tag
+	// CreatedAt is zero in the result of [TagsService.CreateOrUpdate] when the tag
 	// already existed.
 	CreatedAt time.Time `json:"created_at,omitzero"`
 	UpdatedAt time.Time `json:"updated_at,omitzero"`
@@ -113,6 +113,8 @@ func newTagPayload(tag *Tag) (*tagPayload, error) {
 // ListTagsOptions are the options of [TagsService.List] and
 // [TagsService.ListAll].
 type ListTagsOptions struct {
+	_ [0]func()
+
 	// Query filters the tags by name and description, in Elasticsearch
 	// simple_query_string syntax.
 	Query string `url:"query,omitempty"`
@@ -125,8 +127,8 @@ type ListTagsOptions struct {
 	PerPage int `url:"per_page,omitempty"`
 }
 
-// TagList is a page of tags.
-type TagList struct {
+// ListTagsResult is a page of tags.
+type ListTagsResult struct {
 	Tags    []*Tag
 	Page    int
 	PerPage int
@@ -140,7 +142,7 @@ type TagList struct {
 // Kibana API: GET /api/tags
 //
 // Kibana API docs: https://www.elastic.co/docs/api/doc/kibana/operation/operation-get-tags
-func (s *TagsService) List(ctx context.Context, opt *ListTagsOptions, opts ...RequestOption) (*TagList, *Response, error) {
+func (s *TagsService) List(ctx context.Context, opt *ListTagsOptions, opts ...RequestOption) (*ListTagsResult, *Response, error) {
 	path, err := addQuery("/api/tags", opt)
 	if err != nil {
 		return nil, nil, err
@@ -153,11 +155,11 @@ func (s *TagsService) List(ctx context.Context, opt *ListTagsOptions, opts ...Re
 			Total   int `json:"total"`
 		} `json:"meta"`
 	}
-	resp, err := s.client.do(ctx, http.MethodGet, path, nil, &page, opts)
+	resp, err := s.client.do(ctx, http.MethodGet, path, nil, &page, nil, opts)
 	if err != nil {
 		return nil, resp, err
 	}
-	return &TagList{Tags: page.Data, Page: page.Meta.Page, PerPage: page.Meta.PerPage, Total: page.Meta.Total}, resp, nil
+	return &ListTagsResult{Tags: page.Data, Page: page.Meta.Page, PerPage: page.Meta.PerPage, Total: page.Meta.Total}, resp, nil
 }
 
 // ListAll returns an iterator over the tags of the client's space, starting
@@ -183,21 +185,31 @@ func (s *TagsService) ListAll(ctx context.Context, opt *ListTagsOptions, opts ..
 	})
 }
 
+// GetTagOptions are the options of [TagsService.Get].
+type GetTagOptions struct {
+	_ [0]func()
+}
+
 // Get returns a tag by its ID.
 //
 // Kibana API: GET /api/tags/{id}
 //
 // Kibana API docs: https://www.elastic.co/docs/api/doc/kibana/operation/operation-get-tags-id
-func (s *TagsService) Get(ctx context.Context, id string, opts ...RequestOption) (*Tag, *Response, error) {
+func (s *TagsService) Get(ctx context.Context, id string, opt *GetTagOptions, opts ...RequestOption) (*Tag, *Response, error) {
 	if err := requireID("tag ID", id); err != nil {
 		return nil, nil, err
 	}
 	tag := new(Tag)
-	resp, err := s.client.do(ctx, http.MethodGet, pathf("/api/tags/%s", id), nil, tag, opts)
+	resp, err := s.client.do(ctx, http.MethodGet, pathf("/api/tags/%s", id), nil, tag, opt, opts)
 	if err != nil {
 		return nil, resp, err
 	}
 	return tag, resp, nil
+}
+
+// CreateTagOptions are the options of [TagsService.Create].
+type CreateTagOptions struct {
+	_ [0]func()
 }
 
 // Create creates a tag with a generated ID. Its ID and Meta are ignored.
@@ -207,31 +219,36 @@ func (s *TagsService) Get(ctx context.Context, id string, opts ...RequestOption)
 // Kibana API: POST /api/tags
 //
 // Kibana API docs: https://www.elastic.co/docs/api/doc/kibana/operation/operation-post-tags
-func (s *TagsService) Create(ctx context.Context, tag *Tag, opts ...RequestOption) (*Tag, *Response, error) {
+func (s *TagsService) Create(ctx context.Context, tag *Tag, opt *CreateTagOptions, opts ...RequestOption) (*Tag, *Response, error) {
 	payload, err := newTagPayload(tag)
 	if err != nil {
 		return nil, nil, err
 	}
 	created := new(Tag)
-	resp, err := s.client.do(ctx, http.MethodPost, "/api/tags", payload, created, opts)
+	resp, err := s.client.do(ctx, http.MethodPost, "/api/tags", payload, created, opt, opts)
 	if err != nil {
 		return nil, resp, err
 	}
 	return created, resp, nil
 }
 
-// Update replaces the tag with the given ID, or creates it with that ID if
-// it does not exist (the response status is then 201 Created). The tag's ID
-// and Meta are ignored.
+// CreateOrUpdateTagOptions are the options of [TagsService.CreateOrUpdate].
+type CreateOrUpdateTagOptions struct {
+	_ [0]func()
+}
+
+// CreateOrUpdate replaces the tag with the given ID, or creates it with
+// that ID if it does not exist (the response status is then 201 Created).
+// The tag's ID and Meta are ignored.
 //
 // Every field is replaced: an empty Description clears it, and an empty
-// Color gets a new random color. Update a tag returned by
-// [TagsService.Get] to keep its other fields.
+// Color gets a new random color. Pass a tag returned by [TagsService.Get]
+// to keep its other fields.
 //
 // Kibana API: PUT /api/tags/{id}
 //
 // Kibana API docs: https://www.elastic.co/docs/api/doc/kibana/operation/operation-put-tags-id
-func (s *TagsService) Update(ctx context.Context, id string, tag *Tag, opts ...RequestOption) (*Tag, *Response, error) {
+func (s *TagsService) CreateOrUpdate(ctx context.Context, id string, tag *Tag, opt *CreateOrUpdateTagOptions, opts ...RequestOption) (*Tag, *Response, error) {
 	if err := requireID("tag ID", id); err != nil {
 		return nil, nil, err
 	}
@@ -240,11 +257,16 @@ func (s *TagsService) Update(ctx context.Context, id string, tag *Tag, opts ...R
 		return nil, nil, err
 	}
 	updated := new(Tag)
-	resp, err := s.client.do(ctx, http.MethodPut, pathf("/api/tags/%s", id), payload, updated, opts)
+	resp, err := s.client.do(ctx, http.MethodPut, pathf("/api/tags/%s", id), payload, updated, opt, opts)
 	if err != nil {
 		return nil, resp, err
 	}
 	return updated, resp, nil
+}
+
+// DeleteTagOptions are the options of [TagsService.Delete].
+type DeleteTagOptions struct {
+	_ [0]func()
 }
 
 // Delete deletes a tag by its ID.
@@ -252,9 +274,9 @@ func (s *TagsService) Update(ctx context.Context, id string, tag *Tag, opts ...R
 // Kibana API: DELETE /api/tags/{id}
 //
 // Kibana API docs: https://www.elastic.co/docs/api/doc/kibana/operation/operation-delete-tags-id
-func (s *TagsService) Delete(ctx context.Context, id string, opts ...RequestOption) (*Response, error) {
+func (s *TagsService) Delete(ctx context.Context, id string, opt *DeleteTagOptions, opts ...RequestOption) (*Response, error) {
 	if err := requireID("tag ID", id); err != nil {
 		return nil, err
 	}
-	return s.client.do(ctx, http.MethodDelete, pathf("/api/tags/%s", id), nil, nil, opts)
+	return s.client.do(ctx, http.MethodDelete, pathf("/api/tags/%s", id), nil, nil, opt, opts)
 }

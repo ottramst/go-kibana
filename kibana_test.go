@@ -241,7 +241,7 @@ func TestClient_InSpace(t *testing.T) {
 	if got := client.Space(); got != kibana.DefaultSpace {
 		t.Errorf("original Space() = %q, want %q", got, kibana.DefaultSpace)
 	}
-	space, _, err := scoped.Spaces.Get(context.Background(), "marketing")
+	space, _, err := scoped.Spaces.Get(context.Background(), "marketing", nil)
 	if err != nil {
 		t.Fatalf("Spaces.Get() error = %v", err)
 	}
@@ -356,7 +356,7 @@ func TestWithHTTPClient(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, err := client.Spaces.Delete(context.Background(), "x"); err != nil {
+	if _, err := client.Spaces.Delete(context.Background(), "x", nil); err != nil {
 		t.Fatalf("Delete() error = %v", err)
 	}
 	if !called {

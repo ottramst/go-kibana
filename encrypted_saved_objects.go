@@ -13,6 +13,8 @@ type EncryptedSavedObjectsService service
 
 // RotateKeyOptions are the options of [EncryptedSavedObjectsService.RotateKey].
 type RotateKeyOptions struct {
+	_ [0]func()
+
 	// BatchSize is the number of objects to process at a time, at most
 	// 10000 (Kibana's default).
 	BatchSize int `url:"batch_size,omitempty"`
@@ -55,7 +57,7 @@ func (s *EncryptedSavedObjectsService) RotateKey(ctx context.Context, opt *Rotat
 		return nil, nil, err
 	}
 	result := new(RotateKeyResult)
-	resp, err := s.client.do(ctx, http.MethodPost, path, nil, result, opts)
+	resp, err := s.client.do(ctx, http.MethodPost, path, nil, result, nil, opts)
 	if err != nil {
 		return nil, resp, err
 	}

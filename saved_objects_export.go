@@ -10,6 +10,8 @@ import (
 // ExportSavedObjectsRequest is the request of [SavedObjectsService.Export].
 // Set either Types or Objects.
 type ExportSavedObjectsRequest struct {
+	_ [0]func()
+
 	// Types exports all objects of these types, such as "dashboard" or
 	// "index-pattern".
 	Types []string `json:"type,omitempty"`
@@ -56,6 +58,11 @@ type ExportExcludedObject struct {
 	Reason string `json:"reason,omitempty"`
 }
 
+// ExportSavedObjectsOptions are the options of [SavedObjectsService.Export].
+type ExportSavedObjectsOptions struct {
+	_ [0]func()
+}
+
 // Export exports saved objects of the client's space as ndjson, one object
 // per line, followed by an [ExportDetails] line, and writes them to w as
 // Kibana sends them. Import them with [SavedObjectsService.Import].
@@ -68,7 +75,7 @@ type ExportExcludedObject struct {
 // Kibana API: POST /api/saved_objects/_export
 //
 // Kibana API docs: https://www.elastic.co/docs/api/doc/kibana/operation/operation-post-saved-objects-export
-func (s *SavedObjectsService) Export(ctx context.Context, req *ExportSavedObjectsRequest, w io.Writer, opts ...RequestOption) (*Response, error) {
+func (s *SavedObjectsService) Export(ctx context.Context, req *ExportSavedObjectsRequest, w io.Writer, opt *ExportSavedObjectsOptions, opts ...RequestOption) (*Response, error) {
 	if req == nil {
 		return nil, errors.New("kibana: request must not be nil")
 	}
@@ -85,5 +92,5 @@ func (s *SavedObjectsService) Export(ctx context.Context, req *ExportSavedObject
 			return nil, err
 		}
 	}
-	return s.client.do(ctx, http.MethodPost, "/api/saved_objects/_export", req, w, opts)
+	return s.client.do(ctx, http.MethodPost, "/api/saved_objects/_export", req, w, opt, opts)
 }

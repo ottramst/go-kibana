@@ -59,7 +59,7 @@ func TestRolesService_Get(t *testing.T) {
 	if role.Name != "my_kibana_role" || role.Description != "Read logs and use Discover" {
 		t.Errorf("Get() = %+v", role)
 	}
-	wantES := kibana.RoleElasticsearch{
+	wantES := kibana.ElasticsearchPrivileges{
 		Cluster: []string{"monitor"},
 		Indices: []kibana.IndexPrivilege{{
 			Names:         []string{"logs-*"},
@@ -115,7 +115,7 @@ func TestRolesService_CreateOrUpdate(t *testing.T) {
 		Description:       "d",
 		Metadata:          map[string]any{"version": 1},
 		TransientMetadata: map[string]any{"enabled": true},
-		Elasticsearch: kibana.RoleElasticsearch{
+		Elasticsearch: kibana.ElasticsearchPrivileges{
 			Cluster: []string{"monitor"},
 			Indices: []kibana.IndexPrivilege{{Names: []string{"logs-*"}, Privileges: []string{"read"}}},
 		},
@@ -156,7 +156,7 @@ func TestRolesService_Delete(t *testing.T) {
 	mux.HandleFunc("DELETE /api/security/role/r", func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusNoContent)
 	})
-	if _, err := client.Roles.Delete(context.Background(), "r"); err != nil {
+	if _, err := client.Roles.Delete(context.Background(), "r", nil); err != nil {
 		t.Fatalf("Delete() error = %v", err)
 	}
 }
@@ -168,8 +168,8 @@ func TestRolesService_invalidArguments(t *testing.T) {
 	_, _, checks["Get empty name"] = client.Roles.Get(ctx, "", nil)
 	_, checks["CreateOrUpdate empty name"] = client.Roles.CreateOrUpdate(ctx, "", &kibana.Role{}, nil)
 	_, checks["CreateOrUpdate nil"] = client.Roles.CreateOrUpdate(ctx, "r", nil, nil)
-	_, checks["Delete empty name"] = client.Roles.Delete(ctx, "")
-	_, checks["Delete dot-dot name"] = client.Roles.Delete(ctx, "..")
+	_, checks["Delete empty name"] = client.Roles.Delete(ctx, "", nil)
+	_, checks["Delete dot-dot name"] = client.Roles.Delete(ctx, "..", nil)
 	_, _, checks["Get dot name"] = client.Roles.Get(ctx, ".", nil)
 	// An empty Spaces list would make Kibana grant the privilege in every space.
 	_, checks["CreateOrUpdate privilege without spaces"] = client.Roles.CreateOrUpdate(ctx, "r", &kibana.Role{

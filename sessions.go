@@ -28,6 +28,8 @@ const (
 
 // InvalidateSessionsRequest is the request of [UserSessionsService.Invalidate].
 type InvalidateSessionsRequest struct {
+	_ [0]func()
+
 	// Match selects the sessions to invalidate. Required.
 	Match SessionMatch `json:"match"`
 
@@ -62,13 +64,18 @@ type InvalidateSessionsResult struct {
 	Total int `json:"total"`
 }
 
+// InvalidateSessionsOptions are the options of [UserSessionsService.Invalidate].
+type InvalidateSessionsOptions struct {
+	_ [0]func()
+}
+
 // Invalidate invalidates user sessions, logging the users out. It requires
 // the superuser role and fails with [ErrForbidden] otherwise.
 //
 // Kibana API: POST /api/security/session/_invalidate
 //
 // Kibana API docs: https://www.elastic.co/docs/api/doc/kibana/operation/operation-post-security-session-invalidate
-func (s *UserSessionsService) Invalidate(ctx context.Context, req *InvalidateSessionsRequest, opts ...RequestOption) (*InvalidateSessionsResult, *Response, error) {
+func (s *UserSessionsService) Invalidate(ctx context.Context, req *InvalidateSessionsRequest, opt *InvalidateSessionsOptions, opts ...RequestOption) (*InvalidateSessionsResult, *Response, error) {
 	if req == nil {
 		return nil, nil, errors.New("kibana: request must not be nil")
 	}
@@ -87,7 +94,7 @@ func (s *UserSessionsService) Invalidate(ctx context.Context, req *InvalidateSes
 		return nil, nil, errors.New("kibana: Match must be SessionMatchAll or SessionMatchQuery")
 	}
 	result := new(InvalidateSessionsResult)
-	resp, err := s.client.do(ctx, http.MethodPost, "/api/security/session/_invalidate", req, result, opts)
+	resp, err := s.client.do(ctx, http.MethodPost, "/api/security/session/_invalidate", req, result, opt, opts)
 	if err != nil {
 		return nil, resp, err
 	}

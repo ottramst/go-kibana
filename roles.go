@@ -32,7 +32,7 @@ type Role struct {
 	// is disabled, for example because it needs a higher license level.
 	TransientMetadata map[string]any `json:"transient_metadata,omitempty"`
 
-	Elasticsearch RoleElasticsearch `json:"elasticsearch"`
+	Elasticsearch ElasticsearchPrivileges `json:"elasticsearch"`
 
 	Kibana []KibanaPrivilege `json:"kibana,omitempty"`
 
@@ -52,8 +52,8 @@ type RoleTransformError struct {
 	State  json.RawMessage `json:"state,omitempty"`
 }
 
-// RoleElasticsearch are the Elasticsearch privileges of a role.
-type RoleElasticsearch struct {
+// ElasticsearchPrivileges are the Elasticsearch privileges of a role.
+type ElasticsearchPrivileges struct {
 	// Cluster lists cluster privileges, such as "monitor" or "manage".
 	Cluster []string `json:"cluster,omitempty"`
 
@@ -137,10 +137,10 @@ type KibanaPrivilege struct {
 // rolePayload is the request body of the create or update role endpoint,
 // which rejects the read-only fields of [Role].
 type rolePayload struct {
-	Description   string            `json:"description,omitempty"`
-	Metadata      map[string]any    `json:"metadata,omitempty"`
-	Elasticsearch RoleElasticsearch `json:"elasticsearch"`
-	Kibana        []KibanaPrivilege `json:"kibana,omitempty"`
+	Description   string                  `json:"description,omitempty"`
+	Metadata      map[string]any          `json:"metadata,omitempty"`
+	Elasticsearch ElasticsearchPrivileges `json:"elasticsearch"`
+	Kibana        []KibanaPrivilege       `json:"kibana,omitempty"`
 }
 
 func newRolePayload(r *Role) (*rolePayload, error) {
@@ -168,6 +168,8 @@ func newRolePayload(r *Role) (*rolePayload, error) {
 
 // ListRolesOptions are the options for [RolesService.List].
 type ListRolesOptions struct {
+	_ [0]func()
+
 	// ReplaceDeprecatedPrivileges replaces privileges of deprecated features
 	// with the privileges of the features that replace them.
 	ReplaceDeprecatedPrivileges bool `url:"replaceDeprecatedPrivileges,omitempty"`
@@ -175,6 +177,8 @@ type ListRolesOptions struct {
 
 // GetRoleOptions are the options for [RolesService.Get].
 type GetRoleOptions struct {
+	_ [0]func()
+
 	// ReplaceDeprecatedPrivileges replaces privileges of deprecated features
 	// with the privileges of the features that replace them.
 	ReplaceDeprecatedPrivileges bool `url:"replaceDeprecatedPrivileges,omitempty"`
@@ -191,7 +195,7 @@ func (s *RolesService) List(ctx context.Context, opt *ListRolesOptions, opts ...
 		return nil, nil, err
 	}
 	var roles []*Role
-	resp, err := s.client.do(ctx, http.MethodGet, path, nil, &roles, opts)
+	resp, err := s.client.do(ctx, http.MethodGet, path, nil, &roles, nil, opts)
 	if err != nil {
 		return nil, resp, err
 	}
@@ -212,7 +216,7 @@ func (s *RolesService) Get(ctx context.Context, name string, opt *GetRoleOptions
 		return nil, nil, err
 	}
 	role := new(Role)
-	resp, err := s.client.do(ctx, http.MethodGet, path, nil, role, opts)
+	resp, err := s.client.do(ctx, http.MethodGet, path, nil, role, nil, opts)
 	if err != nil {
 		return nil, resp, err
 	}
@@ -221,6 +225,8 @@ func (s *RolesService) Get(ctx context.Context, name string, opt *GetRoleOptions
 
 // CreateOrUpdateRoleOptions are the options for [RolesService.CreateOrUpdate].
 type CreateOrUpdateRoleOptions struct {
+	_ [0]func()
+
 	// CreateOnly makes the request fail with a conflict instead of
 	// overwriting an existing role.
 	CreateOnly bool `url:"createOnly,omitempty"`
@@ -249,7 +255,12 @@ func (s *RolesService) CreateOrUpdate(ctx context.Context, name string, role *Ro
 		return nil, err
 	}
 	// Kibana answers 204 No Content.
-	return s.client.do(ctx, http.MethodPut, path, payload, nil, opts)
+	return s.client.do(ctx, http.MethodPut, path, payload, nil, nil, opts)
+}
+
+// DeleteRoleOptions are the options of [RolesService.Delete].
+type DeleteRoleOptions struct {
+	_ [0]func()
 }
 
 // Delete deletes the role with the given name.
@@ -257,9 +268,9 @@ func (s *RolesService) CreateOrUpdate(ctx context.Context, name string, role *Ro
 // Kibana API: DELETE /api/security/role/{name}
 //
 // Kibana API docs: https://www.elastic.co/docs/api/doc/kibana/operation/operation-delete-security-role-name
-func (s *RolesService) Delete(ctx context.Context, name string, opts ...RequestOption) (*Response, error) {
+func (s *RolesService) Delete(ctx context.Context, name string, opt *DeleteRoleOptions, opts ...RequestOption) (*Response, error) {
 	if err := requireID("role name", name); err != nil {
 		return nil, err
 	}
-	return s.client.do(ctx, http.MethodDelete, pathf("/api/security/role/%s", name), nil, nil, opts)
+	return s.client.do(ctx, http.MethodDelete, pathf("/api/security/role/%s", name), nil, nil, opt, opts)
 }

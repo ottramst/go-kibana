@@ -50,7 +50,7 @@ func TestAccFeatures(t *testing.T) {
 
 func TestAccTaskManagerHealth(t *testing.T) {
 	client := accClient(t)
-	health, _, err := client.TaskManager.Health(t.Context())
+	health, _, err := client.TaskManager.Health(t.Context(), nil)
 	if err != nil {
 		t.Fatalf("Health() error = %v", err)
 	}

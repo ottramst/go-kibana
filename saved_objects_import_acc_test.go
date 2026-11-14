@@ -22,7 +22,7 @@ func TestAccSavedObjectsExportImport(t *testing.T) {
 	var export bytes.Buffer
 	if _, err := src.SavedObjects.Export(ctx, &kibana.ExportSavedObjectsRequest{
 		Objects: []kibana.SavedObjectRef{{Type: "index-pattern", ID: ipID}},
-	}, &export); err != nil {
+	}, &export, nil); err != nil {
 		t.Fatalf("Export() error = %v", err)
 	}
 	var lines [][]byte
@@ -40,7 +40,7 @@ func TestAccSavedObjectsExportImport(t *testing.T) {
 
 	_, err := src.SavedObjects.Export(ctx, &kibana.ExportSavedObjectsRequest{
 		Objects: []kibana.SavedObjectRef{{Type: "index-pattern", ID: randName(t, "missing")}},
-	}, &bytes.Buffer{})
+	}, &bytes.Buffer{}, nil)
 	if !errors.Is(err, kibana.ErrBadRequest) {
 		t.Errorf("Export(missing) error = %v, want ErrBadRequest", err)
 	}
@@ -61,14 +61,14 @@ func TestAccSavedObjectsExportImport(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Import(again) error = %v", err)
 	}
-	if result.Success || len(result.Errors) != 1 || result.Errors[0].Error == nil || result.Errors[0].Error.Type != kibana.ImportErrorConflict {
+	if result.Success || len(result.Errors) != 1 || result.Errors[0].Error == nil || result.Errors[0].Error.Type != kibana.ImportErrorTypeConflict {
 		t.Fatalf("Import(again) = %+v, want a conflict", result)
 	}
 
 	// Resolve the conflict by overwriting.
 	result, _, err = dst.SavedObjects.ResolveImportErrors(ctx, bytes.NewReader(export.Bytes()), &kibana.ResolveImportErrorsRequest{
 		Retries: []kibana.ImportRetry{{Type: "index-pattern", ID: ipID, Overwrite: true, DestinationID: result.Errors[0].Error.DestinationID}},
-	})
+	}, nil)
 	if err != nil {
 		t.Fatalf("ResolveImportErrors() error = %v", err)
 	}

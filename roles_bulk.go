@@ -10,8 +10,8 @@ import (
 	"strings"
 )
 
-// BulkRolesResult is the result of [RolesService.BulkCreateOrUpdate].
-type BulkRolesResult struct {
+// BulkCreateOrUpdateRolesResult is the result of [RolesService.BulkCreateOrUpdate].
+type BulkCreateOrUpdateRolesResult struct {
 	// Created lists the names of the roles that were created.
 	Created []string `json:"created,omitempty"`
 
@@ -26,7 +26,7 @@ type BulkRolesResult struct {
 	Errors map[string]BulkRoleError `json:"errors,omitempty"`
 }
 
-// BulkRoleError is the error of a role in [BulkRolesResult].
+// BulkRoleError is the error of a role in [BulkCreateOrUpdateRolesResult].
 type BulkRoleError struct {
 	// Type is the Elasticsearch error type, such as
 	// "action_request_validation_exception".
@@ -42,18 +42,23 @@ func (e BulkRoleError) Error() string {
 	return "kibana: " + e.Type + ": " + e.Reason
 }
 
+// BulkCreateOrUpdateRolesOptions are the options of [RolesService.BulkCreateOrUpdate].
+type BulkCreateOrUpdateRolesOptions struct {
+	_ [0]func()
+}
+
 // BulkCreateOrUpdate creates or replaces several roles in one request. roles
 // maps role names to their definitions. The read-only fields of the roles are
 // ignored, and every Kibana privilege must list at least one space.
 //
 // Roles that fail, for example because of an unknown Elasticsearch
-// privilege, are reported in [BulkRolesResult.Errors]; the call itself still
+// privilege, are reported in [BulkCreateOrUpdateRolesResult.Errors]; the call itself still
 // succeeds. Kibana does not validate Kibana feature names.
 //
 // Kibana API: POST /api/security/roles
 //
 // Kibana API docs: https://www.elastic.co/docs/api/doc/kibana/operation/operation-post-security-roles
-func (s *RolesService) BulkCreateOrUpdate(ctx context.Context, roles map[string]*Role, opts ...RequestOption) (*BulkRolesResult, *Response, error) {
+func (s *RolesService) BulkCreateOrUpdate(ctx context.Context, roles map[string]*Role, opt *BulkCreateOrUpdateRolesOptions, opts ...RequestOption) (*BulkCreateOrUpdateRolesResult, *Response, error) {
 	if len(roles) == 0 {
 		return nil, nil, errors.New("kibana: roles must not be empty")
 	}
@@ -76,8 +81,8 @@ func (s *RolesService) BulkCreateOrUpdate(ctx context.Context, roles map[string]
 	body := struct {
 		Roles map[string]*rolePayload `json:"roles"`
 	}{payloads}
-	result := new(BulkRolesResult)
-	resp, err := s.client.do(ctx, http.MethodPost, "/api/security/roles", body, result, opts)
+	result := new(BulkCreateOrUpdateRolesResult)
+	resp, err := s.client.do(ctx, http.MethodPost, "/api/security/roles", body, result, opt, opts)
 	if err != nil {
 		return nil, resp, err
 	}
