@@ -1,0 +1,5 @@
+{
+  "statusCode": 404,
+  "error": "Not Found",
+  "message": "Alert instance with id \"a1\" does not exist for rule with id \"probe-sn\""
+}

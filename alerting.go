@@ -95,7 +95,9 @@ type Rule struct {
 	// APIKeyOwner is the user whose API key the rule runs with, set once
 	// the rule was enabled. APIKeyCreatedByUser is set when the rule runs
 	// with the caller's own API key, as when it was created or enabled with
-	// API key authentication, rather than one that Kibana created.
+	// API key authentication, rather than one that Kibana created. Revoking
+	// such a key leaves the rule enabled but unable to query Elasticsearch:
+	// depending on the rule type, its runs fail or match nothing.
 	APIKeyOwner         string `json:"api_key_owner,omitempty"`
 	APIKeyCreatedByUser bool   `json:"api_key_created_by_user,omitempty"`
 

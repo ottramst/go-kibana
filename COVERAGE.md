@@ -6,12 +6,12 @@ Endpoints of the official Kibana OpenAPI specs (v8.19.25, v9.5.6) and the go-kib
 
 Endpoint data comes from the [Kibana OpenAPI specification](https://github.com/elastic/kibana/tree/main/oas_docs) by Elastic, licensed under [CC BY-NC-ND 4.0](https://creativecommons.org/licenses/by-nc-nd/4.0/).
 
-**77 of 726 endpoints implemented.**
+**83 of 726 endpoints implemented.**
 
 | Area | Implemented |
 |---|---|
 | [agent builder](#agent-builder) | 0 / 39 |
-| [alerting](#alerting) | 10 / 36 |
+| [alerting](#alerting) | 16 / 36 |
 | [APM agent configuration](#apm-agent-configuration) | 0 / 7 |
 | [APM agent keys](#apm-agent-keys) | 0 / 1 |
 | [APM annotations](#apm-annotations) | 0 / 2 |
@@ -133,12 +133,12 @@ Endpoint data comes from the [Kibana OpenAPI specification](https://github.com/e
 | POST | `/api/alerting/rule/{id}/_unmute_all` | ✅ | ✅ | `AlertingService.UnmuteAllAlerts` |  |
 | POST | `/api/alerting/rule/{id}/_update_api_key` | ✅ | ✅ | `AlertingService.UpdateRuleAPIKey` |  |
 | GET | `/api/alerting/rule/{id}/query_inspector` | — | ✅ |  |  |
-| POST | `/api/alerting/rule/{id}/snooze_schedule` | ✅ | ✅ |  | Generally available; added in 8.19.0 |
-| DELETE | `/api/alerting/rule/{ruleId}/snooze_schedule/{scheduleId}` | ✅ | ✅ |  | Generally available; added in 8.19.0 |
-| POST | `/api/alerting/rule/{rule_id}/alert/{alert_id}/_mute` | ✅ | ✅ |  |  |
-| POST | `/api/alerting/rule/{rule_id}/alert/{alert_id}/_snooze` | — | ✅ |  | Generally available; added in 9.5.0 |
-| POST | `/api/alerting/rule/{rule_id}/alert/{alert_id}/_unmute` | ✅ | ✅ |  |  |
-| POST | `/api/alerting/rule/{rule_id}/alert/{alert_id}/_unsnooze` | — | ✅ |  | Generally available; added in 9.5.0 |
+| POST | `/api/alerting/rule/{id}/snooze_schedule` | ✅ | ✅ | `AlertingService.CreateSnoozeSchedule` | Generally available; added in 8.19.0 |
+| DELETE | `/api/alerting/rule/{ruleId}/snooze_schedule/{scheduleId}` | ✅ | ✅ | `AlertingService.DeleteSnoozeSchedule` | Generally available; added in 8.19.0 |
+| POST | `/api/alerting/rule/{rule_id}/alert/{alert_id}/_mute` | ✅ | ✅ | `AlertingService.MuteAlert` |  |
+| POST | `/api/alerting/rule/{rule_id}/alert/{alert_id}/_snooze` | — | ✅ | `AlertingService.SnoozeAlert` | Generally available; added in 9.5.0 |
+| POST | `/api/alerting/rule/{rule_id}/alert/{alert_id}/_unmute` | ✅ | ✅ | `AlertingService.UnmuteAlert` |  |
+| POST | `/api/alerting/rule/{rule_id}/alert/{alert_id}/_unsnooze` | — | ✅ | `AlertingService.UnsnoozeAlert` | Generally available; added in 9.5.0 |
 | GET | `/api/alerting/rule_types` | ✅ | ✅ |  |  |
 | GET | `/api/alerting/rules/_find` | ✅ | ✅ | `AlertingService.FindRules` |  |
 | POST | `/api/alerting/rules/backfill/_find` | — | ✅ |  |  |

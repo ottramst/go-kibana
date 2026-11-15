@@ -6,6 +6,8 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"encoding/json"
+	"io"
+	"net/http"
 	"os"
 	"strconv"
 	"strings"
@@ -77,6 +79,29 @@ func randUUID(t *testing.T) string {
 	b[8] = b[8]&0x3f | 0x80
 	h := hex.EncodeToString(b)
 	return h[:8] + "-" + h[8:12] + "-" + h[12:16] + "-" + h[16:20] + "-" + h[20:]
+}
+
+// esRequest sends a request to the Elasticsearch of the compose stack
+// (ELASTICSEARCH_URL, default http://localhost:9200, with the basic auth
+// credentials of the tests), for tests that need data in Elasticsearch.
+// It fails the test unless Elasticsearch answers 2xx.
+func esRequest(t *testing.T, method, path, body string) {
+	t.Helper()
+	req, err := http.NewRequestWithContext(context.WithoutCancel(t.Context()), method, envOr("ELASTICSEARCH_URL", "http://localhost:9200")+path, strings.NewReader(body))
+	if err != nil {
+		t.Fatal(err)
+	}
+	req.SetBasicAuth(envOr("KIBANA_USERNAME", "elastic"), envOr("KIBANA_PASSWORD", "changeme"))
+	req.Header.Set("Content-Type", "application/json")
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		t.Fatalf("Elasticsearch %s %s: %v", method, path, err)
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode/100 != 2 {
+		b, _ := io.ReadAll(resp.Body)
+		t.Fatalf("Elasticsearch %s %s: %s: %s", method, path, resp.Status, b)
+	}
 }
 
 // kibanaVersion returns the version of the acceptance test Kibana, such as
