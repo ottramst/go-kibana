@@ -219,9 +219,8 @@ type RuleQuery struct {
 // and with [QueryInspectorModeExecute] their responses. It works on disabled
 // rules. Kibana answers [ErrBadRequest] for rule types that don't support
 // it, such as ".index-threshold" and ".es-query" (the observability custom
-// threshold rule does), and for an opt.AlertID of another rule of the same
-// type and space. Other opt.AlertID values that match no alert of the rule
-// are [ErrNotFound].
+// threshold rule does). An opt.AlertID that Kibana does not find is
+// [ErrNotFound], and one of another rule is rejected.
 //
 // The query inspector needs Kibana 9.5 or later: Kibana 8.19 answers
 // [ErrNotFound].
