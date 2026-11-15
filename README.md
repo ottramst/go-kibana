@@ -54,9 +54,9 @@ Authenticate with `WithAPIKey` (the base64 `encoded` value of an Elasticsearch A
 | Data views | CRUD and the default data view · field metadata · runtime fields · reference swaps |
 
 [COVERAGE.md](COVERAGE.md) maps every endpoint of the Kibana OpenAPI specs to its method. Not covered in
-these areas: the connector OAuth routes (browser redirects), the connector and alerting routes that Kibana
-deprecated and removed in 9.0 (`/api/actions/action*`, `/api/alerts/*`), and rule backfills, which only
-accept Security detection rules ([#102](https://github.com/ottramst/go-kibana/issues/102)).
+these areas: the connector OAuth routes (a browser OAuth flow), the deprecated legacy `/api/actions` and
+`/api/alerts` routes that only Kibana 8.19 has, and rule backfills, which only accept Security detection
+rules ([#102](https://github.com/ottramst/go-kibana/issues/102)).
 
 ## Cookbook
 
@@ -99,7 +99,7 @@ connector, _, err := client.Connectors.Create(ctx, &kibana.Connector{
 	ConnectorTypeID: kibana.ConnectorTypeIDServerLog,
 }, nil)
 rule, _, err := client.Alerting.CreateRule(ctx, &kibana.Rule{
-	Name:       "Errors in the last 5 minutes",
+	Name:       "Documents in logs-*",
 	RuleTypeID: ".index-threshold",
 	Consumer:   "stackAlerts",
 	Enabled:    true,

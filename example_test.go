@@ -321,7 +321,7 @@ func ExampleAlertingService_CreateRule() {
 	// and log a message when the alert starts and when it recovers. Rules
 	// are created disabled unless Enabled is set.
 	rule, _, err := client.Alerting.CreateRule(ctx, &kibana.Rule{
-		Name:       "Errors in the last 5 minutes",
+		Name:       "Documents in logs-*",
 		RuleTypeID: ".index-threshold",
 		Consumer:   "stackAlerts",
 		Enabled:    true,
