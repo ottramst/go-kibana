@@ -83,11 +83,15 @@ func TestAccAlertingRules(t *testing.T) {
 	if got.Name != name || got.Flapping == nil || got.AlertDelay == nil || !slices.Equal(got.Tags, rule.Tags) {
 		t.Errorf("GetRule() = %+v, want %+v", got, created)
 	}
+	if len(got.Actions) != 1 {
+		t.Fatalf("GetRule() actions = %+v, want 1", got.Actions)
+	}
 	if tf := got.Actions[0].AlertsFilter; tf == nil || tf.Timeframe == nil || tf.Timeframe.Days == nil || len(tf.Timeframe.Days) != 0 {
 		t.Errorf("GetRule() alerts filter = %+v, want a timeframe with no days", tf)
 	}
-	// Kibana 8.19 accepts artifacts but does not store them.
-	storesArtifacts := compareVersions(kibanaVersion(t, client), "9.0.0") >= 0
+	// Kibana 8.19 accepts artifacts but does not store them; 9.5 stores
+	// them. The versions in between are not tested.
+	storesArtifacts := compareVersions(kibanaVersion(t, client), "9.5.0") >= 0
 	if hasGuide := got.Artifacts != nil && got.Artifacts.InvestigationGuide != nil; hasGuide != storesArtifacts {
 		t.Errorf("GetRule() artifacts = %+v, want stored: %v", got.Artifacts, storesArtifacts)
 	}
@@ -104,7 +108,7 @@ func TestAccAlertingRules(t *testing.T) {
 		t.Errorf("UpdateRule() = %+v, want the renamed rule with its actions", updated)
 	}
 
-	if (updated.Artifacts != nil) != storesArtifacts {
+	if kept := updated.Artifacts != nil && updated.Artifacts.InvestigationGuide != nil; kept != storesArtifacts {
 		t.Errorf("UpdateRule() artifacts = %+v, want them kept: %v", updated.Artifacts, storesArtifacts)
 	}
 
