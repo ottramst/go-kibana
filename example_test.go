@@ -167,26 +167,25 @@ func ExampleClient_Do() {
 		log.Fatal(err)
 	}
 
-	// Call an endpoint the client has no method for yet: find alerting
-	// rules.
-	req, err := client.NewRequest(context.Background(), http.MethodGet, "/api/alerting/rules/_find?per_page=10", nil)
+	// Call an endpoint the client has no method for yet: find cases.
+	req, err := client.NewRequest(context.Background(), http.MethodGet, "/api/cases/_find?perPage=10", nil)
 	if err != nil {
 		log.Fatal(err)
 	}
-	var rules struct {
+	var cases struct {
 		Total int `json:"total"`
-		Data  []struct {
-			ID   string `json:"id"`
-			Name string `json:"name"`
-		} `json:"data"`
+		Cases []struct {
+			ID    string `json:"id"`
+			Title string `json:"title"`
+		} `json:"cases"`
 	}
-	if _, err := client.Do(req, &rules); err != nil {
+	if _, err := client.Do(req, &cases); err != nil {
 		log.Fatal(err)
 	}
-	for _, r := range rules.Data {
-		fmt.Println(r.ID, r.Name)
+	for _, c := range cases.Cases {
+		fmt.Println(c.ID, c.Title)
 	}
-	fmt.Println(rules.Total, "rules")
+	fmt.Println(cases.Total, "cases")
 }
 
 func ExampleSpacesService_CopySavedObjects() {

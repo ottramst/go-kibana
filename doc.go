@@ -74,14 +74,14 @@
 // the authentication, the space prefix and the headers Kibana requires, and
 // return the same errors as the methods:
 //
-//	req, err := client.NewRequest(ctx, http.MethodGet, "/api/alerting/rules/_find?per_page=10", nil)
+//	req, err := client.NewRequest(ctx, http.MethodGet, "/api/cases/_find?perPage=10", nil)
 //	if err != nil {
 //		return err
 //	}
-//	var rules struct {
+//	var cases struct {
 //		Total int `json:"total"`
 //	}
-//	_, err = client.Do(req, &rules)
+//	_, err = client.Do(req, &cases)
 //
 // # Timeouts and retries
 //

@@ -1,0 +1,59 @@
+{
+  "id": "probe-rule-3",
+  "enabled": false,
+  "name": "probe-rule-3",
+  "tags": [
+    "probe"
+  ],
+  "rule_type_id": ".index-threshold",
+  "consumer": "stackAlerts",
+  "schedule": {
+    "interval": "1m"
+  },
+  "actions": [
+    {
+      "group": "threshold met",
+      "id": "0b8d1a4e-0000-4000-8000-000000000002",
+      "params": {
+        "message": "{{context.message}}"
+      },
+      "connector_type_id": ".server-log",
+      "frequency": {
+        "summary": false,
+        "notify_when": "onActionGroupChange",
+        "throttle": null
+      },
+      "uuid": "07ae050f-b216-4ebb-a404-c92eb2115e86"
+    }
+  ],
+  "params": {
+    "index": [
+      "probe-idx"
+    ],
+    "timeField": "@timestamp",
+    "aggType": "count",
+    "groupBy": "all",
+    "timeWindowSize": 5,
+    "timeWindowUnit": "m",
+    "thresholdComparator": ">",
+    "threshold": [
+      0
+    ]
+  },
+  "created_by": "elastic",
+  "updated_by": "elastic",
+  "created_at": "2026-11-15T17:42:47.693Z",
+  "updated_at": "2026-11-15T17:42:47.693Z",
+  "api_key_owner": null,
+  "api_key_created_by_user": null,
+  "throttle": null,
+  "mute_all": false,
+  "notify_when": null,
+  "muted_alert_ids": [],
+  "execution_status": {
+    "status": "pending",
+    "last_execution_date": "2026-11-15T17:42:47.693Z"
+  },
+  "revision": 0,
+  "running": false
+}

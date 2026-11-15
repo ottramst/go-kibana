@@ -1,0 +1,61 @@
+{
+  "id": "probe-rule-2",
+  "enabled": true,
+  "name": "r3b",
+  "tags": [],
+  "rule_type_id": ".index-threshold",
+  "consumer": "stackAlerts",
+  "schedule": {
+    "interval": "10s"
+  },
+  "actions": [],
+  "params": {
+    "index": [
+      "probe-idx"
+    ],
+    "timeField": "@timestamp",
+    "aggType": "count",
+    "groupBy": "all",
+    "timeWindowSize": 5,
+    "timeWindowUnit": "m",
+    "thresholdComparator": ">",
+    "threshold": [
+      0
+    ]
+  },
+  "scheduled_task_id": "probe-rule-2",
+  "created_by": "elastic",
+  "updated_by": "elastic",
+  "created_at": "2026-11-15T17:40:06.593Z",
+  "updated_at": "2026-11-15T17:40:57.164Z",
+  "api_key_owner": "elastic",
+  "api_key_created_by_user": false,
+  "throttle": null,
+  "mute_all": false,
+  "notify_when": null,
+  "muted_alert_ids": [],
+  "execution_status": {
+    "status": "active",
+    "last_execution_date": "2026-11-15T17:42:48.190Z",
+    "last_duration": 314
+  },
+  "last_run": {
+    "outcome": "succeeded",
+    "outcome_order": 0,
+    "warning": null,
+    "outcome_msg": null,
+    "alerts_count": {
+      "new": 0,
+      "ignored": 0,
+      "recovered": 0,
+      "active": 1
+    }
+  },
+  "next_run": "2026-11-15T17:42:58.169Z",
+  "revision": 4,
+  "running": false,
+  "alert_delay": {
+    "active": 2
+  },
+  "flapping": null
+}
