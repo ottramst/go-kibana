@@ -51,7 +51,8 @@ type Rule struct {
 
 	// Enabled rules run on their schedule. Unlike Kibana, which enables new
 	// rules by default, [AlertingService.CreateRule] creates a disabled rule
-	// when Enabled is false. [AlertingService.UpdateRule] cannot change it.
+	// when Enabled is false. Use [AlertingService.EnableRule] and
+	// [AlertingService.DisableRule] to change it later.
 	Enabled bool `json:"enabled"`
 
 	Schedule RuleSchedule `json:"schedule"`
@@ -91,10 +92,10 @@ type Rule struct {
 	CreatedAt time.Time `json:"created_at,omitzero"`
 	UpdatedAt time.Time `json:"updated_at,omitzero"`
 
-	// APIKeyOwner is the user whose API key the rule runs with, set while
-	// the rule is enabled. APIKeyCreatedByUser is set when the key was
-	// created by the user rather than by Kibana, as when the rule was
-	// enabled with API key authentication.
+	// APIKeyOwner is the user whose API key the rule runs with, set once
+	// the rule was enabled. APIKeyCreatedByUser is set when the rule runs
+	// with the caller's own API key, as when it was created or enabled with
+	// API key authentication, rather than one that Kibana created.
 	APIKeyOwner         string `json:"api_key_owner,omitempty"`
 	APIKeyCreatedByUser bool   `json:"api_key_created_by_user,omitempty"`
 
