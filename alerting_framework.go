@@ -220,7 +220,8 @@ type RuleQuery struct {
 // rules. Kibana answers [ErrBadRequest] for rule types that don't support
 // it, such as ".index-threshold" and ".es-query" (the observability custom
 // threshold rule does). An opt.AlertID that Kibana does not find is
-// [ErrNotFound], and one of another rule is rejected.
+// [ErrNotFound], and one that Kibana finds but that belongs to another rule
+// is rejected.
 //
 // The query inspector needs Kibana 9.5 or later: Kibana 8.19 answers
 // [ErrNotFound].
