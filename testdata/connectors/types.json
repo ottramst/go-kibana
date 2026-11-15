@@ -1,0 +1,50 @@
+[
+  {
+    "id": ".server-log",
+    "name": "Server log",
+    "enabled": true,
+    "enabled_in_config": true,
+    "enabled_in_license": true,
+    "minimum_license_required": "basic",
+    "supported_feature_ids": [
+      "alerting",
+      "uptime",
+      "siem"
+    ],
+    "is_system_action_type": false,
+    "source": "stack",
+    "is_deprecated": false
+  },
+  {
+    "id": ".sentinelone",
+    "name": "Sentinel One",
+    "enabled": true,
+    "enabled_in_config": true,
+    "enabled_in_license": true,
+    "minimum_license_required": "enterprise",
+    "supported_feature_ids": [
+      "endpointSecurity"
+    ],
+    "is_system_action_type": false,
+    "source": "stack",
+    "sub_feature": "endpointSecurity",
+    "is_deprecated": false
+  },
+  {
+    "id": ".jira-cloud",
+    "name": "Jira Cloud",
+    "enabled": true,
+    "enabled_in_config": true,
+    "enabled_in_license": true,
+    "minimum_license_required": "enterprise",
+    "supported_feature_ids": [
+      "workflows",
+      "agentBuilder"
+    ],
+    "is_system_action_type": false,
+    "source": "spec",
+    "is_deprecated": false,
+    "description": "Search issues, browse projects, and look up users in Jira Cloud",
+    "is_experimental": true
+  }
+]

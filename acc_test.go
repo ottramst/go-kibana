@@ -65,6 +65,20 @@ func randName(t *testing.T, prefix string) string {
 	return prefix + "-" + hex.EncodeToString(b)
 }
 
+// randUUID returns a random version 4 UUID, for objects whose predefined
+// IDs must be UUIDs on Kibana 8.19, such as connectors.
+func randUUID(t *testing.T) string {
+	t.Helper()
+	b := make([]byte, 16)
+	if _, err := rand.Read(b); err != nil {
+		t.Fatal(err)
+	}
+	b[6] = b[6]&0x0f | 0x40
+	b[8] = b[8]&0x3f | 0x80
+	h := hex.EncodeToString(b)
+	return h[:8] + "-" + h[8:12] + "-" + h[12:16] + "-" + h[16:20] + "-" + h[20:]
+}
+
 // kibanaVersion returns the version of the acceptance test Kibana, such as
 // "9.5.6".
 func kibanaVersion(t *testing.T, client *kibana.Client) string {

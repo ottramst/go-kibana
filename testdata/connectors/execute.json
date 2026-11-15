@@ -1,0 +1,5 @@
+{
+  "status": "ok",
+  "data": "{\"query\":{\"match_all\":{}}}",
+  "connector_id": "probe-es"
+}

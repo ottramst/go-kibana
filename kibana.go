@@ -52,6 +52,7 @@ type Client struct {
 	common service
 
 	// Services used for talking to different parts of the Kibana API.
+	Connectors            *ConnectorsService
 	DataViews             *DataViewsService
 	EncryptedSavedObjects *EncryptedSavedObjectsService
 	Features              *FeaturesService
@@ -182,6 +183,7 @@ func NewClient(baseURL string, opts ...ClientOption) (*Client, error) {
 
 func (c *Client) initServices() {
 	c.common.client = c
+	c.Connectors = (*ConnectorsService)(&c.common)
 	c.DataViews = (*DataViewsService)(&c.common)
 	c.EncryptedSavedObjects = (*EncryptedSavedObjectsService)(&c.common)
 	c.Features = (*FeaturesService)(&c.common)

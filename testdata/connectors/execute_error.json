@@ -1,0 +1,7 @@
+{
+  "status": "error",
+  "message": "error validating action params: ✖ Invalid input: expected string, received undefined\n  → at message",
+  "errorSource": "user",
+  "connector_id": "probe-log-1",
+  "retry": false
+}
