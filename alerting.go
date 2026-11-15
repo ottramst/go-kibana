@@ -41,7 +41,8 @@ type Rule struct {
 	Name string `json:"name"`
 
 	// RuleTypeID is the type of the rule, such as ".index-threshold" or
-	// ".es-query".
+	// ".es-query". [AlertingService.ListRuleTypes] returns the types of a
+	// Kibana.
 	RuleTypeID string `json:"rule_type_id"`
 
 	// Consumer is the Kibana feature that owns the rule, such as
@@ -140,8 +141,8 @@ type RuleAction struct {
 	ID string `json:"id"`
 
 	// Group is the action group that runs the action, such as
-	// "threshold met" or "recovered", which depend on the rule type.
-	// System actions have none.
+	// "threshold met" or "recovered"; [RuleType] lists them. System
+	// actions have none.
 	Group string `json:"group,omitempty"`
 
 	// Params are the parameters of the connector, as a JSON object; strings

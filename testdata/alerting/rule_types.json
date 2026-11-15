@@ -1,0 +1,358 @@
+[
+  {
+    "action_groups": [
+      {
+        "id": "threshold met",
+        "name": "Threshold met"
+      },
+      {
+        "id": "recovered",
+        "name": "Recovered"
+      }
+    ],
+    "action_variables": {
+      "context": [
+        {
+          "name": "message",
+          "description": "A pre-constructed message for the alert."
+        },
+        {
+          "name": "title",
+          "description": "A pre-constructed title for the alert."
+        },
+        {
+          "name": "group",
+          "description": "The group that exceeded the threshold."
+        },
+        {
+          "name": "date",
+          "description": "The date the alert met the threshold conditions."
+        },
+        {
+          "name": "value",
+          "description": "The value that exceeded the threshold."
+        },
+        {
+          "name": "conditions",
+          "description": "A string describing the threshold comparator and threshold."
+        }
+      ],
+      "state": [],
+      "params": [
+        {
+          "name": "threshold",
+          "description": "An array of rule threshold values. For between and notBetween thresholds, there are two values."
+        },
+        {
+          "name": "thresholdComparator",
+          "description": "The comparison function for the threshold."
+        },
+        {
+          "name": "index",
+          "description": "The indices the rule queries."
+        },
+        {
+          "name": "timeField",
+          "description": "The field that is used to calculate the time window."
+        },
+        {
+          "name": "aggType",
+          "description": "The type of aggregation."
+        },
+        {
+          "name": "aggField",
+          "description": "The field that is used in the aggregation."
+        },
+        {
+          "name": "groupBy",
+          "description": "Indicates whether the aggregation is applied over all documents or split into groups."
+        },
+        {
+          "name": "termField",
+          "description": "The field that is used for grouping the aggregation."
+        },
+        {
+          "name": "filterKuery",
+          "description": "A KQL expression that limits the scope of alerts."
+        },
+        {
+          "name": "termSize",
+          "description": "The number of groups that are checked against the threshold."
+        },
+        {
+          "name": "timeWindowSize",
+          "description": "The size of the time window, which determines how far back to search for documents."
+        },
+        {
+          "name": "timeWindowUnit",
+          "description": "The type of units for the time window: seconds, minutes, hours, or days."
+        }
+      ]
+    },
+    "alerts": {
+      "context": "stack",
+      "mappings": {
+        "fieldMap": {
+          "kibana.alert.title": {
+            "type": "keyword",
+            "array": false,
+            "required": false
+          },
+          "kibana.alert.evaluation.conditions": {
+            "type": "keyword",
+            "array": false,
+            "required": false
+          },
+          "kibana.alert.evaluation.value": {
+            "type": "keyword",
+            "array": false,
+            "required": false
+          },
+          "kibana.alert.evaluation.threshold": {
+            "type": "scaled_float",
+            "scaling_factor": 100,
+            "required": false
+          },
+          "kibana.alert.grouping": {
+            "type": "object",
+            "dynamic": true,
+            "array": false,
+            "required": false
+          }
+        },
+        "dynamicTemplates": [
+          {
+            "strings_as_keywords": {
+              "path_match": "kibana.alert.grouping.*",
+              "match_mapping_type": "string",
+              "mapping": {
+                "type": "keyword",
+                "ignore_above": 1024
+              }
+            }
+          }
+        ]
+      },
+      "shouldWrite": true,
+      "useEcs": true
+    },
+    "authorized_consumers": {
+      "stackAlerts": {
+        "read": true,
+        "all": true
+      },
+      "alerts": {
+        "read": true,
+        "all": true
+      }
+    },
+    "auto_recover_alerts": true,
+    "category": "management",
+    "default_action_group_id": "threshold met",
+    "does_set_recovery_context": true,
+    "enabled_in_license": true,
+    "fieldsForAAD": [],
+    "has_alerts_mappings": true,
+    "has_fields_for_a_a_d": true,
+    "id": ".index-threshold",
+    "is_internally_managed": false,
+    "is_exportable": true,
+    "minimum_license_required": "basic",
+    "name": "Index threshold",
+    "producer": "stackAlerts",
+    "recovery_action_group": {
+      "id": "recovered",
+      "name": "Recovered"
+    },
+    "rule_task_timeout": "5m"
+  },
+  {
+    "action_groups": [
+      {
+        "id": "custom_threshold.fired",
+        "name": "Alert"
+      },
+      {
+        "id": "custom_threshold.warning",
+        "name": "Warning"
+      },
+      {
+        "id": "custom_threshold.nodata",
+        "name": "No Data"
+      },
+      {
+        "id": "recovered",
+        "name": "Recovered"
+      }
+    ],
+    "action_variables": {
+      "context": [
+        {
+          "name": "group",
+          "description": "The array of objects containing groups that are reporting data"
+        },
+        {
+          "name": "grouping",
+          "description": "The object containing groups that are reporting data"
+        },
+        {
+          "name": "alertDetailsUrl",
+          "description": "Link to the alert troubleshooting view for further context and details. This will be an empty string if the server.publicBaseUrl is not configured.",
+          "usesPublicBaseUrl": true
+        },
+        {
+          "name": "reason",
+          "description": "A concise description of the reason for the alert"
+        },
+        {
+          "name": "timestamp",
+          "description": "A timestamp of when the alert was detected."
+        },
+        {
+          "name": "value",
+          "description": "List of the condition values."
+        },
+        {
+          "name": "cloud",
+          "description": "The cloud object defined by ECS if available in the source."
+        },
+        {
+          "name": "host",
+          "description": "The host object defined by ECS if available in the source."
+        },
+        {
+          "name": "container",
+          "description": "The container object defined by ECS if available in the source."
+        },
+        {
+          "name": "orchestrator",
+          "description": "The orchestrator object defined by ECS if available in the source."
+        },
+        {
+          "name": "labels",
+          "description": "List of labels associated with the entity where this alert triggered."
+        },
+        {
+          "name": "tags",
+          "description": "List of tags associated with the entity where this alert triggered."
+        },
+        {
+          "name": "viewInAppUrl",
+          "description": "Link to the alert source"
+        }
+      ],
+      "state": [],
+      "params": []
+    },
+    "alerts": {
+      "context": "observability.threshold",
+      "mappings": {
+        "fieldMap": {
+          "kibana.alert.evaluation.threshold": {
+            "type": "scaled_float",
+            "scaling_factor": 100,
+            "required": false
+          },
+          "kibana.alert.evaluation.time_range": {
+            "type": "date_range",
+            "array": false,
+            "required": false
+          },
+          "kibana.alert.evaluation.value": {
+            "type": "scaled_float",
+            "scaling_factor": 100,
+            "required": false
+          },
+          "kibana.alert.context": {
+            "type": "object",
+            "array": false,
+            "required": false
+          },
+          "kibana.alert.evaluation.values": {
+            "type": "scaled_float",
+            "scaling_factor": 100,
+            "required": false,
+            "array": true
+          },
+          "kibana.alert.grouping": {
+            "type": "object",
+            "dynamic": true,
+            "array": false,
+            "required": false
+          },
+          "kibana.alert.group": {
+            "type": "object",
+            "array": true,
+            "required": false
+          },
+          "kibana.alert.group.field": {
+            "type": "keyword",
+            "array": true,
+            "required": false
+          },
+          "kibana.alert.group.value": {
+            "type": "keyword",
+            "array": true,
+            "required": false
+          }
+        },
+        "dynamicTemplates": [
+          {
+            "strings_as_keywords": {
+              "path_match": "kibana.alert.grouping.*",
+              "match_mapping_type": "string",
+              "mapping": {
+                "type": "keyword",
+                "ignore_above": 1024
+              }
+            }
+          }
+        ]
+      },
+      "useEcs": true,
+      "useLegacyAlerts": false,
+      "shouldWrite": true
+    },
+    "authorized_consumers": {
+      "stackAlerts": {
+        "read": true,
+        "all": true
+      },
+      "logs": {
+        "read": true,
+        "all": true
+      },
+      "alerts": {
+        "read": true,
+        "all": true
+      },
+      "observability": {
+        "read": true,
+        "all": true
+      },
+      "infrastructure": {
+        "read": true,
+        "all": true
+      }
+    },
+    "auto_recover_alerts": true,
+    "category": "observability",
+    "default_action_group_id": "custom_threshold.fired",
+    "does_set_recovery_context": true,
+    "enabled_in_license": true,
+    "fieldsForAAD": [],
+    "has_alerts_mappings": true,
+    "has_fields_for_a_a_d": true,
+    "id": "observability.rules.custom_threshold",
+    "is_internally_managed": false,
+    "is_exportable": true,
+    "minimum_license_required": "basic",
+    "name": "Custom threshold",
+    "producer": "observability",
+    "recovery_action_group": {
+      "id": "recovered",
+      "name": "Recovered"
+    },
+    "rule_task_timeout": "5m"
+  }
+]

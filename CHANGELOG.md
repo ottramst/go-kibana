@@ -6,6 +6,7 @@ FEATURES:
 * alerting: `Alerting.CreateRule`, `GetRule`, `UpdateRule`, `DeleteRule`, `FindRules` and `FindRulesAll` manage alerting rules ([#98](https://github.com/ottramst/go-kibana/issues/98))
 * alerting: `Alerting.EnableRule`, `DisableRule`, `MuteAllAlerts`, `UnmuteAllAlerts` and `UpdateRuleAPIKey` change the state of a rule ([#99](https://github.com/ottramst/go-kibana/issues/99))
 * alerting: `Alerting.CreateSnoozeSchedule`, `DeleteSnoozeSchedule`, `MuteAlert`, `UnmuteAlert`, and, on Kibana 9.5+, `SnoozeAlert` and `UnsnoozeAlert` snooze and mute rules and alerts ([#100](https://github.com/ottramst/go-kibana/issues/100))
+* alerting: `Alerting.Health`, `ListRuleTypes`, and, on Kibana 9.5+, `GetRuleQueryInspector` return the alerting framework health, the rule types and the queries of a rule ([#101](https://github.com/ottramst/go-kibana/issues/101))
 
 ## v1.0.0
 
