@@ -327,11 +327,12 @@ func ExampleConnectorsService_Execute() {
 		Params: json.RawMessage(`{"message": "Hello from go-kibana", "level": "info"}`),
 	}, nil)
 	if err != nil {
-		log.Fatal(err)
+		log.Print(err)
+		return
 	}
 	// A failed execution is a result with an error status, not an error.
 	if result.Status != kibana.ExecuteConnectorStatusOK {
-		log.Fatalf("connector failed: %s (%s)", result.Message, result.ServiceMessage)
+		log.Printf("connector failed: %s (%s)", result.Message, result.ServiceMessage)
 	}
 }
 

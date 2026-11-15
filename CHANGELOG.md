@@ -2,7 +2,7 @@
 
 FEATURES:
 
-* connectors: `Connectors.List`, `Get`, `Create`, `Update`, `Delete`, `Execute` and `ListTypes` manage connectors ([#48](https://github.com/ottramst/go-kibana/issues/48))
+* connectors: `Connectors.List`, `Get`, `Create`, `Update`, `Delete`, `Execute` and `ListTypes` manage connectors ([#96](https://github.com/ottramst/go-kibana/issues/96), [#97](https://github.com/ottramst/go-kibana/issues/97))
 
 ## v1.0.0
 
