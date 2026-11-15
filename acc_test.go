@@ -6,10 +6,14 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"encoding/json"
+	"fmt"
+	"io"
+	"net/http"
 	"os"
 	"strconv"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/ottramst/go-kibana"
 )
@@ -77,6 +81,33 @@ func randUUID(t *testing.T) string {
 	b[8] = b[8]&0x3f | 0x80
 	h := hex.EncodeToString(b)
 	return h[:8] + "-" + h[8:12] + "-" + h[12:16] + "-" + h[16:20] + "-" + h[20:]
+}
+
+// esRequest sends a request to the Elasticsearch of the compose stack
+// (ELASTICSEARCH_URL, default http://localhost:9200, with the basic auth
+// credentials of the tests), for tests that need data in Elasticsearch. It
+// returns an error unless Elasticsearch answers 2xx within 30 seconds; it
+// works in cleanups too.
+func esRequest(t *testing.T, method, path, body string) error {
+	t.Helper()
+	ctx, cancel := context.WithTimeout(context.WithoutCancel(t.Context()), 30*time.Second)
+	defer cancel()
+	req, err := http.NewRequestWithContext(ctx, method, envOr("ELASTICSEARCH_URL", "http://localhost:9200")+path, strings.NewReader(body))
+	if err != nil {
+		return err
+	}
+	req.SetBasicAuth(envOr("KIBANA_USERNAME", "elastic"), envOr("KIBANA_PASSWORD", "changeme"))
+	req.Header.Set("Content-Type", "application/json")
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return fmt.Errorf("elasticsearch %s %s: %w", method, path, err)
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode/100 != 2 {
+		b, _ := io.ReadAll(resp.Body)
+		return fmt.Errorf("elasticsearch %s %s: %s: %s", method, path, resp.Status, b)
+	}
+	return nil
 }
 
 // kibanaVersion returns the version of the acceptance test Kibana, such as

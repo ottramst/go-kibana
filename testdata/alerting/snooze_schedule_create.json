@@ -1,0 +1,18 @@
+{
+  "schedule": {
+    "id": "6a45bc34-f63a-4498-a921-086fa6542b5e",
+    "custom": {
+      "duration": "2h",
+      "start": "2030-01-01T00:00:00.000Z",
+      "timezone": "Europe/Tallinn",
+      "recurring": {
+        "end": "2031-01-01T00:00:00.000Z",
+        "every": "1M",
+        "onMonthDay": [
+          1,
+          15
+        ]
+      }
+    }
+  }
+}
