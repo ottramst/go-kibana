@@ -54,9 +54,9 @@ Authenticate with `WithAPIKey` (the base64 `encoded` value of an Elasticsearch A
 | Data views | CRUD and the default data view · field metadata · runtime fields · reference swaps |
 
 [COVERAGE.md](COVERAGE.md) maps every endpoint of the Kibana OpenAPI specs to its method. Not covered in
-these areas: the connector OAuth routes (a browser OAuth flow), the deprecated `/api/actions/action*`,
-`/api/actions/list_action_types` and `/api/alerts` routes that only Kibana 8.19 has, and rule
-backfills, which only accept Security detection rules
+these areas: the connector OAuth routes (a browser OAuth flow), the deprecated `/api/actions`,
+`/api/actions/action*`, `/api/actions/list_action_types` and `/api/alerts` routes that only Kibana 8.19
+has, and rule backfills, which only accept Security detection rules
 ([#102](https://github.com/ottramst/go-kibana/issues/102)).
 
 ## Cookbook

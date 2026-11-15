@@ -90,7 +90,7 @@ To run the check locally on a clean checkout, against the latest v1 release:
 ```bash
 (cd tools/gorelease && go build -o /tmp/gorelease golang.org/x/exp/cmd/gorelease)
 latest=$(go list -m -versions github.com/ottramst/go-kibana | tr ' ' '\n' | grep -E '^v1\.[0-9]+\.[0-9]+$' | sort -V | tail -n 1)
-/tmp/gorelease -base="$latest"
+/tmp/gorelease -base="${latest:?lookup failed}"
 ```
 
 ## Releases
