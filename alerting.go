@@ -41,8 +41,7 @@ type Rule struct {
 	Name string `json:"name"`
 
 	// RuleTypeID is the type of the rule, such as ".index-threshold" or
-	// ".es-query". [AlertingService.ListRuleTypes] returns the types of a
-	// Kibana.
+	// ".es-query".
 	RuleTypeID string `json:"rule_type_id"`
 
 	// Consumer is the Kibana feature that owns the rule, such as
@@ -52,8 +51,7 @@ type Rule struct {
 
 	// Enabled rules run on their schedule. Unlike Kibana, which enables new
 	// rules by default, [AlertingService.CreateRule] creates a disabled rule
-	// when Enabled is false. Use [AlertingService.EnableRule] and
-	// [AlertingService.DisableRule] to change it later.
+	// when Enabled is false. [AlertingService.UpdateRule] cannot change it.
 	Enabled bool `json:"enabled"`
 
 	Schedule RuleSchedule `json:"schedule"`
@@ -82,6 +80,8 @@ type Rule struct {
 	Flapping *RuleFlapping `json:"flapping,omitempty"`
 
 	// Artifacts link dashboards and an investigation guide to the rule.
+	// Kibana 8.19 accepts them but does not store them.
+	// [AlertingService.UpdateRule] with a nil Artifacts removes them.
 	Artifacts *RuleArtifacts `json:"artifacts,omitempty"`
 
 	// The following fields are set by Kibana.
@@ -137,8 +137,8 @@ type RuleAction struct {
 	ID string `json:"id"`
 
 	// Group is the action group that runs the action, such as
-	// "threshold met" or "recovered"; [RuleType] lists them. System
-	// actions have none.
+	// "threshold met" or "recovered", which depend on the rule type.
+	// System actions have none.
 	Group string `json:"group,omitempty"`
 
 	// Params are the parameters of the connector, as a JSON object; strings
@@ -167,7 +167,9 @@ type RuleActionFrequency struct {
 
 	// Summary runs the action once for all alerts of a run, instead of
 	// once per alert.
-	Summary    bool           `json:"summary"`
+	Summary bool `json:"summary"`
+
+	// NotifyWhen is required.
 	NotifyWhen RuleNotifyWhen `json:"notify_when"`
 
 	// Throttle is the minimum time between runs of the action, such as
@@ -195,7 +197,8 @@ type RuleAlertsFilterQuery struct {
 	// UI. Nil is sent as [].
 	Filters json.RawMessage `json:"filters"`
 
-	// DSL is set by Kibana: the KQL and filters as an Elasticsearch query.
+	// DSL is the KQL and filters as an Elasticsearch query, which Kibana
+	// fills in. It can be sent back unchanged.
 	DSL string `json:"dsl,omitempty"`
 }
 
@@ -203,7 +206,8 @@ type RuleAlertsFilterQuery struct {
 type RuleAlertsFilterTimeframe struct {
 	_ [0]func()
 
-	// Days are ISO weekdays: 1 is Monday, 7 is Sunday.
+	// Days are ISO weekdays: 1 is Monday, 7 is Sunday. Empty means every
+	// day; nil is sent as [].
 	Days  []int                 `json:"days"`
 	Hours RuleAlertsFilterHours `json:"hours"`
 
@@ -301,11 +305,32 @@ type RuleExecutionStatus struct {
 type RuleExecutionMessage struct {
 	_ [0]func()
 
-	// Reason is a category such as "execute", "decrypt", "license" or
-	// "maxAlerts".
-	Reason  string `json:"reason"`
-	Message string `json:"message"`
+	Reason  RuleExecutionReason `json:"reason"`
+	Message string              `json:"message"`
 }
+
+// RuleExecutionReason is the reason of a failed rule run or of a warning.
+type RuleExecutionReason string
+
+// Reasons of failed rule runs.
+const (
+	RuleExecutionReasonRead     RuleExecutionReason = "read"
+	RuleExecutionReasonDecrypt  RuleExecutionReason = "decrypt"
+	RuleExecutionReasonExecute  RuleExecutionReason = "execute"
+	RuleExecutionReasonUnknown  RuleExecutionReason = "unknown"
+	RuleExecutionReasonLicense  RuleExecutionReason = "license"
+	RuleExecutionReasonTimeout  RuleExecutionReason = "timeout"
+	RuleExecutionReasonDisabled RuleExecutionReason = "disabled"
+	RuleExecutionReasonValidate RuleExecutionReason = "validate"
+)
+
+// Reasons of rule run warnings.
+const (
+	RuleExecutionReasonMaxExecutableActions RuleExecutionReason = "maxExecutableActions"
+	RuleExecutionReasonMaxAlerts            RuleExecutionReason = "maxAlerts"
+	RuleExecutionReasonMaxQueuedActions     RuleExecutionReason = "maxQueuedActions"
+	RuleExecutionReasonRuleExecution        RuleExecutionReason = "ruleExecution"
+)
 
 // RuleLastRunOutcome is the outcome of a rule run.
 type RuleLastRunOutcome string
@@ -327,8 +352,8 @@ type RuleLastRun struct {
 	// success and 20 for a failure.
 	OutcomeOrder int `json:"outcome_order"`
 
-	// Warning is the reason of a warning or failure, such as "execute".
-	Warning string `json:"warning,omitempty"`
+	// Warning is the reason of a warning or failure.
+	Warning RuleExecutionReason `json:"warning,omitempty"`
 
 	// OutcomeMsg holds the messages of a warning or failure.
 	OutcomeMsg  []string        `json:"outcome_msg,omitempty"`

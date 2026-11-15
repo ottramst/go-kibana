@@ -59,10 +59,10 @@ func TestAlertingService_GetRule_status(t *testing.T) {
 		}},
 		{"alerting/rule_get_error.json", func(t *testing.T, r *kibana.Rule) {
 			es := r.ExecutionStatus
-			if es.Status != kibana.RuleExecutionStateError || es.Error == nil || es.Error.Reason != "execute" || es.Error.Message == "" {
+			if es.Status != kibana.RuleExecutionStateError || es.Error == nil || es.Error.Reason != kibana.RuleExecutionReasonExecute || es.Error.Message == "" {
 				t.Errorf("execution status = %+v", es)
 			}
-			if lr := r.LastRun; lr == nil || lr.Outcome != kibana.RuleLastRunOutcomeFailed || lr.Warning != "execute" || len(lr.OutcomeMsg) != 1 {
+			if lr := r.LastRun; lr == nil || lr.Outcome != kibana.RuleLastRunOutcomeFailed || lr.Warning != kibana.RuleExecutionReasonExecute || len(lr.OutcomeMsg) != 1 {
 				t.Errorf("last run = %+v", lr)
 			}
 		}},
@@ -114,11 +114,14 @@ func newTestRule() *kibana.Rule {
 		Schedule:   kibana.RuleSchedule{Interval: "1m"},
 		Params:     json.RawMessage(`{"index":["i"]}`),
 		Actions: []kibana.RuleAction{{
-			ID:              "c1",
-			Group:           "threshold met",
-			Params:          json.RawMessage(`{"message":"m"}`),
-			Frequency:       &kibana.RuleActionFrequency{NotifyWhen: kibana.RuleNotifyWhenOnActiveAlert},
-			AlertsFilter:    &kibana.RuleActionAlertsFilter{Query: &kibana.RuleAlertsFilterQuery{KQL: "host.name:a"}},
+			ID:        "c1",
+			Group:     "threshold met",
+			Params:    json.RawMessage(`{"message":"m"}`),
+			Frequency: &kibana.RuleActionFrequency{NotifyWhen: kibana.RuleNotifyWhenOnActiveAlert},
+			AlertsFilter: &kibana.RuleActionAlertsFilter{
+				Query:     &kibana.RuleAlertsFilterQuery{KQL: "host.name:a"},
+				Timeframe: &kibana.RuleAlertsFilterTimeframe{Hours: kibana.RuleAlertsFilterHours{Start: "08:00", End: "17:00"}, Timezone: "UTC"},
+			},
 			UUID:            "u1",
 			ConnectorTypeID: kibana.ConnectorTypeIDServerLog,
 		}},
@@ -142,7 +145,8 @@ func newTestRule() *kibana.Rule {
 const testRuleBody = `"params":{"index":["i"]},` +
 	`"actions":[{"id":"c1","group":"threshold met","params":{"message":"m"},` +
 	`"frequency":{"summary":false,"notify_when":"onActiveAlert"},` +
-	`"alerts_filter":{"query":{"kql":"host.name:a","filters":[]}},"uuid":"u1"}],` +
+	`"alerts_filter":{"query":{"kql":"host.name:a","filters":[]},` +
+	`"timeframe":{"days":[],"hours":{"start":"08:00","end":"17:00"},"timezone":"UTC"}},"uuid":"u1"}],` +
 	`"tags":["t"],"alert_delay":{"active":2},"artifacts":{"dashboards":[{"id":"d1"}]},` +
 	`"flapping":{"look_back_window":10,"status_change_threshold":3}`
 
@@ -172,6 +176,7 @@ func TestAlertingService_CreateRule(t *testing.T) {
 			rule.ID = tt.id
 			before := *rule
 			beforeFilter := *rule.Actions[0].AlertsFilter.Query
+			beforeTimeframe := *rule.Actions[0].AlertsFilter.Timeframe
 			got, _, err := client.Alerting.CreateRule(context.Background(), rule, nil)
 			if err != nil {
 				t.Fatalf("CreateRule() error = %v", err)
@@ -179,7 +184,8 @@ func TestAlertingService_CreateRule(t *testing.T) {
 			if got.ID != "probe-rule-3" {
 				t.Errorf("CreateRule() = %+v, want the created rule", got)
 			}
-			if !reflect.DeepEqual(*rule, before) || !reflect.DeepEqual(*rule.Actions[0].AlertsFilter.Query, beforeFilter) {
+			if !reflect.DeepEqual(*rule, before) || !reflect.DeepEqual(*rule.Actions[0].AlertsFilter.Query, beforeFilter) ||
+				!reflect.DeepEqual(*rule.Actions[0].AlertsFilter.Timeframe, beforeTimeframe) {
 				t.Error("CreateRule() modified the rule")
 			}
 		})
@@ -215,7 +221,10 @@ func TestAlertingService_CreateRule_errors(t *testing.T) {
 		"no consumer":  func(r *kibana.Rule) { r.Consumer = "" },
 		"no interval":  func(r *kibana.Rule) { r.Schedule.Interval = "" },
 		"no action ID": func(r *kibana.Rule) { r.Actions[0].ID = "" },
-		"bad ID":       func(r *kibana.Rule) { r.ID = ".." },
+		"no frequency notify when": func(r *kibana.Rule) {
+			r.Actions[0].Frequency = &kibana.RuleActionFrequency{Summary: true}
+		},
+		"bad ID": func(r *kibana.Rule) { r.ID = ".." },
 	}
 	for name, modify := range invalid {
 		rule := newTestRule()
@@ -371,6 +380,17 @@ func TestAlertingService_FindRules_noOptions(t *testing.T) {
 	}
 	if _, _, err := client.Alerting.FindRules(context.Background(), &kibana.FindRulesOptions{HasReference: &kibana.SavedObjectRef{Type: "action"}}); err == nil {
 		t.Error("FindRules(reference without ID) error = nil, want an error")
+	}
+}
+
+func TestAlertingService_FindRules_errors(t *testing.T) {
+	mux, client := setup(t)
+	mux.HandleFunc("GET /api/alerting/rules/_find", func(w http.ResponseWriter, _ *http.Request) {
+		writeJSON(t, w, http.StatusBadRequest, fixture(t, "alerting/rules_find_window.json"))
+	})
+	_, _, err := client.Alerting.FindRules(context.Background(), &kibana.FindRulesOptions{Page: 101, PerPage: 100})
+	if !errors.Is(err, kibana.ErrBadRequest) {
+		t.Errorf("FindRules() error = %v, want ErrBadRequest", err)
 	}
 }
 

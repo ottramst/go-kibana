@@ -91,6 +91,9 @@ func validateRule(r *Rule) error {
 		if a.ID == "" {
 			return fmt.Errorf("kibana: rule action %d: ID must not be empty", i)
 		}
+		if a.Frequency != nil && a.Frequency.NotifyWhen == "" {
+			return fmt.Errorf("kibana: rule action %d: Frequency.NotifyWhen must not be empty", i)
+		}
 	}
 	return nil
 }
@@ -120,15 +123,33 @@ func (r *Rule) commonPayload() ruleCommonPayload {
 			UseAlertDataForTemplate: a.UseAlertDataForTemplate,
 			UUID:                    a.UUID,
 		}
-		if f := a.AlertsFilter; f != nil && f.Query != nil && len(f.Query.Filters) == 0 {
-			// Kibana requires the filters; copy, so as not to modify the
-			// caller's value.
-			q := *f.Query
-			q.Filters = json.RawMessage("[]")
-			p.Actions[i].AlertsFilter = &RuleActionAlertsFilter{Query: &q, Timeframe: f.Timeframe}
-		}
+		p.Actions[i].AlertsFilter = alertsFilterPayload(a.AlertsFilter)
 	}
 	return p
+}
+
+// alertsFilterPayload returns f with nil filters and days as empty arrays,
+// which Kibana requires, copying what it changes so as not to modify the
+// caller's value.
+func alertsFilterPayload(f *RuleActionAlertsFilter) *RuleActionAlertsFilter {
+	if f == nil {
+		return nil
+	}
+	query, timeframe := f.Query, f.Timeframe
+	if query != nil && len(query.Filters) == 0 {
+		q := *query
+		q.Filters = json.RawMessage("[]")
+		query = &q
+	}
+	if timeframe != nil && timeframe.Days == nil {
+		tf := *timeframe
+		tf.Days = []int{}
+		timeframe = &tf
+	}
+	if query == f.Query && timeframe == f.Timeframe {
+		return f
+	}
+	return &RuleActionAlertsFilter{Query: query, Timeframe: timeframe}
 }
 
 // newRuleCreatePayload validates a rule and returns its writable fields.
@@ -232,8 +253,9 @@ type UpdateRuleOptions struct {
 // UpdateRule replaces the rule with the given ID. The rule's ID, type,
 // consumer, enabled state and the fields set by Kibana are ignored.
 //
-// Tags and actions that are left out are removed, and so are the flapping
-// settings when r.Flapping is nil; AlertDelay is kept when nil. Pass a rule
+// Tags, actions and artifacts that are left out are removed, and so are
+// the flapping settings when r.Flapping is nil; AlertDelay is kept when
+// nil. Pass a rule
 // returned by [AlertingService.GetRule] to keep its other fields, but not
 // one returned by [AlertingService.FindRules] with Fields, which is
 // partial. Actions whose connector was deleted fail the update with
