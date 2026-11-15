@@ -59,6 +59,8 @@ type GetAlertingHealthOptions struct {
 }
 
 // Health returns the health of the alerting framework of the Kibana.
+// Kibana answers [ErrForbidden] to users who may not use any rule type in
+// the space.
 //
 // Kibana API: GET /api/alerting/_health
 //
@@ -126,7 +128,7 @@ type RuleType struct {
 	HasFieldsForAAD        bool `json:"has_fields_for_a_a_d"`
 	IsExportable           bool `json:"is_exportable"`
 
-	// IsInternallyManaged rule types are managed by Kibana; only Kibana 9.x
+	// IsInternallyManaged rule types are managed by Kibana; only Kibana 9.5
 	// returns it.
 	IsInternallyManaged bool `json:"is_internally_managed,omitempty"`
 }
@@ -190,9 +192,10 @@ type GetRuleQueryInspectorOptions struct {
 	// Mode is QueryInspectorModeBuild unless set.
 	Mode QueryInspectorMode `url:"mode,omitempty"`
 
-	// AlertID is the ID of an alert document of the rule (not the alert
-	// instance ID): the queries then use the time range in which the
-	// alert was evaluated, instead of the current time.
+	// AlertID is the UUID of an alert of the rule (its kibana.alert.uuid
+	// field, not the alert instance ID): the queries then use the rule
+	// parameters and the time range with which the alert was evaluated,
+	// instead of the current ones.
 	AlertID string `url:"alert_id,omitempty"`
 }
 
@@ -216,7 +219,8 @@ type RuleQuery struct {
 // and with [QueryInspectorModeExecute] their responses. It works on disabled
 // rules. Kibana answers [ErrBadRequest] for rule types that don't support
 // it, such as ".index-threshold" and ".es-query" (the observability custom
-// threshold rule does), and [ErrNotFound] for an unknown opt.AlertID.
+// threshold rule does), and for an opt.AlertID of another rule, and
+// [ErrNotFound] for an unknown opt.AlertID.
 //
 // The query inspector needs Kibana 9.5 or later: Kibana 8.19 answers
 // [ErrNotFound].
