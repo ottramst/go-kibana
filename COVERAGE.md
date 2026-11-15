@@ -6,7 +6,7 @@ Endpoints of the official Kibana OpenAPI specs (v8.19.25, v9.5.6) and the go-kib
 
 Endpoint data comes from the [Kibana OpenAPI specification](https://github.com/elastic/kibana/tree/main/oas_docs) by Elastic, licensed under [CC BY-NC-ND 4.0](https://creativecommons.org/licenses/by-nc-nd/4.0/).
 
-**60 of 726 endpoints implemented.**
+**67 of 726 endpoints implemented.**
 
 | Area | Implemented |
 |---|---|
@@ -18,7 +18,7 @@ Endpoint data comes from the [Kibana OpenAPI specification](https://github.com/e
 | [APM server schema](#apm-server-schema) | 0 / 1 |
 | [APM sourcemaps](#apm-sourcemaps) | 0 / 3 |
 | [cases](#cases) | 0 / 32 |
-| [connectors](#connectors) | 0 / 17 |
+| [connectors](#connectors) | 7 / 17 |
 | [Dashboards](#dashboards) | 0 / 5 |
 | [Data streams](#data-streams) | 0 / 2 |
 | [data views](#data-views) | 15 / 15 |
@@ -248,13 +248,13 @@ Endpoint data comes from the [Kibana OpenAPI specification](https://github.com/e
 | GET | `/api/actions/connector/_oauth_callback` | — | ✅ |  | Added in 9.4.0 |
 | GET | `/api/actions/connector/_oauth_callback_script` | — | ✅ |  | Added in 9.4.0 |
 | GET | `/api/actions/connector/{connectorId}/oauth/start` | — | ✅ |  |  |
-| GET | `/api/actions/connector/{id}` | ✅ | ✅ |  |  |
-| POST | `/api/actions/connector/{id}` | ✅ | ✅ |  |  |
-| PUT | `/api/actions/connector/{id}` | ✅ | ✅ |  |  |
-| DELETE | `/api/actions/connector/{id}` | ✅ | ✅ |  |  |
-| POST | `/api/actions/connector/{id}/_execute` | ✅ | ✅ |  |  |
-| GET | `/api/actions/connector_types` | ✅ | ✅ |  |  |
-| GET | `/api/actions/connectors` | ✅ | ✅ |  |  |
+| GET | `/api/actions/connector/{id}` | ✅ | ✅ | `ConnectorsService.Get` |  |
+| POST | `/api/actions/connector/{id}` | ✅ | ✅ | `ConnectorsService.Create` |  |
+| PUT | `/api/actions/connector/{id}` | ✅ | ✅ | `ConnectorsService.Update` |  |
+| DELETE | `/api/actions/connector/{id}` | ✅ | ✅ | `ConnectorsService.Delete` |  |
+| POST | `/api/actions/connector/{id}/_execute` | ✅ | ✅ | `ConnectorsService.Execute` |  |
+| GET | `/api/actions/connector_types` | ✅ | ✅ | `ConnectorsService.ListTypes` |  |
+| GET | `/api/actions/connectors` | ✅ | ✅ | `ConnectorsService.List` |  |
 | GET | `/api/actions/list_action_types` | ✅ | — |  | deprecated |
 
 ## Dashboards

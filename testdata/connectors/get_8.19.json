@@ -1,0 +1,18 @@
+{
+  "id": "7de6e507-5697-4100-9e1b-3d4979189414",
+  "name": "es2",
+  "config": {
+    "url": "http://elasticsearch:9200/_count",
+    "method": "post",
+    "hasAuth": true,
+    "authType": "webhook-authentication-basic",
+    "headers": {
+      "Content-Type": "application/json"
+    }
+  },
+  "connector_type_id": ".webhook",
+  "is_preconfigured": false,
+  "is_deprecated": false,
+  "is_missing_secrets": false,
+  "is_system_action": false
+}

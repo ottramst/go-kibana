@@ -1,0 +1,11 @@
+{
+  "id": "5558f519-84e2-4d96-a7d6-18a5a93f4248",
+  "name": "probe-log",
+  "config": {},
+  "connector_type_id": ".server-log",
+  "is_preconfigured": false,
+  "is_deprecated": false,
+  "is_missing_secrets": false,
+  "is_system_action": false,
+  "is_connector_type_deprecated": false
+}

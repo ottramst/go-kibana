@@ -1,0 +1,20 @@
+{
+  "id": "probe-es",
+  "name": "es3",
+  "config": {
+    "url": "http://elasticsearch:9200/_count",
+    "method": "post",
+    "headers": {
+      "Content-Type": "application/json"
+    },
+    "hasAuth": true,
+    "authType": "webhook-authentication-basic"
+  },
+  "connector_type_id": ".webhook",
+  "is_preconfigured": false,
+  "is_deprecated": false,
+  "is_missing_secrets": false,
+  "is_system_action": false,
+  "is_connector_type_deprecated": false,
+  "auth_mode": "shared"
+}
