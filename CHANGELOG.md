@@ -1,4 +1,6 @@
-## Unreleased
+## v1.1.0
+
+v1.1.0 adds connectors and alerting rules: `client.Connectors` and `client.Alerting` cover connector CRUD, execution and types, and rule CRUD, find, state, snoozes, alert muting, framework health, rule types and the query inspector. It only adds API: code written for v1.0.0 keeps compiling. Rule backfills only accept Security detection rules, so they come with the Security solution APIs ([#102](https://github.com/ottramst/go-kibana/issues/102)). Tested against Kibana 8.19.25 and 9.5.6.
 
 FEATURES:
 
