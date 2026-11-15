@@ -90,9 +90,9 @@ type UpdateRuleAPIKeyOptions struct {
 	_ [0]func()
 }
 
-// UpdateRuleAPIKey replaces the API key that a rule runs with with one of
-// the calling user, who becomes Rule.APIKeyOwner, for example when the
-// owner of the key lost access. Kibana creates a new key, except with API
+// UpdateRuleAPIKey makes a rule run with an API key of the calling user,
+// who becomes Rule.APIKeyOwner, for example when the owner of the previous
+// key lost access. Kibana creates a new key, except with API
 // key authentication on Kibana 8.19: it then stores the caller's key
 // (Rule.APIKeyCreatedByUser is set), and the rule's runs fail once that
 // key is revoked.
