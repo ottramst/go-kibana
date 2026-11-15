@@ -6,12 +6,12 @@ Endpoints of the official Kibana OpenAPI specs (v8.19.25, v9.5.6) and the go-kib
 
 Endpoint data comes from the [Kibana OpenAPI specification](https://github.com/elastic/kibana/tree/main/oas_docs) by Elastic, licensed under [CC BY-NC-ND 4.0](https://creativecommons.org/licenses/by-nc-nd/4.0/).
 
-**72 of 726 endpoints implemented.**
+**77 of 726 endpoints implemented.**
 
 | Area | Implemented |
 |---|---|
 | [agent builder](#agent-builder) | 0 / 39 |
-| [alerting](#alerting) | 5 / 36 |
+| [alerting](#alerting) | 10 / 36 |
 | [APM agent configuration](#apm-agent-configuration) | 0 / 7 |
 | [APM agent keys](#apm-agent-keys) | 0 / 1 |
 | [APM annotations](#apm-annotations) | 0 / 2 |
@@ -127,11 +127,11 @@ Endpoint data comes from the [Kibana OpenAPI specification](https://github.com/e
 | POST | `/api/alerting/rule/{id}` | ✅ | ✅ | `AlertingService.CreateRule` |  |
 | PUT | `/api/alerting/rule/{id}` | ✅ | ✅ | `AlertingService.UpdateRule` |  |
 | DELETE | `/api/alerting/rule/{id}` | ✅ | ✅ | `AlertingService.DeleteRule` |  |
-| POST | `/api/alerting/rule/{id}/_disable` | ✅ | ✅ |  |  |
-| POST | `/api/alerting/rule/{id}/_enable` | ✅ | ✅ |  |  |
-| POST | `/api/alerting/rule/{id}/_mute_all` | ✅ | ✅ |  |  |
-| POST | `/api/alerting/rule/{id}/_unmute_all` | ✅ | ✅ |  |  |
-| POST | `/api/alerting/rule/{id}/_update_api_key` | ✅ | ✅ |  |  |
+| POST | `/api/alerting/rule/{id}/_disable` | ✅ | ✅ | `AlertingService.DisableRule` |  |
+| POST | `/api/alerting/rule/{id}/_enable` | ✅ | ✅ | `AlertingService.EnableRule` |  |
+| POST | `/api/alerting/rule/{id}/_mute_all` | ✅ | ✅ | `AlertingService.MuteAllAlerts` |  |
+| POST | `/api/alerting/rule/{id}/_unmute_all` | ✅ | ✅ | `AlertingService.UnmuteAllAlerts` |  |
+| POST | `/api/alerting/rule/{id}/_update_api_key` | ✅ | ✅ | `AlertingService.UpdateRuleAPIKey` |  |
 | GET | `/api/alerting/rule/{id}/query_inspector` | — | ✅ |  |  |
 | POST | `/api/alerting/rule/{id}/snooze_schedule` | ✅ | ✅ |  | Generally available; added in 8.19.0 |
 | DELETE | `/api/alerting/rule/{ruleId}/snooze_schedule/{scheduleId}` | ✅ | ✅ |  | Generally available; added in 8.19.0 |

@@ -48,7 +48,7 @@ Authenticate with `WithAPIKey` (the base64 `encoded` value of an Elasticsearch A
 | Short URLs | create, get, resolve, delete |
 | Tags (Kibana 9.5+) | CRUD with an iterator |
 | Connectors | CRUD · execute · list types |
-| Alerting | rule CRUD · find with an iterator |
+| Alerting | rule CRUD · find with an iterator · enable, disable, mute all · API key update |
 | Saved objects | import, export, resolve import errors · CRUD, bulk, find and resolve (deprecated by Kibana) |
 | Encrypted saved objects | rotate the encryption key |
 | Data views | CRUD and the default data view · field metadata · runtime fields · reference swaps |
