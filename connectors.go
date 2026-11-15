@@ -55,8 +55,8 @@ type Connector struct {
 
 	// Config is the configuration of the connector, as a JSON object whose
 	// fields depend on the connector type, such as {"url": "...",
-	// "method": "post"} for a webhook. Left out when nil: Kibana then
-	// uses {}.
+	// "method": "post"} for a webhook. Left out when nil or empty: Kibana
+	// then uses {}.
 	Config json.RawMessage `json:"config,omitempty"`
 
 	// Secrets are the credentials of the connector, as a JSON object whose
@@ -249,7 +249,7 @@ type ExecuteConnectorRequest struct {
 
 	// Params are the parameters of the action, as a JSON object whose
 	// fields depend on the connector type, such as {"message": "..."} for
-	// a server log connector. Nil sends {}.
+	// a server log connector. Nil or empty sends {}.
 	Params json.RawMessage `json:"params"`
 }
 
@@ -319,7 +319,7 @@ func (s *ConnectorsService) Execute(ctx context.Context, id string, req *Execute
 	body := struct {
 		Params json.RawMessage `json:"params"`
 	}{Params: json.RawMessage("{}")}
-	if req != nil && req.Params != nil {
+	if req != nil && len(req.Params) > 0 {
 		body.Params = req.Params
 	}
 	result := new(ExecuteConnectorResult)
@@ -357,9 +357,8 @@ const (
 type ConnectorType struct {
 	_ [0]func()
 
-	ID          ConnectorTypeID `json:"id"`
-	Name        string          `json:"name"`
-	Description string          `json:"description,omitempty"`
+	ID   ConnectorTypeID `json:"id"`
+	Name string          `json:"name"`
 
 	// Enabled is set when the type is enabled in kibana.yml
 	// (EnabledInConfig) and by the license (EnabledInLicense).
@@ -379,8 +378,9 @@ type ConnectorType struct {
 	// "endpointSecurity", if any.
 	SubFeature string `json:"sub_feature,omitempty"`
 
-	// IsDeprecated, IsExperimental and Source are only returned by Kibana
-	// 9.x.
+	// Description, IsDeprecated, IsExperimental and Source are only
+	// returned by Kibana 9.x.
+	Description    string              `json:"description,omitempty"`
 	IsDeprecated   bool                `json:"is_deprecated"`
 	IsExperimental bool                `json:"is_experimental,omitempty"`
 	Source         ConnectorTypeSource `json:"source,omitempty"`

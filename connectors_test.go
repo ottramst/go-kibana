@@ -256,17 +256,20 @@ func TestConnectorsService_Execute(t *testing.T) {
 func TestConnectorsService_Execute_failed(t *testing.T) {
 	mux, client := setup(t)
 	mux.HandleFunc("POST /api/actions/connector/{id}/_execute", func(w http.ResponseWriter, r *http.Request) {
-		// Nil params are sent as {}: Kibana requires the field.
+		// Empty params are sent as {}: Kibana requires the field.
 		testJSONBody(t, r, `{"params":{}}`)
 		writeJSON(t, w, http.StatusOK, fixture(t, "connectors/execute_error.json"))
 	})
 	// A failed execution is a result, not an error.
-	got, _, err := client.Connectors.Execute(context.Background(), "probe-log-1", nil, nil)
+	got, _, err := client.Connectors.Execute(context.Background(), "probe-log-1", &kibana.ExecuteConnectorRequest{Params: json.RawMessage{}}, nil)
 	if err != nil {
 		t.Fatalf("Execute() error = %v", err)
 	}
 	if got.Status != kibana.ExecuteConnectorStatusError || got.ErrorSource != kibana.ExecuteConnectorErrorSourceUser || got.Message == "" || string(got.Retry) != "false" {
 		t.Errorf("Execute() = %+v, want a user error", got)
+	}
+	if _, _, err := client.Connectors.Execute(context.Background(), "probe-log-1", nil, nil); err != nil {
+		t.Errorf("Execute(nil) error = %v", err)
 	}
 	if _, _, err := client.Connectors.Execute(context.Background(), "", nil, nil); err == nil {
 		t.Error("Execute(empty ID) error = nil, want an error")

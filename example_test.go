@@ -303,6 +303,33 @@ func ExampleTagsService_ListAll() {
 	}
 }
 
+func ExampleConnectorsService_Execute() {
+	client, err := kibana.NewClient("http://localhost:5601", kibana.WithAPIKey(os.Getenv("KIBANA_API_KEY")))
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	ctx := context.Background()
+	connector, _, err := client.Connectors.Create(ctx, &kibana.Connector{
+		Name:            "Server log",
+		ConnectorTypeID: kibana.ConnectorTypeIDServerLog,
+	}, nil)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	result, _, err := client.Connectors.Execute(ctx, connector.ID, &kibana.ExecuteConnectorRequest{
+		Params: json.RawMessage(`{"message": "Hello from go-kibana", "level": "info"}`),
+	}, nil)
+	if err != nil {
+		log.Fatal(err)
+	}
+	// A failed execution is a result with an error status, not an error.
+	if result.Status != kibana.ExecuteConnectorStatusOK {
+		log.Fatalf("connector failed: %s (%s)", result.Message, result.ServiceMessage)
+	}
+}
+
 func ExampleSavedObjectsService_Export() {
 	client, err := kibana.NewClient("http://localhost:5601", kibana.WithAPIKey(os.Getenv("KIBANA_API_KEY")))
 	if err != nil {
