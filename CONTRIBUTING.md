@@ -85,11 +85,12 @@ release (for example `v1.2.0`), and its CHANGELOG entry goes under `BREAKING CHA
 warns instead of failing, on the pull request, on `main` and on later pull requests, until the next release
 makes the file stale; the release pull request deletes it.
 
-To run the check locally on a clean checkout:
+To run the check locally on a clean checkout, against the latest v1 release:
 
 ```bash
 (cd tools/gorelease && go build -o /tmp/gorelease golang.org/x/exp/cmd/gorelease)
-/tmp/gorelease -base=v1.0.0   # the latest v1 release
+latest=$(go list -m -versions github.com/ottramst/go-kibana | tr ' ' '\n' | grep -E '^v1\.[0-9]+\.[0-9]+$' | sort -V | tail -n 1)
+/tmp/gorelease -base="$latest"
 ```
 
 ## Releases
