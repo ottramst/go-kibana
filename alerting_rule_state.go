@@ -18,9 +18,10 @@ type EnableRuleOptions struct {
 	_ [0]func()
 }
 
-// EnableRule enables a rule, so that it runs on its schedule. Kibana creates
-// an API key for the rule as the calling user, if it has none. Enabling an
-// enabled rule does nothing.
+// EnableRule enables a rule, so that it runs on its schedule. If the rule
+// has no API key, Kibana creates one as the calling user, or, with API key
+// authentication, stores the caller's key. Enabling an enabled rule does
+// nothing.
 //
 // Kibana API: POST /api/alerting/rule/{id}/_enable
 //
@@ -59,7 +60,8 @@ type MuteAllAlertsOptions struct {
 }
 
 // MuteAllAlerts mutes all the alerts of a rule: the rule keeps running, but
-// its actions don't. Rule.MuteAll is then set.
+// its actions don't. Rule.MuteAll is then set, and the alerts muted one by
+// one (Rule.MutedAlertIDs) are cleared.
 //
 // Kibana API: POST /api/alerting/rule/{id}/_mute_all
 //
@@ -73,8 +75,8 @@ type UnmuteAllAlertsOptions struct {
 	_ [0]func()
 }
 
-// UnmuteAllAlerts undoes [AlertingService.MuteAllAlerts]. Alerts muted with
-// [AlertingService.MuteAlert] stay muted.
+// UnmuteAllAlerts undoes [AlertingService.MuteAllAlerts]. Like it, it
+// clears the alerts muted one by one (Rule.MutedAlertIDs).
 //
 // Kibana API: POST /api/alerting/rule/{id}/_unmute_all
 //
@@ -90,7 +92,9 @@ type UpdateRuleAPIKeyOptions struct {
 
 // UpdateRuleAPIKey replaces the API key that a rule runs with by a new one
 // of the calling user, who becomes Rule.APIKeyOwner. Use it when the owner
-// of the key lost access, or to rotate the key.
+// of the key lost access, or to rotate the key. With API key
+// authentication, Kibana 8.19 stores the caller's key, while 9.x creates a
+// new one.
 //
 // Kibana API: POST /api/alerting/rule/{id}/_update_api_key
 //

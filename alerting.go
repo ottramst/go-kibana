@@ -93,8 +93,9 @@ type Rule struct {
 	UpdatedAt time.Time `json:"updated_at,omitzero"`
 
 	// APIKeyOwner is the user whose API key the rule runs with, set once
-	// the rule was enabled. APIKeyCreatedByUser tells whether the user
-	// created that key, rather than Kibana.
+	// the rule was enabled. APIKeyCreatedByUser is set when the rule runs
+	// with the caller's own API key, as when it was created or enabled with
+	// API key authentication, rather than one that Kibana created.
 	APIKeyOwner         string `json:"api_key_owner,omitempty"`
 	APIKeyCreatedByUser bool   `json:"api_key_created_by_user,omitempty"`
 
