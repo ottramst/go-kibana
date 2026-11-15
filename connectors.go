@@ -61,8 +61,9 @@ type Connector struct {
 
 	// Secrets are the credentials of the connector, as a JSON object whose
 	// fields depend on the connector type, such as {"user": "...",
-	// "password": "..."}. Kibana stores them encrypted and never returns
-	// them, so Secrets is always nil in results.
+	// "password": "..."}. Left out when nil or empty. Kibana stores them
+	// encrypted and never returns them, so Secrets is always nil in
+	// results.
 	Secrets json.RawMessage `json:"secrets,omitempty"`
 
 	// The following fields are set by Kibana.
@@ -94,7 +95,8 @@ type connectorPayload struct {
 	// ConnectorTypeID is only sent on create: updates reject it.
 	ConnectorTypeID ConnectorTypeID `json:"connector_type_id,omitempty"`
 
-	// Config and Secrets are left out when nil: Kibana rejects null.
+	// Config and Secrets are left out when nil or empty: Kibana rejects
+	// null.
 	Config  json.RawMessage `json:"config,omitempty"`
 	Secrets json.RawMessage `json:"secrets,omitempty"`
 }

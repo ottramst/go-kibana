@@ -317,6 +317,11 @@ func ExampleConnectorsService_Execute() {
 	if err != nil {
 		log.Fatal(err)
 	}
+	defer func() {
+		if _, err := client.Connectors.Delete(ctx, connector.ID, nil); err != nil {
+			log.Print(err)
+		}
+	}()
 
 	result, _, err := client.Connectors.Execute(ctx, connector.ID, &kibana.ExecuteConnectorRequest{
 		Params: json.RawMessage(`{"message": "Hello from go-kibana", "level": "info"}`),
