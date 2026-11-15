@@ -52,7 +52,13 @@ func TestAccAlertingRules(t *testing.T) {
 			Group:     "threshold met",
 			Params:    json.RawMessage(`{"message":"{{context.message}}"}`),
 			Frequency: &kibana.RuleActionFrequency{NotifyWhen: kibana.RuleNotifyWhenOnActionGroupChange},
+			// Nil days, which the client sends as [], mean every day.
+			AlertsFilter: &kibana.RuleActionAlertsFilter{Timeframe: &kibana.RuleAlertsFilterTimeframe{
+				Hours:    kibana.RuleAlertsFilterHours{Start: "08:00", End: "17:00"},
+				Timezone: "UTC",
+			}},
 		}},
+		Artifacts:  &kibana.RuleArtifacts{InvestigationGuide: &kibana.RuleInvestigationGuide{Blob: "# Guide"}},
 		AlertDelay: &kibana.RuleAlertDelay{Active: 2},
 		Flapping:   &kibana.RuleFlapping{LookBackWindow: 10, StatusChangeThreshold: 3},
 	}
@@ -77,6 +83,14 @@ func TestAccAlertingRules(t *testing.T) {
 	if got.Name != name || got.Flapping == nil || got.AlertDelay == nil || !slices.Equal(got.Tags, rule.Tags) {
 		t.Errorf("GetRule() = %+v, want %+v", got, created)
 	}
+	if tf := got.Actions[0].AlertsFilter; tf == nil || tf.Timeframe == nil || tf.Timeframe.Days == nil || len(tf.Timeframe.Days) != 0 {
+		t.Errorf("GetRule() alerts filter = %+v, want a timeframe with no days", tf)
+	}
+	// Kibana 8.19 accepts artifacts but does not store them.
+	storesArtifacts := compareVersions(kibanaVersion(t, client), "9.0.0") >= 0
+	if hasGuide := got.Artifacts != nil && got.Artifacts.InvestigationGuide != nil; hasGuide != storesArtifacts {
+		t.Errorf("GetRule() artifacts = %+v, want stored: %v", got.Artifacts, storesArtifacts)
+	}
 
 	// Read, modify, write: the actions and settings of the rule that was
 	// read are kept.
@@ -90,15 +104,19 @@ func TestAccAlertingRules(t *testing.T) {
 		t.Errorf("UpdateRule() = %+v, want the renamed rule with its actions", updated)
 	}
 
-	// A nil Flapping removes the flapping settings; a nil AlertDelay keeps
-	// the delay.
-	updated.Flapping, updated.AlertDelay = nil, nil
+	if (updated.Artifacts != nil) != storesArtifacts {
+		t.Errorf("UpdateRule() artifacts = %+v, want them kept: %v", updated.Artifacts, storesArtifacts)
+	}
+
+	// A nil Flapping removes the flapping settings, and nil Artifacts
+	// remove the artifacts; a nil AlertDelay keeps the delay.
+	updated.Flapping, updated.AlertDelay, updated.Artifacts = nil, nil, nil
 	updated, _, err = client.Alerting.UpdateRule(ctx, updated.ID, updated, nil)
 	if err != nil {
 		t.Fatalf("UpdateRule(no flapping) error = %v", err)
 	}
-	if updated.Flapping != nil || updated.AlertDelay == nil {
-		t.Errorf("UpdateRule(no flapping) = flapping %+v, alert delay %+v, want no flapping and the delay", updated.Flapping, updated.AlertDelay)
+	if updated.Flapping != nil || updated.AlertDelay == nil || updated.Artifacts != nil {
+		t.Errorf("UpdateRule(no flapping) = flapping %+v, alert delay %+v, artifacts %+v, want only the delay", updated.Flapping, updated.AlertDelay, updated.Artifacts)
 	}
 
 	found, _, err := client.Alerting.FindRules(ctx, &kibana.FindRulesOptions{

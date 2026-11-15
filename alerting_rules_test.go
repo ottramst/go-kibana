@@ -250,10 +250,13 @@ func TestAlertingService_UpdateRule(t *testing.T) {
 	})
 	rule := newTestRule()
 	before := *rule
+	beforeFilter := *rule.Actions[0].AlertsFilter.Query
+	beforeTimeframe := *rule.Actions[0].AlertsFilter.Timeframe
 	if _, _, err := client.Alerting.UpdateRule(context.Background(), "probe-rule-3", rule, nil); err != nil {
 		t.Fatalf("UpdateRule() error = %v", err)
 	}
-	if !reflect.DeepEqual(*rule, before) {
+	if !reflect.DeepEqual(*rule, before) || !reflect.DeepEqual(*rule.Actions[0].AlertsFilter.Query, beforeFilter) ||
+		!reflect.DeepEqual(*rule.Actions[0].AlertsFilter.Timeframe, beforeTimeframe) {
 		t.Error("UpdateRule() modified the rule")
 	}
 }

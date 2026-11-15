@@ -119,11 +119,10 @@ func (r *Rule) commonPayload() ruleCommonPayload {
 			Group:                   a.Group,
 			Params:                  rawOr(a.Params, "{}"),
 			Frequency:               a.Frequency,
-			AlertsFilter:            a.AlertsFilter,
+			AlertsFilter:            alertsFilterPayload(a.AlertsFilter),
 			UseAlertDataForTemplate: a.UseAlertDataForTemplate,
 			UUID:                    a.UUID,
 		}
-		p.Actions[i].AlertsFilter = alertsFilterPayload(a.AlertsFilter)
 	}
 	return p
 }
@@ -255,11 +254,10 @@ type UpdateRuleOptions struct {
 //
 // Tags, actions and artifacts that are left out are removed, and so are
 // the flapping settings when r.Flapping is nil; AlertDelay is kept when
-// nil. Pass a rule
-// returned by [AlertingService.GetRule] to keep its other fields, but not
-// one returned by [AlertingService.FindRules] with Fields, which is
-// partial. Actions whose connector was deleted fail the update with
-// [ErrBadRequest].
+// nil. Pass a rule returned by [AlertingService.GetRule] to keep its other
+// fields, but not one returned by [AlertingService.FindRules] with Fields,
+// which is partial. Actions whose connector was deleted fail the update
+// with [ErrBadRequest].
 //
 // Kibana API: PUT /api/alerting/rule/{id}
 //
