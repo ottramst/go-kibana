@@ -1,0 +1,5 @@
+{
+  "statusCode": 400,
+  "error": "Bad Request",
+  "message": "Query inspection is not supported for rule type \".index-threshold\""
+}
