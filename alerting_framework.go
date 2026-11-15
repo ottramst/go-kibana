@@ -128,8 +128,8 @@ type RuleType struct {
 	HasFieldsForAAD        bool `json:"has_fields_for_a_a_d"`
 	IsExportable           bool `json:"is_exportable"`
 
-	// IsInternallyManaged rule types are managed by Kibana; only Kibana 9.5
-	// returns it.
+	// IsInternallyManaged rule types are managed by Kibana; Kibana 8.19 does
+	// not return it.
 	IsInternallyManaged bool `json:"is_internally_managed,omitempty"`
 }
 
@@ -194,8 +194,8 @@ type GetRuleQueryInspectorOptions struct {
 
 	// AlertID is the UUID of an alert of the rule (its kibana.alert.uuid
 	// field, not the alert instance ID): the queries then use the rule
-	// parameters and the time range with which the alert was evaluated,
-	// instead of the current ones.
+	// parameters and the time range with which the alert was evaluated, if
+	// the alert recorded them, instead of the current ones.
 	AlertID string `url:"alert_id,omitempty"`
 }
 
@@ -219,8 +219,9 @@ type RuleQuery struct {
 // and with [QueryInspectorModeExecute] their responses. It works on disabled
 // rules. Kibana answers [ErrBadRequest] for rule types that don't support
 // it, such as ".index-threshold" and ".es-query" (the observability custom
-// threshold rule does), and for an opt.AlertID of another rule, and
-// [ErrNotFound] for an unknown opt.AlertID.
+// threshold rule does), and for an opt.AlertID of another rule of the same
+// type and space. Other opt.AlertID values that match no alert of the rule
+// are [ErrNotFound].
 //
 // The query inspector needs Kibana 9.5 or later: Kibana 8.19 answers
 // [ErrNotFound].
