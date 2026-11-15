@@ -24,7 +24,7 @@ func TestAlertingService_CreateSnoozeSchedule(t *testing.T) {
 		writeJSON(t, w, http.StatusOK, fixture(t, "alerting/snooze_schedule_create.json"))
 	})
 	tallinn := time.FixedZone("EET", 2*60*60)
-	req := &kibana.CreateSnoozeScheduleRequest{Schedule: kibana.SnoozeSchedule{
+	req := &kibana.SnoozeSchedule{
 		ID: "ignored",
 		Custom: kibana.CustomSchedule{
 			Start:    time.Date(2030, 1, 1, 2, 0, 0, 123, tallinn),
@@ -36,7 +36,7 @@ func TestAlertingService_CreateSnoozeSchedule(t *testing.T) {
 				OnMonthDay: []int{1, 15},
 			},
 		},
-	}}
+	}
 	got, _, err := client.Alerting.CreateSnoozeSchedule(context.Background(), "a/b?", req, nil)
 	if err != nil {
 		t.Fatalf("CreateSnoozeSchedule() error = %v", err)
@@ -47,7 +47,7 @@ func TestAlertingService_CreateSnoozeSchedule(t *testing.T) {
 		!c.Recurring.End.Equal(time.Date(2031, 1, 1, 0, 0, 0, 0, time.UTC)) {
 		t.Errorf("CreateSnoozeSchedule() = %+v, recurring %+v", got, c.Recurring)
 	}
-	if req.Schedule.ID != "ignored" {
+	if req.ID != "ignored" {
 		t.Error("CreateSnoozeSchedule() modified the request")
 	}
 }
@@ -58,12 +58,12 @@ func TestAlertingService_CreateSnoozeSchedule_invalid(t *testing.T) {
 	valid := kibana.CustomSchedule{Start: time.Now(), Duration: "1h"}
 	for name, tt := range map[string]struct {
 		id  string
-		req *kibana.CreateSnoozeScheduleRequest
+		req *kibana.SnoozeSchedule
 	}{
 		"nil":         {"r", nil},
-		"no start":    {"r", &kibana.CreateSnoozeScheduleRequest{Schedule: kibana.SnoozeSchedule{Custom: kibana.CustomSchedule{Duration: "1h"}}}},
-		"no duration": {"r", &kibana.CreateSnoozeScheduleRequest{Schedule: kibana.SnoozeSchedule{Custom: kibana.CustomSchedule{Start: time.Now()}}}},
-		"no rule ID":  {"", &kibana.CreateSnoozeScheduleRequest{Schedule: kibana.SnoozeSchedule{Custom: valid}}},
+		"no start":    {"r", &kibana.SnoozeSchedule{Custom: kibana.CustomSchedule{Duration: "1h"}}},
+		"no duration": {"r", &kibana.SnoozeSchedule{Custom: kibana.CustomSchedule{Start: time.Now()}}},
+		"no rule ID":  {"", &kibana.SnoozeSchedule{Custom: valid}},
 	} {
 		if _, _, err := client.Alerting.CreateSnoozeSchedule(ctx, tt.id, tt.req, nil); err == nil {
 			t.Errorf("CreateSnoozeSchedule(%s) error = nil, want an error", name)

@@ -19,14 +19,14 @@ func TestAccAlertingSnoozeSchedules(t *testing.T) {
 		Schedule: kibana.RuleSchedule{Interval: "1m"}, Params: testThresholdParams})
 
 	start := time.Now().Add(24 * time.Hour).Truncate(time.Millisecond)
-	schedule, _, err := client.Alerting.CreateSnoozeSchedule(ctx, rule.ID, &kibana.CreateSnoozeScheduleRequest{Schedule: kibana.SnoozeSchedule{
+	schedule, _, err := client.Alerting.CreateSnoozeSchedule(ctx, rule.ID, &kibana.SnoozeSchedule{
 		Custom: kibana.CustomSchedule{
 			Start:     start,
 			Duration:  "2h",
 			Timezone:  "Europe/Tallinn",
 			Recurring: &kibana.ScheduleRecurrence{Every: "1w", OnWeekDay: []string{"MO", "FR"}, Occurrences: 3},
 		},
-	}}, nil)
+	}, nil)
 	if err != nil {
 		t.Fatalf("CreateSnoozeSchedule() error = %v", err)
 	}
@@ -63,8 +63,12 @@ func TestAccAlertingMuteAlert(t *testing.T) {
 	// Kibana 9.5 checks that the alert exists unless told not to; 8.19
 	// never does.
 	_, err := client.Alerting.MuteAlert(ctx, rule.ID, "a/1", nil)
-	if validates := compareVersions(kibanaVersion(t, client), "9.5.0") >= 0; validates != errors.Is(err, kibana.ErrNotFound) {
-		t.Errorf("MuteAlert(missing alert) error = %v, want ErrNotFound: %v", err, validates)
+	if compareVersions(kibanaVersion(t, client), "9.5.0") >= 0 {
+		if !errors.Is(err, kibana.ErrNotFound) {
+			t.Errorf("MuteAlert(missing alert) error = %v, want ErrNotFound", err)
+		}
+	} else if err != nil {
+		t.Errorf("MuteAlert(missing alert) error = %v, want none before Kibana 9.5", err)
 	}
 	noValidation := &kibana.MuteAlertOptions{ValidateAlertsExistence: new(false)}
 	for _, id := range []string{"a/1", "a 2"} {
@@ -97,8 +101,11 @@ func TestAccAlertingSnoozeAlert_unsupported(t *testing.T) {
 	if compareVersions(kibanaVersion(t, client), "9.5.0") >= 0 {
 		t.Skip("Kibana 9.5+ can snooze alerts")
 	}
+	client = client.InSpace(createSpace(t, client))
+	rule := createRule(t, client, &kibana.Rule{Name: randName(t, "acc"), RuleTypeID: ".index-threshold", Consumer: "stackAlerts",
+		Schedule: kibana.RuleSchedule{Interval: "1m"}, Params: testThresholdParams})
 	req := &kibana.SnoozeAlertRequest{ExpiresAt: time.Now().Add(time.Hour)}
-	if _, err := client.Alerting.SnoozeAlert(t.Context(), "r", "a", req, nil); !errors.Is(err, kibana.ErrNotFound) {
+	if _, err := client.Alerting.SnoozeAlert(t.Context(), rule.ID, "a", req, nil); !errors.Is(err, kibana.ErrNotFound) {
 		t.Errorf("SnoozeAlert() error = %v, want ErrNotFound before Kibana 9.5", err)
 	}
 }
@@ -115,10 +122,11 @@ func TestAccAlertingSnoozeAlert(t *testing.T) {
 	ctx := t.Context()
 
 	index := randName(t, "go-kibana-acc")
-	esRequest(t, "POST", "/"+index+"/_doc?refresh=true", fmt.Sprintf(`{"@timestamp":%q}`, time.Now().UTC().Format(time.RFC3339)))
+	if err := esRequest(t, "POST", "/"+index+"/_doc?refresh=true", fmt.Sprintf(`{"@timestamp":%q}`, time.Now().UTC().Format(time.RFC3339))); err != nil {
+		t.Fatal(err)
+	}
 	cleanup(t, func(context.Context) error {
-		esRequest(t, "DELETE", "/"+index, "")
-		return nil
+		return esRequest(t, "DELETE", "/"+index, "")
 	})
 	rule := createRule(t, client, &kibana.Rule{
 		Name:       randName(t, "acc"),

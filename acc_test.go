@@ -6,12 +6,14 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
 	"os"
 	"strconv"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/ottramst/go-kibana"
 )
@@ -83,25 +85,29 @@ func randUUID(t *testing.T) string {
 
 // esRequest sends a request to the Elasticsearch of the compose stack
 // (ELASTICSEARCH_URL, default http://localhost:9200, with the basic auth
-// credentials of the tests), for tests that need data in Elasticsearch.
-// It fails the test unless Elasticsearch answers 2xx.
-func esRequest(t *testing.T, method, path, body string) {
+// credentials of the tests), for tests that need data in Elasticsearch. It
+// returns an error unless Elasticsearch answers 2xx within 30 seconds; it
+// works in cleanups too.
+func esRequest(t *testing.T, method, path, body string) error {
 	t.Helper()
-	req, err := http.NewRequestWithContext(context.WithoutCancel(t.Context()), method, envOr("ELASTICSEARCH_URL", "http://localhost:9200")+path, strings.NewReader(body))
+	ctx, cancel := context.WithTimeout(context.WithoutCancel(t.Context()), 30*time.Second)
+	defer cancel()
+	req, err := http.NewRequestWithContext(ctx, method, envOr("ELASTICSEARCH_URL", "http://localhost:9200")+path, strings.NewReader(body))
 	if err != nil {
-		t.Fatal(err)
+		return err
 	}
 	req.SetBasicAuth(envOr("KIBANA_USERNAME", "elastic"), envOr("KIBANA_PASSWORD", "changeme"))
 	req.Header.Set("Content-Type", "application/json")
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
-		t.Fatalf("Elasticsearch %s %s: %v", method, path, err)
+		return fmt.Errorf("elasticsearch %s %s: %w", method, path, err)
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode/100 != 2 {
 		b, _ := io.ReadAll(resp.Body)
-		t.Fatalf("Elasticsearch %s %s: %s: %s", method, path, resp.Status, b)
+		return fmt.Errorf("elasticsearch %s %s: %s: %s", method, path, resp.Status, b)
 	}
+	return nil
 }
 
 // kibanaVersion returns the version of the acceptance test Kibana, such as

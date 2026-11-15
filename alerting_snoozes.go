@@ -64,15 +64,6 @@ type ScheduleRecurrence struct {
 	OnMonth    []int    `json:"onMonth,omitempty"`
 }
 
-// CreateSnoozeScheduleRequest is the body of
-// [AlertingService.CreateSnoozeSchedule].
-type CreateSnoozeScheduleRequest struct {
-	_ [0]func()
-
-	// Schedule is the schedule to add. Its ID is ignored.
-	Schedule SnoozeSchedule
-}
-
 // snoozeScheduleRequestPayload is the body of snooze schedule requests.
 type snoozeScheduleRequestPayload struct {
 	Schedule struct {
@@ -100,12 +91,13 @@ type scheduleRecurrencePayload struct {
 	OnMonth     []int    `json:"onMonth,omitempty"`
 }
 
-// newSnoozeScheduleRequestPayload validates a request and returns its body.
-func newSnoozeScheduleRequestPayload(req *CreateSnoozeScheduleRequest) (*snoozeScheduleRequestPayload, error) {
-	if req == nil {
-		return nil, errors.New("kibana: snooze schedule request must not be nil")
+// newSnoozeScheduleRequestPayload validates a schedule and returns the body
+// of a request that creates it, without its ID.
+func newSnoozeScheduleRequestPayload(schedule *SnoozeSchedule) (*snoozeScheduleRequestPayload, error) {
+	if schedule == nil {
+		return nil, errors.New("kibana: snooze schedule must not be nil")
 	}
-	c := req.Schedule.Custom
+	c := schedule.Custom
 	if c.Start.IsZero() || c.Duration == "" {
 		return nil, errors.New("kibana: snooze schedule Start and Duration must be set")
 	}
@@ -128,18 +120,19 @@ type CreateSnoozeScheduleOptions struct {
 }
 
 // CreateSnoozeSchedule adds a snooze schedule to a rule: the rule keeps
-// running, but its actions don't during the schedule. It returns the schedule
-// with its ID, which [AlertingService.DeleteSnoozeSchedule] takes. Kibana
-// does not return a rule's snooze schedules otherwise.
+// running, but its actions don't during the schedule. The schedule's ID is
+// ignored. It returns the schedule with the ID that Kibana assigned, which
+// [AlertingService.DeleteSnoozeSchedule] takes; Kibana does not return a
+// rule's snooze schedules otherwise.
 //
 // Kibana API: POST /api/alerting/rule/{id}/snooze_schedule
 //
 // Kibana API docs: https://www.elastic.co/docs/api/doc/kibana/operation/operation-post-alerting-rule-id-snooze-schedule
-func (s *AlertingService) CreateSnoozeSchedule(ctx context.Context, ruleID string, req *CreateSnoozeScheduleRequest, opt *CreateSnoozeScheduleOptions, opts ...RequestOption) (*SnoozeSchedule, *Response, error) {
+func (s *AlertingService) CreateSnoozeSchedule(ctx context.Context, ruleID string, schedule *SnoozeSchedule, opt *CreateSnoozeScheduleOptions, opts ...RequestOption) (*SnoozeSchedule, *Response, error) {
 	if err := requireID("rule ID", ruleID); err != nil {
 		return nil, nil, err
 	}
-	payload, err := newSnoozeScheduleRequestPayload(req)
+	payload, err := newSnoozeScheduleRequestPayload(schedule)
 	if err != nil {
 		return nil, nil, err
 	}
