@@ -48,6 +48,7 @@ Authenticate with `WithAPIKey` (the base64 `encoded` value of an Elasticsearch A
 | Short URLs | create, get, resolve, delete |
 | Tags (Kibana 9.5+) | CRUD with an iterator |
 | Connectors | CRUD · execute · list types |
+| Alerting | rule CRUD · find with an iterator |
 | Saved objects | import, export, resolve import errors · CRUD, bulk, find and resolve (deprecated by Kibana) |
 | Encrypted saved objects | rotate the encryption key |
 | Data views | CRUD and the default data view · field metadata · runtime fields · reference swaps |
@@ -125,9 +126,9 @@ needs. `Do` decodes the response, or copies it into an `io.Writer`, and returns 
 for non-2xx responses.
 
 ```go
-req, err := client.NewRequest(ctx, http.MethodGet, "/api/alerting/rules/_find?per_page=10", nil)
-var rules struct{ Total int `json:"total"` }
-_, err = client.Do(req, &rules)
+req, err := client.NewRequest(ctx, http.MethodGet, "/api/cases/_find?perPage=10", nil)
+var cases struct{ Total int `json:"total"` }
+_, err = client.Do(req, &cases)
 ```
 
 **Set timeouts and retries** ([example](https://pkg.go.dev/github.com/ottramst/go-kibana#example-WithRetry)).
@@ -178,7 +179,7 @@ Serverless projects should work for the endpoints they expose, but are not teste
 
 ## Roadmap
 
-v1.0 covers the core platform APIs, and v1.1 adds connectors. Alerting, Fleet, the Security solution and other areas
+v1.0 covers the core platform APIs, and v1.1 adds connectors and alerting rules. Fleet, the Security solution and other areas
 are tracked as [backlog epics](https://github.com/ottramst/go-kibana/issues?q=is%3Aissue+is%3Aopen+label%3Aepic+no%3Amilestone)
 and [milestones](https://github.com/ottramst/go-kibana/milestones). Contributions are welcome.
 
