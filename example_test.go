@@ -302,6 +302,54 @@ func ExampleTagsService_ListAll() {
 	}
 }
 
+func ExampleAlertingService_CreateRule() {
+	client, err := kibana.NewClient("http://localhost:5601", kibana.WithAPIKey(os.Getenv("KIBANA_API_KEY")))
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	ctx := context.Background()
+	connector, _, err := client.Connectors.Create(ctx, &kibana.Connector{
+		Name:            "Ops log",
+		ConnectorTypeID: kibana.ConnectorTypeIDServerLog,
+	}, nil)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// Alert when the logs-* indices got documents in the last 5 minutes,
+	// and log a message when the alert starts and when it recovers. Rules
+	// are created disabled unless Enabled is set.
+	rule, _, err := client.Alerting.CreateRule(ctx, &kibana.Rule{
+		Name:       "Errors in the last 5 minutes",
+		RuleTypeID: ".index-threshold",
+		Consumer:   "stackAlerts",
+		Enabled:    true,
+		Schedule:   kibana.RuleSchedule{Interval: "1m"},
+		Params: json.RawMessage(`{"index": ["logs-*"], "timeField": "@timestamp", "aggType": "count", "groupBy": "all",
+			"timeWindowSize": 5, "timeWindowUnit": "m", "thresholdComparator": ">", "threshold": [0]}`),
+		Tags: []string{"ops"},
+		Actions: []kibana.RuleAction{
+			{
+				ID:        connector.ID,
+				Group:     "threshold met",
+				Params:    json.RawMessage(`{"message": "{{context.message}}", "level": "warn"}`),
+				Frequency: &kibana.RuleActionFrequency{NotifyWhen: kibana.RuleNotifyWhenOnActionGroupChange},
+			},
+			{
+				ID:        connector.ID,
+				Group:     "recovered",
+				Params:    json.RawMessage(`{"message": "Recovered: {{rule.name}}"}`),
+				Frequency: &kibana.RuleActionFrequency{NotifyWhen: kibana.RuleNotifyWhenOnActionGroupChange},
+			},
+		},
+	}, nil)
+	if err != nil {
+		log.Fatal(err)
+	}
+	fmt.Println("created rule", rule.ID)
+}
+
 func ExampleConnectorsService_Execute() {
 	client, err := kibana.NewClient("http://localhost:5601", kibana.WithAPIKey(os.Getenv("KIBANA_API_KEY")))
 	if err != nil {

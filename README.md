@@ -53,7 +53,10 @@ Authenticate with `WithAPIKey` (the base64 `encoded` value of an Elasticsearch A
 | Encrypted saved objects | rotate the encryption key |
 | Data views | CRUD and the default data view · field metadata · runtime fields · reference swaps |
 
-[COVERAGE.md](COVERAGE.md) maps every endpoint of the Kibana OpenAPI specs to its method.
+[COVERAGE.md](COVERAGE.md) maps every endpoint of the Kibana OpenAPI specs to its method. Not covered in
+these areas: the connector OAuth routes (browser redirects), the connector and alerting routes that Kibana
+deprecated and removed in 9.0 (`/api/actions/action*`, `/api/alerts/*`), and rule backfills, which only
+accept Security detection rules ([#102](https://github.com/ottramst/go-kibana/issues/102)).
 
 ## Cookbook
 
@@ -82,6 +85,31 @@ _, err := client.Roles.CreateOrUpdate(ctx, "marketing_analyst", &kibana.Role{
 	Kibana: []kibana.KibanaPrivilege{{
 		Feature: map[string][]string{"discover": {"read"}, "dashboard": {"all"}},
 		Spaces:  []string{"marketing"},
+	}},
+}, nil)
+```
+
+**Notify a connector from a rule** ([example](https://pkg.go.dev/github.com/ottramst/go-kibana#example-AlertingService.CreateRule)).
+Rule and action parameters are JSON, as the rule and connector types define them. Rules are created
+disabled unless `Enabled` is set, and updates replace the rule, so read it first, as for spaces.
+
+```go
+connector, _, err := client.Connectors.Create(ctx, &kibana.Connector{
+	Name:            "Ops log",
+	ConnectorTypeID: kibana.ConnectorTypeIDServerLog,
+}, nil)
+rule, _, err := client.Alerting.CreateRule(ctx, &kibana.Rule{
+	Name:       "Errors in the last 5 minutes",
+	RuleTypeID: ".index-threshold",
+	Consumer:   "stackAlerts",
+	Enabled:    true,
+	Schedule:   kibana.RuleSchedule{Interval: "1m"},
+	Params:     json.RawMessage(`{"index": ["logs-*"], "timeField": "@timestamp", "aggType": "count", ...}`),
+	Actions: []kibana.RuleAction{{
+		ID:        connector.ID,
+		Group:     "threshold met",
+		Params:    json.RawMessage(`{"message": "{{context.message}}"}`),
+		Frequency: &kibana.RuleActionFrequency{NotifyWhen: kibana.RuleNotifyWhenOnActionGroupChange},
 	}},
 }, nil)
 ```
@@ -179,8 +207,8 @@ Serverless projects should work for the endpoints they expose, but are not teste
 
 ## Roadmap
 
-v1.0 covers the core platform APIs, and v1.1 adds connectors and alerting rules. Fleet, the Security solution and other areas
-are tracked as [backlog epics](https://github.com/ottramst/go-kibana/issues?q=is%3Aissue+is%3Aopen+label%3Aepic+no%3Amilestone)
+v1.0 covers the core platform APIs, and v1.1 adds connectors and alerting rules. Fleet, the Security
+solution and other areas are tracked as [backlog epics](https://github.com/ottramst/go-kibana/issues?q=is%3Aissue+is%3Aopen+label%3Aepic+no%3Amilestone)
 and [milestones](https://github.com/ottramst/go-kibana/milestones). Contributions are welcome.
 
 ## Development
